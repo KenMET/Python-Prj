@@ -1,35 +1,46 @@
 import time
 import datetime
+import sys
+import gc
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 
-panel_pos_list = []
-
+sys.path.append(r'../mysql/')
+import mysql_lib as ml
 
 class FundBase:
     def __init__(self, Name=None, 
                     Code=None, 
                     Detail = {
-                        '成立日期':'1970年01月01日',
-                        '最新规模':'1亿',
-                        '累计单位净值':0.9710,
-                        '单位净值':0.9740,
-                        '涨跌幅':-0.001,
+                        '成立日期':'None',
+                        '最新规模':'None',
+                        '基金类型':'None',
+                        '管理人':'None',
+                        '累计单位净值':'None',
+                        '近1月':'None',
+                        '近3月':'None',
+                        '近6月':'None',
+                        '近1年':'None',
+                        '成立来':'None',
                         '净值详细数据':{
                             '1970/01/01/四': {
+                                '涨跌幅':'None',
+                                '单位净值':'None',
+                                '净值估算':'None',
                                 '09:30': {
-                                    '估值':0.9792, 
-                                    '均值':0.9793, 
-                                    '跌涨幅':0.0101,
-                                }
+                                    '估值':'None',
+                                    '均值':'None',
+                                    '跌涨幅':'None',
+                                },
                             }
                         }
                     }):
         self.Name = Name
         self.Code = Code
-        del Detail['净值详细数据']['1970/01/01/四']
+        del Detail['净值详细数据']
+        Detail.update({'净值详细数据':{}})
         self.Detail = Detail
 
 
@@ -59,7 +70,50 @@ def fund_get_dict_of_str(tmp):
     return date, {time : {'估值':reckon_value, '均值':avg_value, '跌涨幅':amplitude,}}
     
 def fund_push_to_database(fund):
-    print ('%s'%(fund.Detail['净值详细数据']))
+    base_dict = fund.Detail
+    total_db = {'名字':fund.Name, '代号':fund.Code,
+                '成立日期':'','最新规模':'','基金类型':'',
+                '管理人':'','累计单位净值':'','近1月':'',
+                '近3月':'','近6月':'','近1年':'','成立来':'',}
+    mydb = ml.mysql_client(host="182.61.47.202",user="root")
+    #mydb.delet_db('Fund')
+    #mydb.creat_db('Fund')
+    mydb.select_db('Fund')
+    #mydb.creat_tb('Head_Table', total_db)
+    title_list = []
+    list_tmp = []
+    for index in total_db:
+        title_list.append(index)
+        list_tmp.append(base_dict.get(index, total_db[index]))
+    title_list = title_list
+    list_of_tuple = [list_tmp, ]
+    mydb.insert('Head_Table', title_list, list_of_tuple)
+
+def fund_info_wash(info_str):
+    import re
+    dict_info = {}
+    dict_detail = {}
+    data = re.split(r"['\n','：','|',' ']", info_str)
+    while '' in data:
+        data.remove('')
+
+    dict_detail.update({'净值估算':data[2]})
+    dict_detail.update({'跌涨幅':str([data[3],data[4],])})
+    dict_detail.update({'单位净值':data[11]})
+
+    dict_info.update({'近1月':data[6]})
+    dict_info.update({'近3月':data[13]})
+    dict_info.update({'近6月':data[19]})
+    dict_info.update({'近1年':data[8]})
+    dict_info.update({'成立来':data[21]})
+    dict_info.update({'基金类型':str([data[23], data[24],])})
+    dict_info.update({'最新规模':data[26]})
+    dict_info.update({'成立日期':data[32]})
+    dict_info.update({'管理人':data[36]})
+    dict_info.update({'累计单位净值':data[17]})
+
+    return dict_info, dict_detail
+
 
 def fund_get_detail(driver, fund):
     if fund.Name == None and fund.Code == None:
@@ -69,12 +123,19 @@ def fund_get_detail(driver, fund):
     if fund.Code == None:
         return {}
 
+    driver.get('http://fund.eastmoney.com/%s.html?spm=search'%(fund.Code))
+
+    dict_info, detail = fund_info_wash(driver.find_element_by_class_name("fundInfoItem").text)
+    fund.Detail.update(dict_info)
+    fund.Detail['净值详细数据'].update(detail)
+
+    name = driver.find_element_by_class_name("fundDetail-tit").text
+    fund.Name = name[:name.find('(')]
+
     driver.get('http://finance.sina.com.cn/fund/quotes/%s/bc.shtml'%(fund.Code))
     elem_base = driver.find_element_by_id("hq_chart_panel")
     fund_data = driver.find_element_by_id("fundChartCurInfo")
 
-    print (driver.find_element_by_class_name("fund_info_blk2").text)
-    print (driver.find_element_by_class_name("fund_info_blk3").text)
     height = elem_base.size['height']//2
     width = elem_base.size['width']
     last_data = ''
@@ -103,6 +164,8 @@ def main():
     driver = spider_init(*args)
     
     fund = FundBase(Code = '161725')
+    fund_get_detail(driver, fund)
+    fund = FundBase(Code = '161028')
     fund_get_detail(driver, fund)
 
     driver.close()

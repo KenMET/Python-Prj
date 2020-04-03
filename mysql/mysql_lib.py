@@ -9,7 +9,7 @@ import mysql.connector
 
 
 class mysql_client:
-    def __init__(self, host="182.61.47.202",user="ken", passwd="123123"):
+    def __init__(self, host="1.2.3.4",user="ken", passwd="05310119"):
         self.host = host
         self.user = user
         self.passwd = passwd
@@ -61,13 +61,25 @@ class mysql_client:
 
 '''
 def main():
-    mydb = mysql_client(host="182.61.47.202",user="root", passwd="05310119")
-    mydb.delet_db('Test')
-    mydb.creat_db('Test')
-    mydb.select_db('Test')
-    mydb.creat_tb('test_tb', {'Name':'', 'Double':'', 'Pic':''})
-    title_list = ['Name','Detail', 'Pic']
-    list_of_tuple = [['1','2','3'],['A','B','C'],['!','@','#']]
-    mydb.insert('test_tb', title_list, list_of_tuple)
-    print (mydb.show_tb('test_tb'))
+    total_db = {'名字':'', '代号':'',
+                '成立日期':'','最新规模':'','基金类型':'',
+                '管理人':'','累计单位净值':'','近1月':'',
+                '近3月':'','近6月':'','近1年':'','成立来':'',}
+    mydb = mysql_client(host="182.61.47.202",user="root")
+    #mydb.delet_db('Fund')
+    mydb.creat_db('Fund')
+    mydb.select_db('Fund')
+    mydb.creat_tb('Head_Table', total_db)
+
+    #mydb.delet_db('Test')
+    #mydb.creat_db('Test')
+    #mydb.select_db('Test')
+    #mydb.creat_tb('test_tb', {'名字':'', '性别':'', '年龄':''})
+    #title_list = ['名字','性别', '年龄']
+    #list_of_tuple = [['1','2','3'],['A','B','C'],['!','@','#']]
+    #mydb.insert('test_tb', title_list, list_of_tuple)
+    #print (mydb.show_tb('test_tb'))
+
+if __name__ == '__main__':
+    main()
 '''

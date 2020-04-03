@@ -25,7 +25,7 @@ class tcp_server (threading.Thread):
         self.ClientLimit = ClientLimit
         self.CallBack = CallBack
         self.Args = Args
-    def run(self):
+    def run(self):  #Over Write Father Class
         print ("开始创建TCP服务器")
         tcp_server = socket(AF_INET, SOCK_STREAM)
         tcp_server.bind((self.IP, self.Port))
