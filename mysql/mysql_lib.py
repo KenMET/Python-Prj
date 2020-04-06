@@ -43,8 +43,16 @@ class mysql_client:
     def delet_tb(self, table):
         self.cursor.execute("DROP TABLE IF EXISTS %s"%(table))
 
-    def show_tb(self, table):
-        self.cursor.execute("SELECT * FROM %s"%(table))
+    def clear_tb(self, table):
+        self.cursor.execute("DELETE FROM %s"%(table))
+
+    def show_tb(self, table, key_dict):
+        key_word = ''
+        if len(key_dict) != 0:
+            key_word = 'where '
+            for index in key_dict:
+                key_word += "%s='%s' "%(index, key_dict[index])
+        self.cursor.execute("SELECT * FROM %s %s"%(table, key_word))
         return self.cursor.fetchall()
 
     def insert(self, table, title_list, list_of_tuple):
@@ -57,6 +65,32 @@ class mysql_client:
         for list_index in list_of_tuple:
             val.append(tuple(list_index))
         self.cursor.executemany(sql_cmd, val)
+        #self.db_connect.commit()
+
+    def insert_or_update(self, table, title_list, list_of_tuple, key_list, repalce_flag):
+        key_dict = {}
+        for key_index in key_list:
+            key_dict.update({key_index:list_of_tuple[title_list.index(key_index)]})
+        res_list = self.show_tb(table, key_dict)
+        if len(res_list) == 0:
+            self.insert(table, title_list, [list_of_tuple])
+            return True
+        elif len(res_list) != 1:
+            return False
+        if len(title_list) != len(list_of_tuple):
+            return False
+        if repalce_flag == False:
+            return False
+        tmp_str = 'SET '
+        for i in range(len(title_list)):
+            tmp_str += "%s = '%s', "%(title_list[i], list_of_tuple[i])
+        sql_cmd = 'UPDATE %s '%(table) + tmp_str + " WHERE %s = '%s'"%(key_index, list_of_tuple[title_list.index(key_index)])
+        sql_cmd = sql_cmd.replace(',  WHERE', ' WHERE')
+        sql_cmd = sql_cmd.replace("['", "[").replace("']", "]").replace("', '", ", ")
+        self.cursor.execute(sql_cmd)
+        #self.db_connect.commit()
+        
+    def flush(self):
         self.db_connect.commit()
 
 '''
