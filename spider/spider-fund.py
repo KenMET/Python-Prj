@@ -57,8 +57,6 @@ def spider_init(*args):
         chrome_options.add_argument(index)
     return webdriver.Chrome(chrome_options=chrome_options)
 
-def fund_get_code_by_name(name):
-    return None
 
 def fund_get_dict_of_str(tmp):
     if tmp.find('估') < 0 or tmp.find('幅') < 0:
@@ -69,45 +67,44 @@ def fund_get_dict_of_str(tmp):
     avg_value = float(tmp[tmp.find('均:')+2:tmp.find(' 幅:')])
     amplitude = float(tmp[tmp.find('幅:')+2:tmp.find('%')])
     return date, {time : {'估值':reckon_value, '均值':avg_value, '跌涨幅':amplitude,}}
-    
-def fund_push_to_database(fund_list):
-    for fund_index in fund_list:
-        base_dict = fund_index.Detail
-        total_db = {'名字':fund_index.Name, '代号':fund_index.Code,
-                    '成立日期':'','最新规模':'','基金类型':'',
-                    '管理人':'','累计单位净值':'','近1月':'',
-                    '近3月':'','近6月':'','近1年':'','成立来':'',}
-        mydb = ml.mysql_client(host="182.61.47.202",user="root")
-        #mydb.delet_db('Fund')
-        #mydb.creat_db('Fund')
-        mydb.select_db('Fund')
-        mydb.creat_tb('Head_Table', total_db)
-        title_list = []
-        list_tmp = []
-        for index in total_db:
-            title_list.append(index)
-            list_tmp.append(base_dict.get(index, total_db[index]))
-        mydb.insert_or_update('Head_Table', title_list, list_tmp, ['代号'], True)
-        
-        detail_in_day = fund_index.Detail['净值详细数据']
-        total_db_second = {'时间':'','估值':'','均值':'','跌涨幅':'',}
-        #mydb.delet_tb('Code'+fund_index.Code)
-        mydb.creat_tb('Code'+fund_index.Code, total_db_second)
-        title_list.clear()
-        list_tmp.clear()
-        for title_index in total_db_second:
-            title_list.append(title_index)
-        for this_day in detail_in_day:
-            detail_this_day = detail_in_day[this_day]
-            for detail_index in detail_this_day:
-                if detail_index.find(':') >= 0:
-                    val_detail = detail_this_day[detail_index]
-                    list_tmp.append(this_day + ' ' + detail_index)
-                    for val_index in val_detail:
-                        list_tmp.append(val_detail.get(val_index, total_db_second[val_index]))
-                    mydb.insert_or_update('Code'+fund_index.Code,title_list,list_tmp,['时间'],False)
-                list_tmp.clear()
-    mydb.flush()
+
+def fund_update_info(mysql_obj, fund):
+    base_dict = fund.Detail
+    total_db = {'名字':fund.Name, '代号':fund.Code,
+                '成立日期':'','最新规模':'','基金类型':'',
+                '管理人':'','累计单位净值':'','近1月':'',
+                '近3月':'','近6月':'','近1年':'','成立来':'',}
+    #mysql_obj.delet_db('Fund')
+    #mysql_obj.creat_db('Fund')
+    mysql_obj.select_db('Fund')
+    mysql_obj.creat_tb('Head_Table', total_db)
+    title_list = []
+    list_tmp = []
+    for index in total_db:
+        title_list.append(index)
+        list_tmp.append(base_dict.get(index, total_db[index]))
+    mysql_obj.insert_or_update('Head_Table', title_list, list_tmp, ['代号'], True)
+
+
+def fund_update_detail(mysql_obj, fund):
+    detail_in_day = fund.Detail['净值详细数据']
+    total_db = {'时间':'','估值':'','均值':'','跌涨幅':'',}
+    #mysql_obj.delet_tb('Code'+fund.Code)
+    mysql_obj.creat_tb('Code'+fund.Code, total_db)
+    title_list = []
+    list_tmp = []
+    for title_index in total_db:
+        title_list.append(title_index)
+    for this_day in detail_in_day:
+        detail_this_day = detail_in_day[this_day]
+        for detail_index in detail_this_day:
+            if detail_index.find(':') >= 0:
+                val_detail = detail_this_day[detail_index]
+                list_tmp.append(this_day + ' ' + detail_index)
+                for val_index in val_detail:
+                    list_tmp.append(val_detail.get(val_index, total_db[val_index]))
+                mysql_obj.insert_or_update('Code'+fund.Code,title_list,list_tmp,['时间'],False)
+            list_tmp.clear()
 
 
 
@@ -136,26 +133,24 @@ def fund_info_wash(info_str):
 
     return dict_info, dict_detail
 
-
-def fund_get_detail(driver, fund):
-    if fund.Name == None and fund.Code == None:
-        return {}
-    if fund.Name != None and fund.Code == None:
-        fund.Code = fund_get_code_by_name(fund.Name)
+def fund_get_info(driver, fund):
     if fund.Code == None:
         return {}
-
     driver.get('http://fund.eastmoney.com/%s.html?spm=search'%(fund.Code))
     dict_info, detail = fund_info_wash(driver.find_element_by_class_name("fundInfoItem").text)
     fund.Detail.update(dict_info)
     name = driver.find_element_by_class_name("fundDetail-tit").text
     fund.Name = name[:name.find('(')]
     print ("[%s] Get Fund Detail"%(fund.Code))
-    
+
+
+def fund_get_detail(driver, fund):
+    if fund.Code == None:
+        return {}
+
     driver.get('http://finance.sina.com.cn/fund/quotes/%s/bc.shtml'%(fund.Code))
     elem_base = driver.find_element_by_id("hq_chart_panel")
     fund_data = driver.find_element_by_id("fundChartCurInfo")
-
     height = elem_base.size['height']//2
     width = elem_base.size['width']
     last_data = ''
@@ -177,23 +172,31 @@ def fund_get_detail(driver, fund):
             same_cnt += 1
             if same_cnt > 3:
                 break
-    fund.Detail['净值详细数据'][date].update(detail)
+    #fund.Detail['净值详细数据'][date].update(detail)
     print ("[%s] Get Fund hq_chart_panel"%(fund.Code))
     
 
-def main():
-    args = ['--no-sandbox', '--disable-dev-shm-usage', '--headless']
-    driver = spider_init(*args)
-
-    code_list = ['161725', '161028']
-
-    for code_index in code_list:
-        fund = FundBase(Code = code_index)
-        fund_get_detail(driver, fund)
-        fund_push_to_database([fund, ])
-    
-    driver.close()
 
 if __name__ == '__main__':
-    main()
+    file_argv = sys.argv
+    del file_argv[0]
+    if len(file_argv) != 1:
+        print ('argv error')
+        exit()
+    
+    chrome_args = ['--no-sandbox', '--disable-dev-shm-usage', '--headless']
+    driver = spider_init(*chrome_args)
 
+    #code = '161725'
+    #code = '161028'
+
+    fund = FundBase(Code = file_argv[0])
+    fund_get_info(driver, fund)
+    fund_get_detail(driver, fund)
+    mydb = ml.mysql_client(host="182.61.47.202",user="root")
+    fund_update_info(mydb, fund)
+    fund_update_detail(mydb, fund)
+    mydb.flush()
+
+    driver.close()
+    print ('update success')
