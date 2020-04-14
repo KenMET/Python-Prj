@@ -27,7 +27,7 @@ def str2hexbytes(str_tmp):
 #hex byte -> str
 #e.g.   b'\x31\x32\x33' -> '123'
 def hexbytes2str(bytes_tmp):
-    return bytes_tmp.decode()
+    return bytes_tmp.decode('gbk')  #arvg 'gbk' for Chinese
 #print (str(str2hexbytes('123')) + ' <-> ' + hexbytes2str(b'\x31\x32\x33'))
 
 

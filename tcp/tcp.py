@@ -9,7 +9,7 @@ from socket import *
 sys.path.append(r'../common/alphabet/')
 import alphabet_pro
 
-def test_proc(recv_data, a, b):
+def test_proc(client, recv_data, a, b):
     print ('recv_data:[%s] args:[%s %d]'%(alphabet_pro.hexbytes2str(recv_data), a, b))
 
 
@@ -26,10 +26,10 @@ class tcp_server (threading.Thread):
         self.CallBack = CallBack
         self.Args = Args
     def run(self):  #Over Write Father Class
-        print ("开始创建TCP服务器")
         tcp_server = socket(AF_INET, SOCK_STREAM)
         tcp_server.bind((self.IP, self.Port))
         tcp_server.listen(self.ClientLimit)
+        print ("TCP Server Generate Successfully")
         while True:
             clientsocket,addr = tcp_server.accept()
             print ('accept connect[%s]'%(str(addr)))
@@ -57,11 +57,9 @@ class tcp_server (threading.Thread):
             if not recv_data :
                 self.del_client(Socket = clientsocket)
                 return False
-            self.CallBack(recv_data, *self.Args)
+            self.CallBack(clientsocket, recv_data, *self.Args)
         return True
-
-
-
+    
 
 
 def main():
