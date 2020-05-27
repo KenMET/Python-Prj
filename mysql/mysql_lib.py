@@ -26,19 +26,26 @@ class mysql_client:
         self.cursor.execute("DROP DATABASE IF EXISTS %s"%(data_base))
 
     def creat_tb(self, table, title_dict):
+        if len(title_dict) < 1:
+            return False
+        first = False
         list_tmp = []
         for dict_index in title_dict:
-            if type(title_dict[dict_index]) == type(''):
-                var_type = 'VARCHAR[255]'
-            elif type(title_dict[dict_index]) == type(0.1):
+            if type(title_dict[dict_index]) == type(0.1):
                 var_type = 'FLOAT[6,3]'
             elif type(title_dict[dict_index]) == type(1):
                 var_type = 'INT[10]'
-            list_tmp.append(dict_index + ' ' + var_type)
+            else:
+                var_type = 'VARCHAR[255]'
+            if first == False:
+                main_key = dict_index
+                main_key_type = var_type.replace('[','(').replace(']',')')
+                first = True
+            else:
+                list_tmp.append(dict_index + ' ' + var_type)
         data_type = str(tuple(list_tmp)).replace("'", '').strip('(').strip(')')
         data_type = data_type.replace("]", ')').replace("[", '(')
-        #self.cursor.execute("ALTER TABLE %s ADD COLUMN id INT AUTO_INCREMENT PRIMARY KEY"%(table))
-        self.cursor.execute("CREATE TABLE IF NOT EXISTS %s (id INT AUTO_INCREMENT PRIMARY KEY, %s)"%(table, data_type))
+        self.cursor.execute("CREATE TABLE IF NOT EXISTS %s (%s %s PRIMARY KEY, %s)"%(table, main_key, main_key_type, data_type))
 
     def delet_tb(self, table):
         self.cursor.execute("DROP TABLE IF EXISTS %s"%(table))
@@ -52,42 +59,23 @@ class mysql_client:
             key_word = 'where '
             for index in key_dict:
                 key_word += "%s='%s' "%(index, key_dict[index])
-        self.cursor.execute("SELECT * FROM %s %s"%(table, key_word))
+        print("SELECT * FROM %s %s"%(table, key_word))
+        exit()
         return self.cursor.fetchall()
 
-    def insert(self, table, title_list, list_of_tuple):
-        if len(title_list) != len(list_of_tuple[0]):
+    #table: string
+    #title_list:single list [...]
+    #list_of_tuple: double_list[(...), (...), (...)]
+    def insert(self, table, title_list, list_of_tuple, replace):
+        if type(list_of_tuple) != type([0,]) or type(list_of_tuple[0]) != type((0,)):
             return False
-        title_str = str(title_list).replace("'",'').replace('[','').replace(']','')
-        sql_cmd = 'INSERT INTO %s (%s) VALUES (%s)'%(table, title_str, ''.join('%s, ' for i in range(len(title_list))))
-        sql_cmd = sql_cmd[:-3] + ')'
-        val = []
-        for list_index in list_of_tuple:
-            val.append(tuple(list_index))
-        self.cursor.executemany(sql_cmd, val)
-        #self.db_connect.commit()
-
-    def insert_or_update(self, table, title_list, list_of_tuple, key_list, repalce_flag):
-        key_dict = {}
-        for key_index in key_list:
-            key_dict.update({key_index:list_of_tuple[title_list.index(key_index)]})
-        res_list = self.show_tb(table, key_dict)
-        if len(res_list) == 0:
-            self.insert(table, title_list, [list_of_tuple])
-            return True
-        elif len(res_list) != 1:
-            return False
-        if len(title_list) != len(list_of_tuple):
-            return False
-        if repalce_flag == False:
-            return False
-        tmp_str = 'SET '
-        for i in range(len(title_list)):
-            tmp_str += "%s = '%s', "%(title_list[i], list_of_tuple[i])
-        sql_cmd = 'UPDATE %s '%(table) + tmp_str + " WHERE %s = '%s'"%(key_index, list_of_tuple[title_list.index(key_index)])
-        sql_cmd = sql_cmd.replace(',  WHERE', ' WHERE')
-        sql_cmd = sql_cmd.replace("['", "[").replace("']", "]").replace("', '", ", ")
-        self.cursor.execute(sql_cmd)
+        title_str = ', '.join(title_list)
+        if replace == True:
+            sql_cmd = 'INSERT INTO %s (%s) VALUES (%s)'%(table, title_str, ', '.join('%s' for i in range(len(title_list))))
+            sql_cmd += ' ON DUPLICATE KEY UPDATE ' + ', '.join('%s=VALUES(%s)'%(index, index) for index in title_list)
+        else:
+            sql_cmd = 'INSERT IGNORE INTO %s (%s) VALUES (%s)'%(table, title_str, ', '.join('%s' for i in range(len(title_list))))
+        self.cursor.executemany(sql_cmd, list_of_tuple)
         #self.db_connect.commit()
         
     def flush(self):

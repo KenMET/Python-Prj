@@ -11,45 +11,41 @@ from selenium.webdriver.common.action_chains import ActionChains
 sys.path.append(r'../mysql/')
 import mysql_lib as ml
 
+web_dict = {
+    '基金基本概况':{'web':'http://fundf10.eastmoney.com/jbgk_xxxxxx.html', 'type':'0'},
+    '基金往日数据':{'web':'http://fundf10.eastmoney.com/jjjz_xxxxxx.html', 'type':'1'},
+}
+
+
+base_list_name = [
+    '基金全称', '成立日期', '成立规模', '资产规模', '基金管理','累计单位净值', '近1月涨跌', 
+    '净值详细数据', '日期', '单位净值', '累计净值', '日涨跌幅', '舆论'
+]
+
+
 class FundBase:
     def __init__(self, Name=None, 
                     Code=None, 
                     Detail = {
-                        '成立日期':'None',
-                        '最新规模':'None',
-                        '基金类型':'None',
-                        '管理人':'None',
-                        '累计单位净值':'None',
-                        '近1月':'None',
-                        '近3月':'None',
-                        '近6月':'None',
-                        '近1年':'None',
-                        '成立来':'None',
-                        '净值详细数据':{
+                        base_list_name[0]:'',
+                        base_list_name[1]:'',
+                        base_list_name[2]:'',
+                        base_list_name[3]:'',
+                        base_list_name[4]:'',
+                        base_list_name[5]:'',
+                        base_list_name[6]:'',
+                        base_list_name[7]:{
                             '1970/01/01/四': {
-                                '涨跌幅':'None',
-                                '单位净值':'None',
-                                '净值估算':'None',
-                                '09:30': {
-                                    '估值':'None',
-                                    '均值':'None',
-                                    '跌涨幅':'None',
-                                },
+                                '涨跌幅':'',
+                                '单位净值':'',
                             }
                         }
                     }):
         self.Name = Name
         self.Code = Code
-        del Detail['净值详细数据']
-        Detail.update({'净值详细数据':{}})
+        del Detail[base_list_name[7]]
+        Detail.update({base_list_name[7]:{}})
         self.Detail = Detail
-
-
-def AC_execute(driver, elem, offset_x, offset_y):
-    action = ActionChains(driver)
-    action.move_to_element_with_offset(elem, offset_x, offset_y) 
-    action.perform()
-
 
 def spider_init(*args):
     chrome_options=Options()
@@ -57,125 +53,82 @@ def spider_init(*args):
         chrome_options.add_argument(index)
     return webdriver.Chrome(chrome_options=chrome_options)
 
-
-def fund_get_dict_of_str(tmp):
-    if tmp.find('估') < 0 or tmp.find('幅') < 0:
-        return {}
-    date = tmp[:tmp.find(':')-2]
-    time = tmp[tmp.find(':')-2:tmp.find(' 估:')]
-    reckon_value = float(tmp[tmp.find('估:')+2:tmp.find(' 均:')])
-    avg_value = float(tmp[tmp.find('均:')+2:tmp.find(' 幅:')])
-    amplitude = float(tmp[tmp.find('幅:')+2:tmp.find('%')])
-    return date, {time : {'估值':reckon_value, '均值':avg_value, '跌涨幅':amplitude,}}
-
-def fund_update_info(mysql_obj, fund):
+def fund_update_base_info(mysql_obj, fund):
     base_dict = fund.Detail
-    total_db = {'名字':fund.Name, '代号':fund.Code,
-                '成立日期':'','最新规模':'','基金类型':'',
-                '管理人':'','累计单位净值':'','近1月':'',
-                '近3月':'','近6月':'','近1年':'','成立来':'',}
-    #mysql_obj.delet_db('Fund')
-    #mysql_obj.creat_db('Fund')
-    mysql_obj.select_db('Fund')
-    mysql_obj.creat_tb('Head_Table', total_db)
+    total_db = {base_list_name[0]:fund.Name, 
+                '基金代码':fund.Code,
+                base_list_name[1]:'', 
+                base_list_name[2]:'', 
+                base_list_name[3]:'', 
+                base_list_name[4]:'', 
+                }
     title_list = []
     list_tmp = []
     for index in total_db:
         title_list.append(index)
         list_tmp.append(base_dict.get(index, total_db[index]))
-    mysql_obj.insert_or_update('Head_Table', title_list, list_tmp, ['代号'], True)
+    
+    #mysql_obj.delet_db('Fund')
+    #mysql_obj.creat_db('Fund')
+    mysql_obj.select_db('Fund')
+    mysql_obj.creat_tb('InfoSummary', total_db)
+    mysql_obj.insert('InfoSummary', title_list, [tuple(list_tmp)], True)
 
-
-def fund_update_detail(mysql_obj, fund):
-    detail_in_day = fund.Detail['净值详细数据']
-    total_db = {'时间':'','估值':'','均值':'','跌涨幅':'',}
-    #mysql_obj.delet_tb('Code'+fund.Code)
-    mysql_obj.creat_tb('Code'+fund.Code, total_db)
+def fund_update_net_info(mysql_obj, fund):
+    base_dict = fund.Detail[base_list_name[7]]
+    total_db = {base_list_name[8]:'', 
+                base_list_name[9]:'',
+                base_list_name[10]:'',
+                base_list_name[11]:'', 
+                base_list_name[12]:'', 
+                }
     title_list = []
     list_tmp = []
-    for title_index in total_db:
-        title_list.append(title_index)
-    for this_day in detail_in_day:
-        detail_this_day = detail_in_day[this_day]
-        for detail_index in detail_this_day:
-            if detail_index.find(':') >= 0:
-                val_detail = detail_this_day[detail_index]
-                list_tmp.append(this_day + ' ' + detail_index)
-                for val_index in val_detail:
-                    list_tmp.append(val_detail.get(val_index, total_db[val_index]))
-                mysql_obj.insert_or_update('Code'+fund.Code,title_list,list_tmp,['时间'],False)
-            list_tmp.clear()
+    for index in total_db:
+        title_list.append(index)
+    for index in base_dict:
+        list_tmp.append(tuple([index] + base_dict.get(index, ['NULL']) + ['Not Ready']))
+    
+    #mysql_obj.delet_db('Fund')
+    #mysql_obj.creat_db('Fund')
+    mysql_obj.select_db('Fund')
+    mysql_obj.creat_tb('NetOf_%s'%(fund.Code), total_db)
+    mysql_obj.insert('NetOf_%s'%(fund.Code), title_list, list_tmp, True)
 
-
-
-def fund_info_wash(info_str):
+def cleaning_fund_base_info(info_str):
     import re
+    import datetime
     dict_info = {}
-    dict_detail = {}
-    data = re.split(r"['\n','：','|',' ']", info_str)
+    data = re.split(r"['\n',' ']", info_str)
     while '' in data:
         data.remove('')
+    dict_info.update({base_list_name[0]:data[data.index('基金全称') + 1]})
+    dict_info.update({base_list_name[1]:data[data.index('成立日期/规模') + 1]})
+    dict_info.update({base_list_name[2]:data[data.index('成立日期/规模') + 3]})
+    dict_info.update({base_list_name[3]:data[data.index('资产规模') + 1]})
+    dict_info.update({base_list_name[4]:data[data.index('基金管理人') + 1] +'/'+ data[data.index('基金经理人') + 1]})
+    TheNewestDay = data.index('分红送配') + 1
+    dict_info.update({base_list_name[5]:data[TheNewestDay + 2]})
+    tmp_detail = {}
+    for i in range(20):
+        CurrentTime = data[TheNewestDay]
+        #there element need get[单位净值, 累计净值, 日涨跌幅]
+        tmp_detail.update({CurrentTime:[data[TheNewestDay + 1], data[TheNewestDay + 2], data[TheNewestDay + 3]]})
+        TheNewestDay += 6
+    dict_info.update({base_list_name[7]:tmp_detail})
+    
+    return dict_info
 
-    dict_detail.update({'净值估算':data[2]})
-    dict_detail.update({'跌涨幅':str([data[3],data[4],])})
-    dict_detail.update({'单位净值':data[11]})
-
-    dict_info.update({'近1月':data[6]})
-    dict_info.update({'近3月':data[13]})
-    dict_info.update({'近6月':data[19]})
-    dict_info.update({'近1年':data[8]})
-    dict_info.update({'成立来':data[21]})
-    dict_info.update({'基金类型':str([data[23], data[24],]).replace("'",'')})
-    dict_info.update({'最新规模':data[26]})
-    dict_info.update({'成立日期':data[32]})
-    dict_info.update({'管理人':data[36]})
-    dict_info.update({'累计单位净值':data[17]})
-
-    return dict_info, dict_detail
 
 def fund_get_info(driver, fund):
     if fund.Code == None:
         return {}
-    driver.get('http://fund.eastmoney.com/%s.html?spm=search'%(fund.Code))
-    dict_info, detail = fund_info_wash(driver.find_element_by_class_name("fundInfoItem").text)
+    driver.get(web_dict['基金往日数据']['web'].replace('xxxxxx', fund.Code))
+    info_str = driver.find_element_by_id("jztable").text + ' '
+    driver.get(web_dict['基金基本概况']['web'].replace('xxxxxx', fund.Code))
+    info_str += driver.find_element_by_class_name("txt_in").text + ' '
+    dict_info = cleaning_fund_base_info(info_str)
     fund.Detail.update(dict_info)
-    name = driver.find_element_by_class_name("fundDetail-tit").text
-    fund.Name = name[:name.find('(')]
-    print ("[%s] Get Fund Detail"%(fund.Code))
-
-
-def fund_get_detail(driver, fund):
-    if fund.Code == None:
-        return {}
-
-    driver.get('http://finance.sina.com.cn/fund/quotes/%s/bc.shtml'%(fund.Code))
-    elem_base = driver.find_element_by_id("hq_chart_panel")
-    fund_data = driver.find_element_by_id("fundChartCurInfo")
-    height = elem_base.size['height']//2
-    width = elem_base.size['width']
-    last_data = ''
-    same_cnt = 0
-    for i in range(28, width):
-        AC_execute(driver, elem_base, i * 2, height)
-        reach_data = fund_data.text
-        if reach_data != last_data:
-            same_cnt = 0
-            date, time_detail_dict = fund_get_dict_of_str(reach_data)
-            if last_data == '':
-                fund.Detail['净值详细数据'].update({date:{}})
-            fund.Detail['净值详细数据'][date].update(time_detail_dict)
-            
-            last_data = reach_data
-            if reach_data.find('15:00') > 0:
-                break
-        else:
-            same_cnt += 1
-            if same_cnt > 3:
-                break
-    #fund.Detail['净值详细数据'][date].update(detail)
-    print ("[%s] Get Fund hq_chart_panel"%(fund.Code))
-    
-
 
 if __name__ == '__main__':
     file_argv = sys.argv
@@ -186,17 +139,36 @@ if __name__ == '__main__':
     
     chrome_args = ['--no-sandbox', '--disable-dev-shm-usage', '--headless']
     driver = spider_init(*chrome_args)
-
+    
+    ''' Test Code
     #code = '161725'
     #code = '161028'
+    title_list = [base_list_name[8], base_list_name[9],base_list_name[10], 
+                    base_list_name[11], base_list_name[12]]
+    list_tmp = [
+        ('2020-04-24', '1.2345', '2.3456', '1.12%', 'Not Ready'),
+        ('2020-05-26', '1.1111', '2.2222', '3.33%', 'Not Ready'),
+    ]
+    mydb = ml.mysql_client(host="182.61.47.202",user="root")
+    mydb.select_db('Fund')
+    mydb.insert('NetOf_161725', title_list, list_tmp, True)
+    '''
 
     fund = FundBase(Code = file_argv[0])
     fund_get_info(driver, fund)
-    fund_get_detail(driver, fund)
     mydb = ml.mysql_client(host="182.61.47.202",user="root")
-    fund_update_info(mydb, fund)
-    fund_update_detail(mydb, fund)
-    mydb.flush()
+    fund_update_base_info(mydb, fund)
+    fund_update_net_info(mydb, fund)
+    #'''
 
+    mydb.flush()
     driver.close()
     print ('update success')
+
+
+
+
+
+
+
+
