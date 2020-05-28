@@ -81,7 +81,7 @@ def mysql_recv_process(client, recv_data, mydb):
 
 if __name__ == '__main__':
     mydb = ml.mysql_client(host="182.61.47.202",user="root")
-    server = tcp.tcp_server(1, 'TCP Server', '127.0.0.1', 9527, 4096, 5, mysql_recv_process, (mydb, ))
+    server = tcp.tcp_server(1, 'TCP Server', '127.0.0.1', 30001, 4096, 5, mysql_recv_process, (mydb, ))
     server.start()
     server.join()
     mydb.close()
