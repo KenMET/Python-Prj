@@ -19,9 +19,39 @@ import alphabet_pro as alphabet
 def printTime(tcp_client):
     print (time.strftime('%Y-%m-%d %H:%M:%S'))
 
+
+
+
+
+def get_fund_base_info(tcp_client):
+    mysql_cmd1 = { 'Cmd':'select', 'Info':{'Name':'Fund'} }
+    tcp_client.send(alphabet.str2hexbytes(json.dumps(mysql_cmd1, ensure_ascii=False)))
+    res = tcp_recv(tcp_client)
+    if res != None:
+        recv_json = json.loads(alphabet.hexbytes2str(res))
+    mysql_cmd2 = { 'Cmd':'show', 'Info':{'Table':'InfoSummary'} }
+    tcp_client.send(alphabet.str2hexbytes(json.dumps(mysql_cmd2, ensure_ascii=False)))
+    res = tcp_recv(tcp_client)
+    code_list = []
+    if res != None:
+        recv_json = json.loads(alphabet.hexbytes2str(res))
+        res_list = recv_json['Result']
+        print (res_list)
+        for index_list in res_list:
+            name = index_list[0]
+            code = index_list[1]
+            code_list.append(code)
+            print ('Name:%s Code:%s'%(name, code))
+    for code_index in code_list:
+        pipeline = os.popen("python3 /home/ken/workspace/Python-Prj/spider/spider-fund.py %s"%(code_index))
+        #print ("python3 /home/ken/workspace/Python-Prj/spider/spider-fund.py %s"%(code_index))
+        print(pipeline.read())
+
+
 function_list = [
     #[0-线程对象，1-开始时间，2-结束时间，3-上次启动时间，4-启动周期，5-回调函数]
     [None, '19:20:00','20:27:00', '00:00:00', '00:00:03', printTime],
+    [None, '01:30:00','03:00:00', '00:00:00', '05:00:00', get_fund_base_info],
 ]
 
 def is_in_specific_time(start, cur, end):
@@ -55,6 +85,15 @@ def timer_sched(cur_time, Args):
                     func_index[0]=threading.Thread(target=func_index[5],args=Args)
                     func_index[3] = cur_time.strftime("%H:%M:%S")
                     func_index[0].start()
+
+def tcp_recv(tcpCliSock):
+    while True:
+        recv_data = tcpCliSock.recv(4096)
+        if len(recv_data) > 0:
+            return recv_data
+        else:
+            tcpCliSock.close()
+            return None
 
 if __name__ == '__main__':
     tcpCliSock = socket(AF_INET, SOCK_STREAM)    # open socket

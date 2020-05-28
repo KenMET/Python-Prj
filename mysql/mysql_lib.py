@@ -55,12 +55,12 @@ class mysql_client:
 
     def show_tb(self, table, key_dict):
         key_word = ''
-        if len(key_dict) != 0:
-            key_word = 'where '
-            for index in key_dict:
-                key_word += "%s='%s' "%(index, key_dict[index])
-        print("SELECT * FROM %s %s"%(table, key_word))
-        exit()
+        if type(key_dict) != type(None):
+            if len(key_dict) != 0:
+                key_word = 'where '
+                for index in key_dict:
+                    key_word += "%s='%s' "%(index, key_dict[index])
+        self.cursor.execute("SELECT * FROM %s %s"%(table, key_word))
         return self.cursor.fetchall()
 
     #table: string

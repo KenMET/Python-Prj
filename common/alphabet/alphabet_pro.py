@@ -23,11 +23,11 @@ def bytes2hexstr(bytes_tmp):
 #str -> hex byte
 #e.g.   '123' -> b'\x31\x32\x33'(b'123')
 def str2hexbytes(str_tmp):
-    return str_tmp.encode()
+    return str_tmp.encode('utf8')
 #hex byte -> str
 #e.g.   b'\x31\x32\x33' -> '123'
 def hexbytes2str(bytes_tmp):
-    return bytes_tmp.decode('gbk')  #arvg 'gbk' for Chinese
+    return bytes_tmp.decode('utf8')  #arvg 'gbk' for Chinese
 #print (str(str2hexbytes('123')) + ' <-> ' + hexbytes2str(b'\x31\x32\x33'))
 
 

@@ -19,14 +19,12 @@ import mysql_lib as ml
 import alphabet_pro as alphabet
 
 def mysql_show(mydb, dict_info):
-    tmp_dict = {'Table':None, "KeyDict":'Ignore'}
+    tmp_dict = {'Table':None, "KeyDict":None}
     for key in tmp_dict:
         tmp = dict_info.get(key, None)
-        if tmp == None and tmp_dict[key] != 'Ignore':
-            return -1
         tmp_dict[key] = tmp
     table_name = tmp_dict['Table']
-    key_dict = tmp_dict.get('KeyDict', {})
+    key_dict = tmp_dict.get('KeyDict', None)
     return mydb.show_tb(table_name, key_dict)
 
 def mysql_update(mydb, dict_info):
@@ -45,8 +43,6 @@ def mysql_select(mydb, dict_info):
     tmp_dict = {'Name':None}
     for key in tmp_dict:
         tmp = dict_info.get(key, None)
-        if tmp == None and tmp_dict[key] != 'Ignore':
-            return -1
         tmp_dict[key] = tmp
     data_base_name = tmp_dict['Name']
     mydb.select_db(data_base_name)
@@ -75,7 +71,7 @@ def mysql_recv_process(client, recv_data, mydb):
         res_dict['Result'] = 'cmd error'
         client.send(alphabet.str2hexbytes(json.dumps(res_dict)))
         return
-    res = mysql_cb(mydb, recv_json.get('info', None))
+    res = mysql_cb(mydb, recv_json.get('Info', None))
     res_dict['Result'] = res
     client.send(alphabet.str2hexbytes(json.dumps(res_dict, ensure_ascii=False)))
 
