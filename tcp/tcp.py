@@ -5,8 +5,8 @@ import threading
 import copy
 from socket import *
 
-
-sys.path.append(r'../common/alphabet/')
+py_dir = '/home/ken/Code/Python-Prj'
+sys.path.append(r'%s/common/alphabet/'%(py_dir))
 import alphabet_pro
 
 def test_proc(client, recv_data, a, b):
@@ -53,11 +53,16 @@ class tcp_server (threading.Thread):
     def tcp_recv(self, clientsocket, bufsiz):
         recv_data = []
         while True:
-            recv_data = clientsocket.recv(bufsiz)
-            if not recv_data :
+            try:
+                recv_data = clientsocket.recv(bufsiz)
+                if not recv_data :
+                    self.del_client(Socket = clientsocket)
+                    return False
+                self.CallBack(clientsocket, recv_data, *self.Args)
+            except:
+                print ('Client Connection Close by peer')
                 self.del_client(Socket = clientsocket)
                 return False
-            self.CallBack(clientsocket, recv_data, *self.Args)
         return True
     
 

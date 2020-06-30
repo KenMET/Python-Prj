@@ -81,6 +81,10 @@ class mysql_client:
     def flush(self):
         self.db_connect.commit()
 
+    def close(self):
+        self.cursor.close()
+
+
 '''
 def main():
     total_db = {'名字':'', '代号':'',

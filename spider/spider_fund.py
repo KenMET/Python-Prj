@@ -3,12 +3,15 @@ import datetime
 import sys
 import gc
 import copy
+import logging
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 
-sys.path.append(r'../mysql/')
+
+py_dir = '/home/ken/Code/Python-Prj'
+sys.path.append(r'%s/mysql/'%(py_dir))
 import mysql_lib as ml
 
 web_dict = {
@@ -130,13 +133,8 @@ def fund_get_info(driver, fund):
     dict_info = cleaning_fund_base_info(info_str)
     fund.Detail.update(dict_info)
 
-if __name__ == '__main__':
-    file_argv = sys.argv
-    del file_argv[0]
-    if len(file_argv) != 1:
-        print ('argv error')
-        exit()
-    
+
+def main_process(file_arg, logger):
     chrome_args = ['--no-sandbox', '--disable-dev-shm-usage', '--headless']
     driver = spider_init(*chrome_args)
     
@@ -154,16 +152,29 @@ if __name__ == '__main__':
     mydb.insert('NetOf_161725', title_list, list_tmp, True)
     '''
 
-    fund = FundBase(Code = file_argv[0])
+    fund = FundBase(Code = file_arg)
     fund_get_info(driver, fund)
+    logger.info('Fund[%s] Start Get Info...'%(file_arg))
     mydb = ml.mysql_client(host="182.61.47.202",user="root")
+    logger.info('Fund[%s] Connecting to Database...'%(file_arg))
     fund_update_base_info(mydb, fund)
+    logger.info('Fund[%s] Update Base Info...'%(file_arg))
     fund_update_net_info(mydb, fund)
+    logger.info('Fund[%s] Update Net Info...'%(file_arg))
     #'''
 
     mydb.flush()
-    driver.close()
-    print ('update success')
+    driver.quit()
+    logger.info('Fund[%s] Update Success...'%(file_arg))
+
+
+if __name__ == '__main__':
+    file_argv = sys.argv
+    del file_argv[0]
+    if len(file_argv) != 1:
+        print ('argv error')
+        exit()
+    main_process(file_argv[0])
 
 
 
