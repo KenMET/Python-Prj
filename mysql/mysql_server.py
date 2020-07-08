@@ -67,31 +67,58 @@ callback_dict = {
     'heartbeat':mysql_heartbeat,
 }
 
-def mysql_recv_process(client, recv_data, mydb):
+def mysql_recv_process(client, recv_data):
     recv_str = alphabet.hexbytes2str(recv_data)
     recv_json = json.loads(recv_str)
     logger.info('Recv JSON:%s'%(str(recv_json)))
-    cmd = recv_json.get('Cmd', None)
-    res_dict = {'Result':None}
-    if (cmd == None):
-        res_dict['Result'] = 'cmd empty'
-        logger.info('Recv Empty CMD of JSON')
-        client.send(alphabet.str2hexbytes(json.dumps(res_dict)))
-        return
-    
-    mysql_cb = callback_dict.get(cmd, None)
-    if mysql_cb == None:
-        res_dict['Result'] = 'cmd error'
-        client.send(alphabet.str2hexbytes(json.dumps(res_dict)))
-        return
-    res = mysql_cb(mydb, recv_json.get('Info', None))
-    logger.info('Excute CallBack Function Success')
-    res_dict['Result'] = res
-    logger.info('Send JSON:%s'%(str(res_dict)))
+    cmd_num = recv_json.get('CmdNum', 0)
+    linear_flag = recv_json.get('Linear', True)
+    mydb = ml.mysql_client(host="182.61.47.202",user="root")
+    res_dict = {'Result':[]}
+    if cmd_num > 0:
+        cmd_list = recv_json.get('Cmd', None)
+        logger.info("Recv cmd_list: %s"%(str(cmd_list)))
+        info_list = recv_json.get('Info', None)
+        logger.info("Recv info_list: %s"%(str(info_list)))
+    else:
+        res_dict['Result'].append("Command number under 1")
+        logger.info("Command number under 1")
+
+    for cmd_index in cmd_list:
+        if (cmd_index == None):
+            res_dict['Result'].append('cmd empty')
+            if linear_flag == True:
+                logger.info('Recv Empty CMD of JSON, Break')
+                break
+            else:
+                logger.info('Recv Empty CMD of JSON, Continue')
+                continue
+
+        mysql_cb = callback_dict.get(cmd_index, None)
+        if mysql_cb == None:
+            res_dict['Result'].append("Can't find callback[%s]"%(cmd_index))
+            if linear_flag == True:
+                logger.info("Can't find callback[%s], Break"%(cmd_index))
+                break
+            else:
+                logger.info("Can't find callback[%s], Continue"%(cmd_index))
+                continue
+
+        
+        res = mysql_cb(mydb, info_list[cmd_list.index(cmd_index)])
+        logger.info('Excute CallBack Function Success')
+
+        res_dict['Result'].append(res)
+        logger.info('Send JSON:%s'%(str(res_dict)))
+
     client.send(alphabet.str2hexbytes(json.dumps(res_dict, ensure_ascii=False)))
+    if cmd_num > 0:
+        mydb.close()
+
+
 
 if __name__ == '__main__':
-    
+
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
     log_name = py_dir + '/mysql/' + py_name + '.log'
@@ -101,12 +128,11 @@ if __name__ == '__main__':
     fh.setFormatter(formatter)
     logger.addHandler(fh)
     logger.info('Logger Creat Success')
-    
-    mydb = ml.mysql_client(host="182.61.47.202",user="root")
-    server = tcp.tcp_server(1, 'TCP Server', '127.0.0.1', 30001, 4096, 5, mysql_recv_process, (mydb, ))
+
+    server = tcp.tcp_server(1, 'TCP Server', '127.0.0.1', 30001, 4096, 5, mysql_recv_process, ())
     logger.info('TCP Server(MySQL) Create Success, Starting Thread')
     server.start()
     server.join()
-    mydb.close()
+    
     logger.info('TCP Server(MySQL)[Loger:%s] have an err and exited'%(py_name))
     exit()

@@ -28,11 +28,24 @@ def printTime(logger):
     logger.info(time.strftime('%Y-%m-%d %H:%M:%S'))
     timer_sched(printTime, argv = (logger, ))
 
-def heartbeat(tcp_client, logger):
-    mysql_cmd1 = {'Cmd':'heartbeat'}
+def tcp_connect():
+    while True:
+        try:
+            tcpCliSock = socket(AF_INET, SOCK_STREAM)    # open socket
+            tcpCliSock.connect(('127.0.0.1', 30001))               # connect to server
+            logger.info('Connected MySQL Server')
+            return tcpCliSock
+        except:
+            logger.info('Connecting MySQL Server Fail, Retry in 10s...')
+            time.sleep(10)
+
+def heartbeat(logger):
+    tcp_client = tcp_connect()
+    mysql_cmd = { 'CmdNum': 1, 'Linear': True,
+                    'Cmd':['heartbeat']}
     mutexFlag = mutex.acquire(False)
     if mutexFlag:
-        tcp_client.send(alphabet.str2hexbytes(json.dumps(mysql_cmd1, ensure_ascii=False)))
+        tcp_client.send(alphabet.str2hexbytes(json.dumps(mysql_cmd, ensure_ascii=False)))
         res = tcp_recv(tcp_client, logger)
         if res != None:
             recv_json = json.loads(alphabet.hexbytes2str(res))
@@ -40,31 +53,32 @@ def heartbeat(tcp_client, logger):
     else:
         logger.info('Heart Beat mutex acquire Fail, push to next period')
     mutex.release()
-    timer_sched(heartbeat, argv = (tcp_client, logger, ))
+    timer_sched(heartbeat, argv = (logger, ))
+    tcp_client.close()
     
 
-def get_fund_base_info(tcp_client, logger):
+def get_fund_base_info(logger):
+    tcp_client = tcp_connect()
     logger.info('get_fund_base_info Enter')
-    mysql_cmd1 = { 'Cmd':'select', 'Info':{'Name':'Fund'} }
+    mysql_cmd = { 'CmdNum': 2, 'Linear': True,
+                    'Cmd':['select', 'show'], 
+                    'Info':[{'Name':'Fund'}, {'Table':'InfoSummary'}] }
+
     logger.info('Waiting Muxtex...')
     mutexFlag = mutex.acquire(True)
-    logger.info('TCP Send %s'%(str(mysql_cmd1)))
-    tcp_client.send(alphabet.str2hexbytes(json.dumps(mysql_cmd1, ensure_ascii=False)))
+    logger.info('TCP Send %s'%(str(mysql_cmd)))
+    tcp_client.send(alphabet.str2hexbytes(json.dumps(mysql_cmd, ensure_ascii=False)))
     res = tcp_recv(tcp_client, logger)
     if res != None:
         recv_json = json.loads(alphabet.hexbytes2str(res))
         logger.info('TCP Recv %s'%(str(recv_json)))
-    mysql_cmd2 = { 'Cmd':'show', 'Info':{'Table':'InfoSummary'} }
-    logger.info('TCP Send %s'%(str(mysql_cmd2)))
-    tcp_client.send(alphabet.str2hexbytes(json.dumps(mysql_cmd2, ensure_ascii=False)))
-    res = tcp_recv(tcp_client, logger)
     logger.info('Muxtex Release...')
     mutex.release()
     code_list = []
     if res != None:
         recv_json = json.loads(alphabet.hexbytes2str(res))
         logger.info('TCP Recv %s'%(str(recv_json)))
-        res_list = recv_json['Result']
+        res_list = recv_json['Result'][1]
         logger.info(res_list)
         for index_list in res_list:
             name = index_list[0]
@@ -75,7 +89,8 @@ def get_fund_base_info(tcp_client, logger):
             logger.info('Starting Process By Code:%s'%(code_index))
             pt = multiprocessing.Process(target=spiderF.main_process,args=(code_index, logger))
             pt.start()
-    timer_sched(get_fund_base_info, argv = (tcp_client, logger, ))
+    timer_sched(get_fund_base_info, argv = (logger, ))
+    tcp_client.close()
 
 
 def tcp_recv(tcpCliSock, logger):
@@ -145,6 +160,7 @@ def timer_sched(func, argv = (), first_call = False):
         return 0
 
 
+
 if __name__ == '__main__':
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
@@ -156,20 +172,10 @@ if __name__ == '__main__':
     logger.addHandler(fh)
     logger.info('Logger Creat Success')
 
-    while True:
-        try:
-            tcpCliSock = socket(AF_INET, SOCK_STREAM)    # open socket
-            tcpCliSock.connect(('127.0.0.1', 30001))               # connect to server
-            logger.info('Connected MySQL Server')
-            break
-        except:
-            logger.info('Connecting MySQL Server Fail, Retry in 10s...')
-            time.sleep(10)
-
     logger.info('Starting heartbeat...')
-    timer_sched(heartbeat, argv = (tcpCliSock, logger, ), first_call = True)
+    timer_sched(heartbeat, argv = (logger, ), first_call = True)
     logger.info('Starting get_fund_base_info...')
-    timer_sched(get_fund_base_info, argv = (tcpCliSock, logger, ), first_call = True)
+    timer_sched(get_fund_base_info, argv = (logger, ), first_call = True)
     while True:
         time.sleep(65535)
     
