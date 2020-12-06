@@ -13,7 +13,7 @@ from socket import *
 import logging
 mutex=threading.Lock()
 
-py_dir = '/home/ken/Code/Python-Prj'
+py_dir = '/home/ken/ken-workspace/code/Python-Prj'
 py_name = 'daily_sched'
 #sys.path.append(r'%s/log/'%(py_dir))
 sys.path.append(r'%s/mysql/'%(py_dir))

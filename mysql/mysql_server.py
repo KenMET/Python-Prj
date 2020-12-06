@@ -14,7 +14,7 @@ import datetime
 import threading
 import logging
 
-py_dir = '/home/ken/Code/Python-Prj'
+py_dir = '/home/ken/ken-workspace/code/Python-Prj'
 py_name = 'mysql_server'
 sys.path.append(r'%s/tcp/'%(py_dir))
 sys.path.append(r'%s/mysql/'%(py_dir))

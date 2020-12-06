@@ -1,0 +1,13 @@
+[Unit]
+Description=MySQL Server
+After=network.target
+
+[Service]
+Type=simple
+User=nobody
+Restart=on-failure
+RestartSec=5s
+ExecStart=/usr/bin/python3 /home/ken/ken-workspace/code/Python-Prj/mysql/mysql_server.py
+
+[Install]
+WantedBy=multi-user.target

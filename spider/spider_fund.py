@@ -4,13 +4,10 @@ import sys
 import gc
 import copy
 import logging
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.common.action_chains import ActionChains
+import spider_request as spiderRq
 
 
-py_dir = '/home/ken/Code/Python-Prj'
+py_dir = '/home/ken/ken-workspace/code/Python-Prj'
 sys.path.append(r'%s/mysql/'%(py_dir))
 import mysql_lib as ml
 
@@ -49,12 +46,6 @@ class FundBase:
         del Detail[base_list_name[7]]
         Detail.update({base_list_name[7]:{}})
         self.Detail = Detail
-
-def spider_init(*args):
-    chrome_options=Options()
-    for index in args:
-        chrome_options.add_argument(index)
-    return webdriver.Chrome(chrome_options=chrome_options)
 
 def fund_update_base_info(mysql_obj, fund):
     base_dict = fund.Detail
@@ -123,48 +114,33 @@ def cleaning_fund_base_info(info_str):
     return dict_info
 
 
-def fund_get_info(driver, fund):
+def fund_get_info(fund):
     if fund.Code == None:
         return {}
-    driver.get(web_dict['基金往日数据']['web'].replace('xxxxxx', fund.Code))
-    info_str = driver.find_element_by_id("jztable").text + ' '
-    driver.get(web_dict['基金基本概况']['web'].replace('xxxxxx', fund.Code))
-    info_str += driver.find_element_by_class_name("txt_in").text + ' '
-    dict_info = cleaning_fund_base_info(info_str)
-    fund.Detail.update(dict_info)
+    list = spiderRq.request_net_clean(fund.Code)
+    
+    dict_info = {}
+    for index in list:
+        CurrentTime = index['FSRQ']
+        #there element need get[单位净值, 累计净值, 日涨跌幅]
+        dict_info.update({CurrentTime:[index['DWJZ'], index['LJJZ'], index['JZZZL']]})
+
+    fund.Detail.update({'净值详细数据':dict_info})
 
 
 def main_process(file_arg, logger):
-    chrome_args = ['--no-sandbox', '--disable-dev-shm-usage', '--headless']
-    driver = spider_init(*chrome_args)
-    
-    ''' Test Code
-    #code = '161725'
-    #code = '161028'
-    title_list = [base_list_name[8], base_list_name[9],base_list_name[10], 
-                    base_list_name[11], base_list_name[12]]
-    list_tmp = [
-        ('2020-04-24', '1.2345', '2.3456', '1.12%', 'Not Ready'),
-        ('2020-05-26', '1.1111', '2.2222', '3.33%', 'Not Ready'),
-    ]
-    mydb = ml.mysql_client(host="182.61.47.202",user="root")
-    mydb.select_db('Fund')
-    mydb.insert('NetOf_161725', title_list, list_tmp, True)
-    '''
 
     fund = FundBase(Code = file_arg)
-    fund_get_info(driver, fund)
+    fund_get_info(fund)
     logger.info('Fund[%s] Start Get Info...'%(file_arg))
     mydb = ml.mysql_client(host="182.61.47.202",user="root")
     logger.info('Fund[%s] Connecting to Database...'%(file_arg))
-    fund_update_base_info(mydb, fund)
-    logger.info('Fund[%s] Update Base Info...'%(file_arg))
+    #fund_update_base_info(mydb, fund)
+    #logger.info('Fund[%s] Update Base Info...'%(file_arg))
     fund_update_net_info(mydb, fund)
     logger.info('Fund[%s] Update Net Info...'%(file_arg))
-    #'''
 
     mydb.flush()
-    driver.quit()
     logger.info('Fund[%s] Update Success...'%(file_arg))
 
 
