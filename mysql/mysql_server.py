@@ -104,8 +104,10 @@ def mysql_recv_process(client, recv_data):
                 logger.info("Can't find callback[%s], Continue"%(cmd_index))
                 continue
 
-        
-        res = mysql_cb(mydb, info_list[cmd_list.index(cmd_index)])
+        if info_list != None:
+            res = mysql_cb(mydb, info_list[cmd_list.index(cmd_index)])
+        else:
+            res = mysql_cb(mydb, None)
         logger.info('Excute CallBack Function Success')
 
         res_dict['Result'].append(res)

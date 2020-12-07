@@ -21,8 +21,10 @@ def request_base_clean(code):
     response = requests.get(url=url1, headers=header)
     response.encoding = 'utf-8'
 
-    soup = BeautifulSoup(response.text, features="html.parser")
-    print (soup.find_all ( "div" , class_ = "basic-new" ))
+    soup_main = BeautifulSoup(response.text, features="html.parser")
+    print (soup_main.find_all ( "div" , class_ = "basic-new" ))
+
+    print(soup_sub)
     
     return []
 
@@ -51,7 +53,7 @@ def request_net_clean(code):
     return data_list
 
 def main():
-    list = request_net_clean('161725')
+    list = request_base_clean('161725')
     for index in list:
         print (index)
 
