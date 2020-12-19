@@ -10,6 +10,8 @@ py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
 sys.path.append(r'%s/../common/alphabet/'%(py_dir))
 import alphabet_pro as alphabet
 
+echo_str = 'ken_fucking_echo'
+
 def test_proc(client, recv_data, a, b):
     print ('recv_data:[%s] args:[%s %d]'%(alphabet_pro.hexbytes2str(recv_data), a, b))
 
@@ -51,11 +53,35 @@ class named_pipe(threading.Thread):
 
         os.mkfifo(read_pipe_file)
         os.mkfifo(write_pipe_file)
-        print ('server start open write_pipe[%s]'%(write_pipe_file))
+        #print ('server start open write_pipe[%s]'%(write_pipe_file))
         self.write_pipe = os.open(write_pipe_file, os.O_SYNC | os.O_CREAT | os.O_RDWR)
-        print ('server start open read_pipe[%s]'%(read_pipe_file))
+        def tmp_echo(write_file, read_file):
+            time.sleep(0.1)
+            #print ('start echo thread')
+            tmp_w_pipe = os.open(write_file, os.O_SYNC | os.O_CREAT | os.O_RDWR)
+            os.write(tmp_w_pipe, alphabet.str2hexbytes(echo_str))
+            #print ('echo write echo done')
+            tmp_r_pipe = os.open(read_file, os.O_RDONLY)
+            #print ('echo open read_file done')
+            while True:
+                buf = alphabet.hexbytes2str(os.read(tmp_r_pipe, 32))
+                if buf == echo_str:
+                    return 0
+                time.sleep(1)
+
+        tmp = threading.Thread(target=tmp_echo, args=(read_pipe_file, write_pipe_file))
+        tmp.start()
+        #print ('server start open read_pipe[%s]'%(read_pipe_file))
         self.read_pipe = os.open(read_pipe_file, os.O_RDONLY)
-        print ('server open pipe done')
+        #print ('server open pipe done')
+        while True:
+            buf = alphabet.hexbytes2str(os.read(self.read_pipe, 32))
+            if buf == echo_str:
+                self.write(echo_str)
+                break
+            time.sleep(1)
+        tmp.join()
+        print ('pipe[%s] create done...'%(self.pipe_name))
         return 0
 
     def connect(self):
@@ -68,17 +94,8 @@ class named_pipe(threading.Thread):
             print ('pipe[%s] not exists, waitting......'%(write_pipe_file))
             time.sleep(1)
         self.write_pipe = os.open(write_pipe_file, os.O_SYNC | os.O_CREAT | os.O_RDWR)
-        #print ('client open write_pipe ok')
-        while True:
-            print ('connect send echo request')
-            self.write('open_echo')
-            if self.read_pipe is None:
-                self.read_pipe = os.open(read_pipe_file, os.O_RDONLY)
-            buf = self.read(32)
-            if buf == 'open_echo':
-                return 0
-            print ('connect recv :%s'%(buf))
-            time.sleep(5)
+        self.read_pipe = os.open(read_pipe_file, os.O_RDONLY)
+        print ('pipe[%s] connect done...'%(self.pipe_name))
         return 0
 
 
@@ -94,7 +111,6 @@ def test_client_proc():
     client_pipe = named_pipe('test', client_cb, ())
     client_pipe.connect()
     client_pipe.start()
-    print ('client connect ok')
     while True:
         cnt = cnt + 1
         print ('client loop send: [%d]'%(cnt))
@@ -103,9 +119,6 @@ def test_client_proc():
 
 
 def server_cb(server_pipe, recv_data):
-    if recv_data == 'open_echo':
-        server_pipe.write('open_echo')
-        return
     print ('server cb recv: %s'%(recv_data))
     server_pipe.write('server cb echo:%s'%(recv_data))
 
@@ -113,7 +126,6 @@ def test_server_proc():
     server_pipe = named_pipe('test', server_cb, ())
     server_pipe.create()
     server_pipe.start()
-    print ('server create ok')
     while True:
         time.sleep(60)
     
