@@ -7,8 +7,10 @@ import logging
 import spider_request as spiderRq
 
 
-py_dir = '/home/ken/ken-workspace/code/Python-Prj'
-sys.path.append(r'%s/mysql/'%(py_dir))
+py_dir = os.path.dirname(os.path.realpath(__file__))
+py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
+sys.path.append(r'%s/'%(py_dir))
+sys.path.append(r'%s/../mysql/'%(py_dir))
 import mysql_lib as ml
 
 web_dict = {

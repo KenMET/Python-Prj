@@ -4,9 +4,10 @@ import os, time
 import threading
 
 
+py_dir = os.path.dirname(os.path.realpath(__file__))
+py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
 
-py_dir = '/home/ken/ken-workspace/code/Python-Prj'
-sys.path.append(r'%s/common/alphabet/'%(py_dir))
+sys.path.append(r'%s/../common/alphabet/'%(py_dir))
 import alphabet_pro as alphabet
 
 def test_proc(client, recv_data, a, b):

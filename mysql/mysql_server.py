@@ -7,6 +7,7 @@ test json:
 {"Cmd": "select", "info": {"Name": "Fund"}}
 {"Cmd": "show", "info": {"Table": "Head_Table","KeyDict":{"代号":"161725"}}}
 '''
+import os
 import sys
 import time
 import json
@@ -14,11 +15,11 @@ import datetime
 import threading
 import logging
 
-py_dir = '/home/ken/ken-workspace/code/Python-Prj'
-py_name = 'mysql_server'
-sys.path.append(r'%s/tcp/'%(py_dir))
-sys.path.append(r'%s/mysql/'%(py_dir))
-sys.path.append(r'%s/common/alphabet/'%(py_dir))
+py_dir = os.path.dirname(os.path.realpath(__file__))
+py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
+sys.path.append(r'%s/'%(py_dir))
+sys.path.append(r'%s/../tcp/'%(py_dir))
+sys.path.append(r'%s/../common/alphabet/'%(py_dir))
 import tcp
 import mysql_lib as ml
 import alphabet_pro as alphabet
@@ -123,7 +124,7 @@ if __name__ == '__main__':
 
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
-    log_name = py_dir + '/mysql/' + py_name + '.log'
+    log_name = py_dir + '/' + py_name + '.log'
     fh = logging.FileHandler(log_name, mode='w')
     fh.setLevel(logging.INFO)  # 输出到file的log等级的开关
     formatter = logging.Formatter("%(asctime)s - %(filename)s[line:%(lineno)d] - %(levelname)s: %(message)s")

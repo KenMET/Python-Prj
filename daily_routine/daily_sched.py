@@ -13,12 +13,12 @@ from socket import *
 import logging
 mutex=threading.Lock()
 
-py_dir = '/home/ken/ken-workspace/code/Python-Prj'
-py_name = 'daily_sched'
-#sys.path.append(r'%s/log/'%(py_dir))
-sys.path.append(r'%s/mysql/'%(py_dir))
-sys.path.append(r'%s/spider/'%(py_dir))
-sys.path.append(r'%s/common/alphabet/'%(py_dir))
+py_dir = os.path.dirname(os.path.realpath(__file__))
+py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
+sys.path.append(r'%s/'%(py_dir))
+sys.path.append(r'%s/../mysql/'%(py_dir))
+sys.path.append(r'%s/../spider/'%(py_dir))
+sys.path.append(r'%s/../common/alphabet/'%(py_dir))
 import mysql_lib as ml
 #import logken as log
 import spider_fund as spiderF
@@ -164,7 +164,7 @@ def timer_sched(func, argv = (), first_call = False):
 if __name__ == '__main__':
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
-    log_name = py_dir + '/daily_routine/' + py_name + '.log'
+    log_name = py_dir + '/' + py_name + '.log'
     fh = logging.FileHandler(log_name, mode='a')
     fh.setLevel(logging.INFO)  # 输出到file的log等级的开关
     formatter = logging.Formatter("%(asctime)s - %(filename)s[line:%(lineno)d] - %(levelname)s: %(message)s")
