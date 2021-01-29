@@ -24,13 +24,13 @@ def request_base_clean(code):
     soup_main = BeautifulSoup(response.text, features="html.parser")
     print (soup_main.find_all ( "div" , class_ = "basic-new" ))
 
-    print(soup_sub)
+    #print(soup_sub)
     
     return []
 
 #all fund net data must return as a list
-def request_net_clean(code):
-    url1 = 'http://api.fund.eastmoney.com/f10/lsjz?callback=jQuery18308926516764027739_1607151282970&fundCode=%s&pageIndex=1&pageSize=20&startDate=&endDate=&_=xxxxxx'%(code)
+def request_net_clean(code, days):
+    url1 = 'http://api.fund.eastmoney.com/f10/lsjz?callback=jQuery18308926516764027739_1607151282970&fundCode=%s&pageIndex=1&pageSize=%s&startDate=&endDate=&_=xxxxxx'%(code,days)
     url2 = url1.replace('xxxxxx', str(int(round(time.time() * 1000))))
     print (url2)
 
