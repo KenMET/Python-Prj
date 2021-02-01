@@ -5,7 +5,7 @@ import requests
 from bs4 import BeautifulSoup
 
 #all fund base data must return as a list
-def request_base_clean(code):
+def request_base(code):
     url1 = 'http://fundf10.eastmoney.com/jjjz_%s.html'%(code)
     print (url1)
 
@@ -20,13 +20,45 @@ def request_base_clean(code):
                       'Chrome/86.0.4240.198 Safari/537.36',}
     response = requests.get(url=url1, headers=header)
     response.encoding = 'utf-8'
-
-    soup_main = BeautifulSoup(response.text, features="html.parser")
-    print (soup_main.find_all ( "div" , class_ = "basic-new" ))
-
-    #print(soup_sub)
+    data_full = response.text
     
-    return []
+    base_dict = {'单位净值':'1.000', 
+                '涨幅':'0.00%',
+                '交易状态':{'buy':True,'sell':True},
+                '买入费率':'0.10%',}
+    
+    current_net = data_full[data_full.find('单位净值'):]
+    current_net = current_net[:current_net.find('</label>')]
+    NVA_PER = current_net[current_net.find('<b class="grn lar bold">')+len('<b class="grn lar bold">'):current_net.find('</b>')]
+    NVA = NVA_PER[:NVA_PER.find('(')]
+    PER = NVA_PER[NVA_PER.find('(')+1:NVA_PER.find(')')]
+    base_dict['单位净值'] = NVA
+    base_dict['涨幅'] = PER
+
+    fund_state = data_full[data_full.find('交易状态'):]
+    fund_state = fund_state[:fund_state.find('</label>')]
+    buy_state = fund_state[fund_state.find('<span>'):fund_state.find('</span>')]
+    sell_state = fund_state[fund_state.rfind('<span>'):fund_state.rfind('</span>')]
+    if buy_state.find('暂停') >= 0:
+        base_dict['交易状态']['buy'] = False
+    if sell_state.find('暂停') >= 0:
+        base_dict['交易状态']['sell'] = False
+
+    sourcerate = data_full[data_full.find('<b class="sourcerate">'):]
+    sourcerate = sourcerate[:sourcerate.find('</label>')]
+    sourcerate = sourcerate[sourcerate.find('<b>'):]
+    buy_rate = sourcerate[sourcerate.find('<b>')+3:sourcerate.find('</b>')]
+    base_dict['买入费率'] = buy_rate
+
+    for index in base_dict:
+        if type('string') == type(base_dict[index]):
+            base_dict[index] = base_dict[index].replace('\r','').replace('\n','').strip().rstrip()
+
+    #print(current_net)
+    #print(fund_state)
+    #print(sourcerate)
+    print(base_dict)
+    return base_dict
 
 #all fund net data must return as a list
 def request_net_clean(code, days):
@@ -53,9 +85,12 @@ def request_net_clean(code, days):
     return data_list
 
 def main():
-    list = request_base_clean('161725')
-    for index in list:
-        print (index)
+    #list = request_base_clean('161725')
+    #for index in list:
+    #    print (index)
+
+    request_base('161725')
+
 
 if __name__ == '__main__':
     main()
