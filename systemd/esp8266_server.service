@@ -1,0 +1,13 @@
+[Unit]
+Description=ESP8266 Service
+After=network.target
+
+[Service]
+Type=simple
+User=ken
+Restart=on-failure
+RestartSec=5s
+ExecStart=/usr/bin/python3 xxxxxxxxxx/esp8266_server/esp8266_server.py
+
+[Install]
+WantedBy=multi-user.target
