@@ -105,7 +105,7 @@ def request_net(code, days):
     return data_list
 
 def main():
-    #print (request_net('001629', 2))
+    print (request_net('001629', 8))
     print (request_base('001629'))
 
 
