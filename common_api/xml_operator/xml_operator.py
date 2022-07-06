@@ -57,7 +57,7 @@ class operator() :
             if node[i].nodeType == 1:
                 name = node[i].nodeName
                 if namelist.count(name) == 0:
-                    name_list.append(node[i].nodeName)
+                    namelist.append(node[i].nodeName)
         return namelist
 
     def walk_node (self, farther_node) :
