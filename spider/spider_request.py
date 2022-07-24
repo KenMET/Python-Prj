@@ -106,6 +106,7 @@ def request_daily(code):
         title = index.previous_sibling.text.replace('：', '')
         temp_dict.update({title: index.text})
 
+    temp_dict.update({'ID':code})
     return transfer_daily_to_mysql(temp_dict)
 
 #all fund net data must return as a list
@@ -173,6 +174,7 @@ def transfer_base_to_mysql(rq_dict):
 
 def transfer_daily_to_mysql(rq_dict):
         map_dict = {
+            'ID':'ID',
             '净值估算': 'NetValueCurrent', 
             '单位净值': 'NetValueUnit', 
             '累计净值': 'NetValueCumulative', 

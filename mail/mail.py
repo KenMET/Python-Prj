@@ -38,7 +38,6 @@ class mail() :
         except Exception as e:
             print ('Mail send failed:' + str(e))
             return False
-        print ('Mail send Success!')
         return True
 
 if __name__ == '__main__':
