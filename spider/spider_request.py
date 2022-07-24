@@ -67,16 +67,17 @@ def request_base(code):
 
     return transfer_base_to_mysql(temp_dict)
 
-#all fund base data must return as a list
+#all fund daily data must return as a dict
 def request_daily(code):
     url1 = 'http://fund.eastmoney.com/%s.html'%(code)
 
     header = {'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
               'Accept-Encoding': 'gzip, deflate',
               'Accept-Language': 'zh-CN,zh;q=0.9',
+              'Cache-Control': 'max-age=0',
               'Connection': 'keep-alive',
-              'Host': 'fundf10.eastmoney.com',
-              'Referer': 'http://fund.eastmoney.com/',
+              'Host': 'fund.eastmoney.com',
+              'Referer': url1,
               'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
                       'AppleWebKit/537.36 (KHTML, like Gecko) '
                       'Chrome/86.0.4240.198 Safari/537.36',}
@@ -87,9 +88,25 @@ def request_daily(code):
         print ('Request Daily error:[%d]'%(response.status_code))
         return {}
 
+    temp_dict = {}
     soup = BeautifulSoup(response.text, 'html.parser')
     main_div = soup.find('div', class_ = 'fundDetail-main')
 
+    dateItem = main_div.find_all('dd', class_ = "dataNums")
+    for index in dateItem:
+        title = index.previous_sibling.find('span', class_ = 'sp01').text
+        temp_dict.update({title: index.text})
+
+    redItem = main_div.find_all('span', class_ = "ui-font-middle ui-color-red ui-num")
+    for index in redItem:
+        title = index.previous_sibling.text.replace('：', '')
+        temp_dict.update({title: index.text})
+    greenItem = main_div.find_all('span', class_ = "ui-font-middle ui-color-green ui-num")
+    for index in greenItem:
+        title = index.previous_sibling.text.replace('：', '')
+        temp_dict.update({title: index.text})
+
+    print (temp_dict)
 
     return {}
 
@@ -172,7 +189,8 @@ def transfer_net_to_mysql(rq_dict):
         return temp_dict
 
 if __name__ == '__main__':
-    print (request_net('001593', 2))
-    temp = request_base('161028')
-    for index in temp:
-        print ('[%s]:%s'%(index, temp[index]))
+    #print (request_net('001593', 2))
+    #temp = request_base('161028')
+    #for index in temp:
+    #    print ('[%s]:%s'%(index, temp[index]))
+    temp = request_daily('161028')
