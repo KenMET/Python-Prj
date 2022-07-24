@@ -106,9 +106,7 @@ def request_daily(code):
         title = index.previous_sibling.text.replace('：', '')
         temp_dict.update({title: index.text})
 
-    print (temp_dict)
-
-    return {}
+    return transfer_daily_to_mysql(temp_dict)
 
 #all fund net data must return as a list
 def request_net(code, days):
@@ -173,6 +171,28 @@ def transfer_base_to_mysql(rq_dict):
             temp_dict.update({map_dict[key]:rq_dict.get(key, '')})
         return temp_dict
 
+def transfer_daily_to_mysql(rq_dict):
+        map_dict = {
+            '净值估算': 'NetValueCurrent', 
+            '单位净值': 'NetValueUnit', 
+            '累计净值': 'NetValueCumulative', 
+            '近1月': 'Recent1MonthGrowth', 
+            '近3月': 'Recent3MonthGrowth', 
+            '近6月': 'Recent6MonthGrowth', 
+            '近1年': 'Recent1YearGrowth',
+            '近3年': 'Recent3YearGrowth',
+            '成立来': 'SinceEstablishGrowth',
+        }
+        temp_dict = {'Reserve':''}
+        for key in map_dict:
+            temp_dict.update({map_dict[key]:rq_dict.get(key, '')})
+        NetValueUnit = temp_dict['NetValueUnit'][:temp_dict['NetValueUnit'].find('.')+5]
+        NetValueUnitGrowth = temp_dict['NetValueUnit'][temp_dict['NetValueUnit'].find('.')+5:]
+        temp_dict.update({'NetValueUnit':NetValueUnit})
+        temp_dict.update({'NetValueUnitGrowth':NetValueUnitGrowth})
+
+        return temp_dict
+
 def transfer_net_to_mysql(rq_dict):
         map_dict = {
             'FSRQ': 'NetValueDate', 
@@ -194,3 +214,4 @@ if __name__ == '__main__':
     #for index in temp:
     #    print ('[%s]:%s'%(index, temp[index]))
     temp = request_daily('161028')
+    print (temp)
