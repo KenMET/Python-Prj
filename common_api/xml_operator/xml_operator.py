@@ -14,13 +14,16 @@ import xml.dom.minidom
 
 py_dir = os.path.dirname(os.path.realpath(__file__))
 py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
-sys.path.append(r'%s/'%(py_dir))
 
 class operator() :
-    def __init__(self, xml_file):
-        self.xml_file = xml_file
-        self.tree = xml.dom.minidom.parse(self.xml_file)
-        self.root_node = self.tree .documentElement
+    def __init__(self, xml_target, type='file'):
+        if (type == 'string'):
+            self.xml_target = xml_target
+            self.tree = xml.dom.minidom.parseString(self.xml_target)
+        else:
+            self.xml_target = xml_target
+            self.tree = xml.dom.minidom.parse(self.xml_target)
+        self.root_node = self.tree.documentElement
 
     def new_node(self, name, attribute_dict, text, child_node_list):
         node = self.tree.createElement(name)
@@ -60,7 +63,7 @@ class operator() :
                     namelist.append(node[i].nodeName)
         return namelist
 
-    def walk_node (self, farther_node) :
+    def walk_node(self, farther_node) :
         dict = {}
         child_list = self.get_child_namelist(farther_node)
         for child_index in child_list:
