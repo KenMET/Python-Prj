@@ -1,0 +1,13 @@
+[Unit]
+Description=Clash Service
+After=network.target
+
+[Service]
+Type=simple
+User=ken
+Restart=on-failure
+RestartSec=5s
+ExecStart=/home/ken/workspace/Clash/resources/static/files/linux/x64/clash-linux
+
+[Install]
+WantedBy=multi-user.target
