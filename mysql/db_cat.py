@@ -1,7 +1,7 @@
 import sqlalchemy
 from sqlalchemy import create_engine, MetaData, Table, text
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, String, DATE, Text, VARCHAR
+from sqlalchemy import Column, Integer, String, DATETIME, Text, VARCHAR
 from sqlalchemy.orm import sessionmaker, relationship
 import pymysql
 import datetime
@@ -54,6 +54,7 @@ class catdb(object):
     def __init__(self) -> None:
         self.session = None
         self.cat_net_class = {}
+        self.cat_net_rt_class = {}
 
     def openSession(self):
         if self.session is None: 
@@ -87,7 +88,7 @@ class catdb(object):
         if cat_id not in self.cat_net_class:
             new_class = type('CatNet%s'%(cat_id), (Base, ), dict(
                 __tablename__ = 'cat_net_%s'%(cat_id),
-                NetValueDate = Column(DATE, primary_key=True, autoincrement=True),
+                NetValueDate = Column(DATETIME, primary_key=True, autoincrement=True),
                 NetValueUnit = Column(Text, nullable=True),
                 NetValueCumulative = Column(Text, nullable=True),
                 DayGrowth = Column(Text, nullable=True),
@@ -99,10 +100,47 @@ class catdb(object):
             self.cat_net_class.update({cat_id:new_class})
         return self.cat_net_class[cat_id]
 
+    def create_cat_net_rt_class(self, cat_id):
+        if cat_id not in self.cat_net_rt_class:
+            new_class = type('CatNetRT%s'%(cat_id), (Base, ), dict(
+                __tablename__ = 'cat_net_rt_%s'%(cat_id),
+                NetValueTime = Column(DATETIME, primary_key=True, autoincrement=True),
+                NetValueCurrent = Column(Text, nullable=True),
+                NetValueCurrentGrowth = Column(Text, nullable=True),
+                NetValueUnit = Column(Text, nullable=True),
+                Reserve = Column(Text, nullable=True)
+            ))
+            self.cat_net_rt_class.update({cat_id:new_class})
+        return self.cat_net_rt_class[cat_id]
+
+    def queryCatNetRTAll(self, cat_id):
+        if self.session is None:
+            self.connectdb()
+        CatNetRT = self.create_cat_net_rt_class(cat_id)
+        result = self.session.query(CatNetRT).all() 
+        try:
+            self.session.commit()
+        except:
+            return []
+        else:
+            return result
+
     def queryCatNetAll(self, cat_id):
         if self.session is None:
             self.connectdb()
         CatNet = self.create_cat_net_class(cat_id)
+        result = self.session.query(CatNet).all() 
+        try:
+            self.session.commit()
+        except:
+            return []
+        else:
+            return result
+
+    def queryCatRTAll(self, cat_id):
+        if self.session is None:
+            self.connectdb()
+        CatNet = self.create_cat_net_rt_class(cat_id)
         result = self.session.query(CatNet).all() 
         try:
             self.session.commit()
@@ -133,6 +171,18 @@ class catdb(object):
         else:
             return result
     
+    def queryCatNetByTime(self, cat_id, Time):
+        if self.session is None:
+            self.connectdb()
+        CatNet = self.create_cat_net_rt_class(cat_id)
+        result = self.session.query(CatNet).filter(CatNet.NetValueTime == Time).all()
+        try:
+            self.session.commit()
+        except:
+            return []
+        else:
+            return result
+
     def queryCatNetByDate(self, cat_id, Date):
         if self.session is None:
             self.connectdb()
@@ -159,6 +209,13 @@ class catdb(object):
             count += 1
         return count
 
+    def countCatNetByTime(self, cat_id, time):
+        ret = self.queryCatNetByTime(cat_id, time)
+        count = 0
+        for index in ret:
+            count += 1
+        return count
+
     def updateCatSurveyByID(self, ID, cat_dict):
         if self.session is None:
             self.connectdb()
@@ -173,6 +230,22 @@ class catdb(object):
         else:
             cat_dict.update({'ID':ID})
             return self.insertCatSurvey(cat_dict)
+
+    def updateCatNetByTime(self, cat_id, time, cat_dict):
+        if self.session is None:
+            self.connectdb()
+        if (self.countCatNetByTime(cat_id, time) > 0):
+            CatNet = self.create_cat_net_rt_class(cat_id)
+            self.session.query(CatNet).filter(CatNet.NetValueTime == time).update(cat_dict)
+            try:
+                self.session.commit()
+            except:
+                return False
+            else:
+                return True
+        else:
+            cat_dict.update({'NetValueTime':time})
+            return self.insertCatNet(cat_dict)
 
     def updateCatNetByDate(self, cat_id, date, cat_dict):
         if self.session is None:
@@ -221,6 +294,22 @@ class catdb(object):
         else:
             return True
 
+    def insertCatNetRT(self, cat_id, cat_dict):
+        if self.session is None:
+            self.connectdb()
+        if (self.countCatNetByTime(cat_id, cat_dict['NetValueTime']) > 0):
+            return False
+        CatNet = self.create_cat_net_rt_class(cat_id)
+        cat = CatNet()
+        cat = self.get_obj_from_dict(cat_dict, cat)
+        try:
+            self.session.add(cat)
+            self.session.commit()
+        except:
+            return False
+        else:
+            return True
+
     def deleteCatByID(self, ID):
         if self.session is None:
             self.connectdb()
@@ -235,12 +324,41 @@ class catdb(object):
         else:
             return result
 
-    def create_table(self, table_name):
+    def deleteCatRTByID(self, cat_id):
+        if self.session is None:
+            self.connectdb()
+        if cat_id is None or len(cat_id.strip()) == 0:
+            return None
+        CatNet = self.create_cat_net_rt_class(cat_id)
+        result = self.session.query(CatNet).delete(synchronize_session=False) 
+        self.session.flush()
+        try:
+            self.session.commit()
+        except:
+            return []
+        else:
+            return result
+
+    def create_net_rt_table(self, table_name):
         meta = MetaData()
         table_name = Table(
             table_name, meta,
             # Primary key
-            Column('NetValueDate', DATE, primary_key=True),
+            Column('NetValueTime', DATETIME, primary_key=True),
+            # Other keys
+            Column('NetValueCurrent', Text, nullable=True),
+            Column('NetValueCurrentGrowth', Text, nullable=True),
+            Column('NetValueUnit', Text, nullable=True),
+            Column('Reserve', Text, nullable=True),
+        )
+        meta.create_all(engine)
+
+    def create_net_table(self, table_name):
+        meta = MetaData()
+        table_name = Table(
+            table_name, meta,
+            # Primary key
+            Column('NetValueDate', DATETIME, primary_key=True),
             # Other keys
             Column('NetValueUnit', Text, nullable=True),
             Column('NetValueCumulative', Text, nullable=True),

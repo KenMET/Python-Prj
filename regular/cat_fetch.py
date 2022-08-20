@@ -43,7 +43,7 @@ def update(logger):
         net_count = 5
         net_table_name = 'cat_net_%s'%(cat_index)
         if (net_table_name not in tables):
-            db.create_table(net_table_name)
+            db.create_net_table(net_table_name)
             est_date_str = temp_dict['EstablishmentDate_Size'][:temp_dict['EstablishmentDate_Size'].find('/')].strip(' \r\n')
             date_est = datetime.datetime.strptime(est_date_str, '%Y年%m月%d日')
             date_now = datetime.datetime.now()

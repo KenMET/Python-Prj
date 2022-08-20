@@ -109,6 +109,44 @@ def request_daily(code):
     temp_dict.update({'ID':code})
     return transfer_daily_to_mysql(temp_dict)
 
+#all fund daily data must return as a dict
+def request_daily2(code):
+    url1 = 'http://fundf10.eastmoney.com/jbgk_%s.html'%(code)
+
+    header = {'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+              'Accept-Encoding': 'gzip, deflate',
+              'Accept-Language': 'zh-CN,zh;q=0.9',
+              'Connection': 'keep-alive',
+              'Host': 'fundf10.eastmoney.com',
+              'Referer': 'http://fund.eastmoney.com/',
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+                      'AppleWebKit/537.36 (KHTML, like Gecko) '
+                      'Chrome/86.0.4240.198 Safari/537.36',}
+
+    response = requests.get(url=url1, headers=header)
+    response.encoding = 'utf-8'
+    if (response.status_code != 200):
+        print ('Request Base error:[%d]'%(response.status_code))
+        return {}
+
+    temp_dict = {}
+    soup = BeautifulSoup(response.text, 'html.parser')
+    main_div = soup.find('div', class_ = 'col-right')
+    p = main_div.find('p', class_ = 'row row1')
+    labels = p.find_all('label')
+    for index in labels:
+        temp = index.text.replace(' ', '').replace('\r','').replace('\n','')
+        title = temp[:temp.find('：')]
+        if title.find('（') >= 0:
+            title_front = title[:title.find('（')]
+            title_rear = title[title.find('）')+len('）'):]
+            title = title_front + title_rear
+        value = temp[temp.find('：')+len('：'):]
+        temp_dict.update({title:value})
+
+    temp_dict.update({'ID':code})
+    return transfer_daily_to_mysql(temp_dict)
+
 #all fund net data must return as a list
 def request_net(code, days):
     url1 = 'http://api.fund.eastmoney.com/f10/lsjz?callback=jQuery18308926516764027739_1607151282970&fundCode=%s&pageIndex=1&pageSize=%s&startDate=&endDate=&_=xxxxxx'%(code,days)
@@ -138,6 +176,60 @@ def request_net(code, days):
         temp_list.append(transfer_net_to_mysql(index))
     return temp_list
 
+def request_holdings(code, year):
+    url1 = 'http://fundf10.eastmoney.com/FundArchivesDatas.aspx?type=jjcc&code=%s&topline=100&year=%s&month=6&rt=0.8030068316922307'%(code, year)
+    header = {'Accept': '*/*',
+              'Accept-Encoding': 'gzip, deflate',
+              'Accept-Language': 'zh-CN,zh;q=0.9',
+              'Connection': 'keep-alive',
+              'Host': 'fundf10.eastmoney.com',
+              'Referer': 'http://fundf10.eastmoney.com/ccmx_%s.html'%(code),
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+                      'AppleWebKit/537.36 (KHTML, like Gecko) '
+                      'Chrome/86.0.4240.198 Safari/537.36',}
+    response = requests.get(url=url1, headers=header)
+    response.encoding = 'utf-8'
+    if (response.status_code != 200):
+        print ('Request Net error:[%d]'%(response.status_code))
+        return []
+    data_full = response.text
+    data_json = data_full.replace('var apidata={ content:"', '').replace('', '')
+    data_json = data_json[:data_json.rfind('",arryear')]
+    soup = BeautifulSoup(data_json, 'html.parser')
+    form_list = soup.find_all('table')
+    range_list = soup.find_all('h4')
+    if len(form_list) != len(range_list):
+        print ('Not match[%d : %d]'%(len(form_list), len(range_list)))
+        return {}
+    holdings_dict = {}
+    #temp_list = ['id','dog_code', 'dog_name', 'dog_entry_key1', 'dog_entry_key1', 'dog_link', 'dog_proportion', 'dog_shares_w', 'dog_market_value']
+    for form_index in form_list:
+        holdings_list = []
+        item_list = form_index.find_all('tr')
+        for item_index in item_list:
+            temp_dict = {}
+            count = 0
+            for dog_index in item_index.children:
+                if count == 1:
+                    if (len(dog_index.text.replace('\r','').replace('\n','').replace(' ','')) != 6):
+                        break
+                    temp_dict.update({'dog_code':dog_index.text.replace('\r','').replace('\n','').replace(' ','')})
+                elif count == 2:
+                    temp_dict.update({'dog_name':dog_index.text.replace('\r','').replace('\n','').replace(' ','')})
+                elif count == 6:
+                    temp_dict.update({'dog_proportion':dog_index.text.replace('\r','').replace('\n','').replace(' ','')})
+                elif count == 7:
+                    temp_dict.update({'dog_shares_w':dog_index.text.replace('\r','').replace('\n','').replace(' ','')})
+                elif count == 8:
+                    temp_dict.update({'dog_market_value':dog_index.text.replace('\r','').replace('\n','').replace(' ','')})
+                count += 1
+            if (len(temp_dict) > 0):
+                holdings_list.append(temp_dict)
+        range_index = range_list[form_list.index(form_index)]
+        range_name = range_index.find('label', class_ = "left").text
+        range_date = range_index.find('font').text
+        holdings_dict.update({range_name + range_date : holdings_list})
+    return holdings_dict
 
 def transfer_base_to_mysql(rq_dict):
         map_dict = {
@@ -175,23 +267,24 @@ def transfer_base_to_mysql(rq_dict):
 def transfer_daily_to_mysql(rq_dict):
         map_dict = {
             'ID':'ID',
-            '净值估算': 'NetValueCurrent', 
+            #'净值估算': 'NetValueCurrent',
+            '盘中估算': 'NetValueCurrent',
             '单位净值': 'NetValueUnit', 
-            '累计净值': 'NetValueCumulative', 
-            '近1月': 'Recent1MonthGrowth', 
-            '近3月': 'Recent3MonthGrowth', 
-            '近6月': 'Recent6MonthGrowth', 
-            '近1年': 'Recent1YearGrowth',
-            '近3年': 'Recent3YearGrowth',
-            '成立来': 'SinceEstablishGrowth',
+            #'累计净值': 'NetValueCumulative', 
+            #'近1月': 'Recent1MonthGrowth', 
+            #'近3月': 'Recent3MonthGrowth', 
+            #'近6月': 'Recent6MonthGrowth', 
+            #'近1年': 'Recent1YearGrowth',
+            #'近3年': 'Recent3YearGrowth',
+            #'成立来': 'SinceEstablishGrowth',
         }
         temp_dict = {'Reserve':''}
         for key in map_dict:
             temp_dict.update({map_dict[key]:rq_dict.get(key, '')})
-        NetValueUnit = temp_dict['NetValueUnit'][:temp_dict['NetValueUnit'].find('.')+5]
-        NetValueUnitGrowth = temp_dict['NetValueUnit'][temp_dict['NetValueUnit'].find('.')+5:]
-        temp_dict.update({'NetValueUnit':NetValueUnit})
-        temp_dict.update({'NetValueUnitGrowth':NetValueUnitGrowth})
+        NetValueCurrent = temp_dict['NetValueCurrent'][:temp_dict['NetValueCurrent'].find('.')+5]
+        NetValueCurrentGrowth = temp_dict['NetValueCurrent'][temp_dict['NetValueCurrent'].find('.')+5:]
+        temp_dict.update({'NetValueCurrent':NetValueCurrent})
+        temp_dict.update({'NetValueCurrentGrowth':NetValueCurrentGrowth})
 
         return temp_dict
 
@@ -215,5 +308,7 @@ if __name__ == '__main__':
     #temp = request_base('161028')
     #for index in temp:
     #    print ('[%s]:%s'%(index, temp[index]))
-    temp = request_daily('161028')
+    #temp = request_daily2('161028')
+    #print (temp)
+    temp = request_holdings('161028', '2021')
     print (temp)

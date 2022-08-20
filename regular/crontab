@@ -1,4 +1,5 @@
 # Run every 8 hours
 0 */8 * * * python3 /home/ken/workspace/code/Python-Prj/regular/cat_fetch.py
-
+# Run every day at 9:15
+15 9 * * * python3 /home/ken/workspace/code/Python-Prj/regular/cat_day_growth.py
 
