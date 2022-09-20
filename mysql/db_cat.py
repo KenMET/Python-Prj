@@ -10,7 +10,7 @@ import os
 import time
 
 HOSTNAME = '127.0.0.1'
-DATABASE = 'kanos'
+DATABASE = 'kanos_cat'
 PORT = 3306
 USERNAME = 'root'
 PASSWORD = '7cd0a058'
@@ -55,6 +55,7 @@ class catdb(object):
         self.session = None
         self.cat_net_class = {}
         self.cat_net_rt_class = {}
+        self.cat_holding_class = {}
 
     def openSession(self):
         if self.session is None: 
@@ -71,7 +72,14 @@ class catdb(object):
 
     def get_dict_from_obj(self, obj):
         temp = {}
-        attr = [a for a in dir(obj) if not a.startswith('_') and not callable(getattr(obj, a)) and type(getattr(obj, a)) == type('strings')]
+        #attr = [a for a in dir(obj) if not a.startswith('_') and not callable(getattr(obj, a))]
+        #print ('********************************************')
+        #for a in attr:
+        #    print (a, getattr(obj, a), type(getattr(obj, a)))
+        attr = [a for a in dir(obj) if not a.startswith('_') and not callable(getattr(obj, a)) and 
+                (type(getattr(obj, a)) == type('strings') or
+                type(getattr(obj, a)) == datetime.datetime or 
+                type(getattr(obj, a)) == datetime.date)]
         for a in attr:
             temp.update({a:getattr(obj, a)})
         return temp
@@ -113,6 +121,20 @@ class catdb(object):
             self.cat_net_rt_class.update({cat_id:new_class})
         return self.cat_net_rt_class[cat_id]
 
+    def create_cat_holding_class(self, cat_id):
+        if cat_id not in self.cat_holding_class:
+            new_class = type('CatHolding%s'%(cat_id), (Base, ), dict(
+                __tablename__ = 'cat_holding_%s'%(cat_id),
+                DogCodeQuarter = Column(String(255), primary_key=True, autoincrement=True),
+                DogName = Column(Text, nullable=True),
+                DogProportion = Column(Text, nullable=True),
+                DogShare = Column(Text, nullable=True),
+                DogMarketValue = Column(Text, nullable=True),
+                Reserve = Column(Text, nullable=True)
+            ))
+            self.cat_holding_class.update({cat_id:new_class})
+        return self.cat_holding_class[cat_id]
+
     def queryCatNetRTAll(self, cat_id):
         if self.session is None:
             self.connectdb()
@@ -149,6 +171,18 @@ class catdb(object):
         else:
             return result
 
+    def queryLastCatRT(self, cat_id):
+        if self.session is None:
+            self.connectdb()
+        CatNet = self.create_cat_net_rt_class(cat_id)
+        result = self.session.query(CatNet).order_by(sqlalchemy.desc(CatNet.NetValueTime)).first()
+        try:
+            self.session.commit()
+        except:
+            return []
+        else:
+            return result
+
     def queryCatAll(self):
         if self.session is None:
             self.connectdb()
@@ -171,6 +205,18 @@ class catdb(object):
         else:
             return result
     
+    def queryLastCatNet(self, cat_id):
+        if self.session is None:
+            self.connectdb()
+        CatNet = self.create_cat_net_class(cat_id)
+        result = self.session.query(CatNet).order_by(sqlalchemy.desc(CatNet.NetValueDate)).first()
+        try:
+            self.session.commit()
+        except:
+            return []
+        else:
+            return result
+
     def queryCatNetByTime(self, cat_id, Time):
         if self.session is None:
             self.connectdb()
@@ -195,6 +241,42 @@ class catdb(object):
         else:
             return result
 
+    def queryLastCatHolding(self, cat_id):
+        if self.session is None:
+            self.connectdb()
+        CatHolding = self.create_cat_holding_class(cat_id)
+        result = self.session.query(CatHolding).order_by(sqlalchemy.desc(CatHolding.DogCodeQuarter)).first()
+        try:
+            self.session.commit()
+        except:
+            return []
+        else:
+            return result
+
+    def queryCatHoldingByQuarter(self, cat_id, quarter):
+        if self.session is None:
+            self.connectdb()
+        CatHolding = self.create_cat_holding_class(cat_id)
+        result = self.session.query(CatHolding).filter(CatHolding.DogCodeQuarter.like('%{0}%'.format(quarter))).all()
+        try:
+            self.session.commit()
+        except:
+            return []
+        else:
+            return result
+
+    def queryCatHoldingByCodeQuarter(self, cat_id, code_quarter):
+        if self.session is None:
+            self.connectdb()
+        CatHolding = self.create_cat_holding_class(cat_id)
+        result = self.session.query(CatHolding).filter(CatHolding.DogCodeQuarter == code_quarter).all()
+        try:
+            self.session.commit()
+        except:
+            return []
+        else:
+            return result
+
     def countCatByID(self, ID):
         ret = self.queryCatByID(ID)
         count = 0
@@ -204,6 +286,13 @@ class catdb(object):
     
     def countCatNetByDate(self, cat_id, date):
         ret = self.queryCatNetByDate(cat_id, date)
+        count = 0
+        for index in ret:
+            count += 1
+        return count
+
+    def countCatNetByCodeQuarter(self, cat_id, code_quarter):
+        ret = self.queryCatHoldingByCodeQuarter(cat_id, code_quarter)
         count = 0
         for index in ret:
             count += 1
@@ -263,12 +352,43 @@ class catdb(object):
             cat_dict.update({'NetValueDate':date})
             return self.insertCatNet(cat_dict)
 
+    def updateCatHoldingByCodeQuarter(self, cat_id, code_quarter, cat_dict):
+        if self.session is None:
+            self.connectdb()
+        if (self.countCatNetByCodeQuarter(cat_id, code_quarter) > 0):
+            CatHolding = self.create_cat_holding_class(cat_id)
+            self.session.query(CatHolding).filter(CatHolding.DogCodeQuarter == code_quarter).update(cat_dict)
+            try:
+                self.session.commit()
+            except:
+                return False
+            else:
+                return True
+        else:
+            return self.insertCatHolding(cat_id, cat_dict)
+
     def insertCatSurvey(self, cat_dict):
         if self.session is None:
             self.connectdb()
         if (self.countCatByID(cat_dict['ID']) > 0):
             return False
         cat = self.CatSurvey()
+        cat = self.get_obj_from_dict(cat_dict, cat)
+        try:
+            self.session.add(cat)
+            self.session.commit()
+        except:
+            return False
+        else:
+            return True
+
+    def insertCatHolding(self, cat_id, cat_dict):
+        if self.session is None:
+            self.connectdb()
+        if (self.countCatNetByCodeQuarter(cat_id, cat_dict['DogCodeQuarter']) > 0):
+            return False
+        CatHolding = self.create_cat_holding_class(cat_id)
+        cat = CatHolding()
         cat = self.get_obj_from_dict(cat_dict, cat)
         try:
             self.session.add(cat)
@@ -366,6 +486,21 @@ class catdb(object):
             Column('SubscriptionStatus', Text, nullable=True),
             Column('RedemptionStatus', Text, nullable=True),
             Column('DividendsSending', Text, nullable=True),
+            Column('Reserve', Text, nullable=True),
+        )
+        meta.create_all(engine)
+
+    def create_holding_table(self, table_name):
+        meta = MetaData()
+        table_name = Table(
+            table_name, meta,
+            # Primary key
+            Column('DogCodeQuarter', String(255), primary_key=True),
+            # Other keys
+            Column('DogName', Text, nullable=True),
+            Column('DogProportion', Text, nullable=True),
+            Column('DogShare', Text, nullable=True),
+            Column('DogMarketValue', Text, nullable=True),
             Column('Reserve', Text, nullable=True),
         )
         meta.create_all(engine)

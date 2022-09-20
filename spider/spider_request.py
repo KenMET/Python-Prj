@@ -177,7 +177,7 @@ def request_net(code, days):
     return temp_list
 
 def request_holdings(code, year):
-    url1 = 'http://fundf10.eastmoney.com/FundArchivesDatas.aspx?type=jjcc&code=%s&topline=100&year=%s&month=6&rt=0.8030068316922307'%(code, year)
+    url1 = 'http://fundf10.eastmoney.com/FundArchivesDatas.aspx?type=jjcc&code=%s&topline=100&year=%s&month=3&rt=0.8030068316922307'%(code, year)
     header = {'Accept': '*/*',
               'Accept-Encoding': 'gzip, deflate',
               'Accept-Language': 'zh-CN,zh;q=0.9',
@@ -201,35 +201,99 @@ def request_holdings(code, year):
     if len(form_list) != len(range_list):
         print ('Not match[%d : %d]'%(len(form_list), len(range_list)))
         return {}
-    holdings_dict = {}
-    #temp_list = ['id','dog_code', 'dog_name', 'dog_entry_key1', 'dog_entry_key1', 'dog_link', 'dog_proportion', 'dog_shares_w', 'dog_market_value']
+    holdings_list = []
     for form_index in form_list:
-        holdings_list = []
+        range_index = range_list[form_list.index(form_index)]
+        range_date = range_index.find('font').text
         item_list = form_index.find_all('tr')
         for item_index in item_list:
             temp_dict = {}
-            count = 0
-            for dog_index in item_index.children:
-                if count == 1:
-                    if (len(dog_index.text.replace('\r','').replace('\n','').replace(' ','')) != 6):
-                        break
-                    temp_dict.update({'dog_code':dog_index.text.replace('\r','').replace('\n','').replace(' ','')})
-                elif count == 2:
-                    temp_dict.update({'dog_name':dog_index.text.replace('\r','').replace('\n','').replace(' ','')})
-                elif count == 6:
-                    temp_dict.update({'dog_proportion':dog_index.text.replace('\r','').replace('\n','').replace(' ','')})
-                elif count == 7:
-                    temp_dict.update({'dog_shares_w':dog_index.text.replace('\r','').replace('\n','').replace(' ','')})
-                elif count == 8:
-                    temp_dict.update({'dog_market_value':dog_index.text.replace('\r','').replace('\n','').replace(' ','')})
-                count += 1
+            a_list = item_index.find_all('a')
+            for a_index in a_list:
+                parent_class = a_index.parent.attrs.get('class')
+                if parent_class == ['tol']:
+                    temp_dict.update({'DogName':a_index.text.replace('\r','').replace('\n','').replace(' ','')})
+                elif parent_class == None:
+                    temp_dict.update({'DogCodeQuarter':range_date + ':' + a_index.text.replace('\r','').replace('\n','').replace(' ','')})
+            td_first = item_index.find('td', class_ = 'tor')
+            if td_first == None:
+                continue
+            while td_first.find('span') != None or td_first.find('a') != None:
+                td_first = td_first.next_sibling
+            temp_dict.update({'DogProportion':td_first.text.replace('\r','').replace('\n','').replace(' ','')})
+            next_bro = td_first.next_sibling
+            temp_dict.update({'DogShare':next_bro.text.replace('\r','').replace('\n','').replace(' ','')})
+            next_bro = next_bro.next_sibling
+            temp_dict.update({'DogMarketValue':next_bro.text.replace('\r','').replace('\n','').replace(' ','')})
             if (len(temp_dict) > 0):
                 holdings_list.append(temp_dict)
-        range_index = range_list[form_list.index(form_index)]
-        range_name = range_index.find('label', class_ = "left").text
-        range_date = range_index.find('font').text
-        holdings_dict.update({range_name + range_date : holdings_list})
-    return holdings_dict
+    return holdings_list
+
+'''
+https://push2his.eastmoney.com/api/qt/stock/fflow/daykline/get?cb=jQuery1123013525801697988382_1661079347262& lmt=0&klt=101&fields1=f1%2Cf2%2Cf3%2Cf7&fields2=f51%2Cf52%2Cf53%2Cf54%2Cf55%2Cf56%2Cf57%2Cf58%2Cf59%2Cf60%2Cf61%2Cf62%2Cf63%2Cf64%2Cf65&ut=b2884a393a59ad64002292a3e90d46a5&secid=0.002074&_=1661079347263
+https://push2his.eastmoney.com/api/qt/stock/fflow/daykline/get?cb=jQuery11230018430337025947985_1661084285964&lmt=0&klt=101&fields1=f1%2Cf2%2Cf3%2Cf7&fields2=f51%2Cf52%2Cf53%2Cf54%2Cf55%2Cf56%2Cf57%2Cf58%2Cf59%2Cf60%2Cf61%2Cf62%2Cf63%2Cf64%2Cf65&ut=b2884a393a59ad64002292a3e90d46a5&secid=1.600036&_=1661084285965
+https://push2his.eastmoney.com/api/qt/stock/fflow/daykline/get?cb=jQuery112306277901112223307_1661092252881&  lmt=0&klt=101&fields1=f1,f2,f3,f7&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61,f62,f63,f64,f65&ut=b2884a393a59ad64002292a3e90d46a5&secid=0.002074&_=1661092252882
+https://push2his.eastmoney.com/api/qt/stock/fflow/daykline/get?cb=jQuery112301932308102447975_1663597850322&  lmt=0&klt=101&fields1=f1%2Cf2%2Cf3%2Cf7&fields2=f51%2Cf52%2Cf53%2Cf54%2Cf55%2Cf56%2Cf57%2Cf58%2Cf59%2Cf60%2Cf61%2Cf62%2Cf63%2Cf64%2Cf65&ut=b2884a393a59ad64002292a3e90d46a5&secid=1.600066&_=1663597850323
+'''
+def request_money_flows(code):
+    url1 = 'https://push2his.eastmoney.com/api/qt/stock/fflow/daykline/get?fields1=f1,f2,f3,f7&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61,f62,f63,f64,f65&secid=0.%s&_=%d'%(code, int(time.time() * 1000))
+    header = {'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+              'Accept-Encoding': 'gzip, deflate',
+              'Accept-Language': 'zh-CN,zh;q=0.9',
+              'Connection': 'keep-alive',
+              'Host': 'push2his.eastmoney.com',
+              'sec-ch-ua': '"Chromium";v="104", " Not A;Brand";v="99", "Google Chrome";v="104"',
+              'sec-ch-ua-mobile': '?0',
+              'sec-ch-ua-platform': '"Windows"',
+              'Sec-Fetch-Dest': 'document',
+              'Sec-Fetch-Mode': 'navigate',
+              'Sec-Fetch-Site': 'none',
+              'Sec-Fetch-User': '?1',
+              'Upgrade-Insecure-Requests': '1',
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+                      'AppleWebKit/537.36 (KHTML, like Gecko) '
+                      'Chrome/86.0.4240.198 Safari/537.36',}
+    response = requests.get(url=url1, headers=header)
+    response.encoding = 'utf-8'
+    if (response.status_code != 200):
+        print ('Request Net error:[%d]'%(response.status_code))
+        return []
+    main_data = json.loads(response.text).get('data')
+    if main_data == None:
+        time.sleep(5)
+        response = requests.get(url=url1.replace('secid=0', 'secid=1'), headers=header)
+        response.encoding = 'utf-8'
+        if (response.status_code != 200):
+            print ('Request Net error:[%d]'%(response.status_code))
+            return []
+        main_data = json.loads(response.text).get('data')
+        if main_data == None:
+            return []
+    temp_list = []
+    if main_data.get('code', '') != code:
+        return temp_list
+    klines_list = main_data.get('klines', [])
+    for index in klines_list:
+        if type(index) == type('String'):
+            item_list = index.split(',')
+            temp_dict = {
+                'Date': item_list[0],
+                'MainIn': item_list[1],
+                'LittleIn': item_list[2],
+                'MiddIn': item_list[3],
+                'BigIn': item_list[4],
+                'BigPlusIn': item_list[5],
+                'MainPer': item_list[6],
+                'LittlePer': item_list[7],
+                'MiddPer': item_list[8],
+                'BigPer': item_list[9],
+                'BigPlusPer': item_list[10],
+                'CloseValue': item_list[11],
+                'CloseRate': item_list[12],
+            }
+            temp_list.append(temp_dict)
+    return temp_list
+
 
 def transfer_base_to_mysql(rq_dict):
         map_dict = {
@@ -310,5 +374,8 @@ if __name__ == '__main__':
     #    print ('[%s]:%s'%(index, temp[index]))
     #temp = request_daily2('161028')
     #print (temp)
-    temp = request_holdings('161028', '2021')
+    #temp = request_holdings('161028', '2023')
+    #print (temp)
+    temp = request_money_flows('600066')
     print (temp)
+

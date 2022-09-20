@@ -39,7 +39,8 @@ def update(logger):
             flag = db.updateCatSurveyByID(id, temp_dict)
             if (not flag):
                 logger.info ('[Error] - CatSurvey update failed')
-        
+        time.sleep(1)
+
         net_count = 5
         net_table_name = 'cat_net_%s'%(cat_index)
         if (net_table_name not in tables):
@@ -61,6 +62,28 @@ def update(logger):
                 flag = db.updateCatNetByDate(cat_index, date, net_index)
                 if (not flag):
                     logger.info ('[Error] - CatNet update failed')
+        time.sleep(1)
+
+        holding_year_list = [datetime.datetime.now().year]
+        holding_table_name = 'cat_holding_%s'%(cat_index)
+        if (holding_table_name not in tables):
+            db.create_holding_table(holding_table_name)
+            est_date_str = temp_dict['EstablishmentDate_Size'][:temp_dict['EstablishmentDate_Size'].find('/')].strip(' \r\n')
+            date_est = datetime.datetime.strptime(est_date_str, '%Y年%m月%d日')
+            date_now = datetime.datetime.now()
+            holding_year_list = range(date_est.year, date_now.year+1)
+            logger.info('Create table[%s]'%(holding_table_name))
+        for holding_year in holding_year_list:
+            temp_list= srq.request_holdings(cat_index, str(holding_year))
+            for holdings_index in temp_list:
+                logger.info('Table[%s] update holding:%s'%(holding_table_name, str(holdings_index)))
+                flag = db.insertCatHolding(cat_index, holdings_index)
+                if (not flag):
+                    code_quarter = holdings_index['DogCodeQuarter']
+                    flag = db.updateCatHoldingByCodeQuarter(cat_index, code_quarter, holdings_index)
+                    if (not flag):
+                        logger.info ('[Error] - CatHolding update failed')
+            time.sleep(1)
 
 if __name__ == '__main__':
     logger = logging.getLogger()
