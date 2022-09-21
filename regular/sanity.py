@@ -182,17 +182,31 @@ def dog_sanity(logger):
 
 def main(logger):
     flag, error = cat_sanity(logger)
+    email_send_flag = False
+    content = ''
     if (not flag):
         logger.info('Cat Database sanity failed!')
         logger.info(error)
+        content = 'Cat Database sanity failed! Failed reason:\n'+error+'\n'
+        email_send_flag = True
     else:
         logger.info('Cat Database sanity pass!')
     flag, error = dog_sanity(logger)
     if (not flag):
         logger.info('Dog Database sanity failed!')
         logger.info(error)
+        content += 'Dog Database sanity failed! Failed reason:\n'+error+'\n'
+        email_send_flag = True
     else:
         logger.info('Dog Database sanity pass!')
+
+    if (email_send_flag):
+        mail_obj = mail.mail()
+        subject = 'This is KenStation Database Sanity email'
+        content_type = 'plain' # or 'html'
+        mail_obj.set_content('ken_processor@outlook.com', subject, content, content_type)
+        flag = mail_obj.send()
+        logger.info('Mail Send Result[%s]'%(str(flag)))
 
 if __name__ == '__main__':
     logger = logging.getLogger()
