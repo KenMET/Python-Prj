@@ -1,0 +1,73 @@
+version: "3"
+services:
+  sanity:
+    container_name: spider_sanity
+    image: 'spider:latest'
+    restart: "no"
+    volumes:
+      - /data/net_disk/code:/code
+    environment:
+      HOSTNAME : 192.168.8.1
+      PORT : 3306
+      USERNAME : root
+      PASSWORD : WEIyuYAN2feiNot
+      PATH : /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      LANG : C.UTF-8
+      LC_ALL : C.UTF-8
+      TZ : Asia/Shanghai
+    entrypoint:
+      /usr/bin/python3 /code/Python-Prj/regular/sanity.py
+
+  cat_fetch:
+    container_name: spider_cat
+    image: 'spider:latest'
+    restart: "no"
+    volumes:
+      - /data/net_disk/code:/code
+    environment:
+      HOSTNAME : 192.168.8.1
+      PORT : 3306
+      USERNAME : root
+      PASSWORD : WEIyuYAN2feiNot
+      PATH : /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      LANG : C.UTF-8
+      LC_ALL : C.UTF-8
+      TZ : Asia/Shanghai
+    entrypoint:
+      /usr/bin/python3 /code/Python-Prj/regular/cat_fetch.py
+
+  dog_fetch:
+    container_name: spider_dog
+    image: 'spider:latest'
+    restart: "no"
+    volumes:
+      - /data/net_disk/code:/code
+    environment:
+      HOSTNAME : 192.168.8.1
+      PORT : 3306
+      USERNAME : root
+      PASSWORD : WEIyuYAN2feiNot
+      PATH : /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      LANG : C.UTF-8
+      LC_ALL : C.UTF-8
+      TZ : Asia/Shanghai
+    entrypoint:
+      /usr/bin/python3 /code/Python-Prj/regular/dog_fetch.py
+
+  cat_day_growth:
+    container_name: spider_cat_day_growth
+    image: 'spider:latest'
+    restart: "no"
+    volumes:
+      - /data/net_disk/code:/code
+    environment:
+      HOSTNAME : 192.168.8.1
+      PORT : 3306
+      USERNAME : root
+      PASSWORD : WEIyuYAN2feiNot
+      PATH : /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      LANG : C.UTF-8
+      LC_ALL : C.UTF-8
+      TZ : Asia/Shanghai
+    entrypoint:
+      /usr/bin/python3 /code/Python-Prj/regular/cat_day_growth.py
