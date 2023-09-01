@@ -49,7 +49,7 @@ def cat_net_rt(logger, db, table_name):
     if NetValueTime == None:
         return False, "%s [NetValueTime] return None"%(table_name)
     else:
-        if type(NetValueTime) != datetime.datetime:
+        if type(NetValueTime) != datetime.date:
             return False, "table_name [NetValueTime] type incorrect[%s]"%(str(type(NetValueTime)))
     del temp_dict['NetValueTime']
     del temp_dict['Reserve']

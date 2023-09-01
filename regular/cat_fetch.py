@@ -26,6 +26,8 @@ def update(logger):
     cfg = xo.operator(file_name)
     cfg_dict = cfg.walk_node(cfg.root_node)
     cat_list = cfg_dict.get('cat_list', {}).get('id', [])
+    if type(cat_list) == type(''):
+        cat_list = [cat_list, ]
     db = cbc.catdb()
     tables = db.queryTable()
 
@@ -57,9 +59,9 @@ def update(logger):
             logger.info('Table[%s] update net:%s'%(net_table_name, str(net_index)))
             flag = db.insertCatNet(cat_index, net_index)
             if (not flag):
-                date = net_index['NetValueDate']
+                date_str = net_index['NetValueDate']
                 del net_index['NetValueDate']
-                flag = db.updateCatNetByDate(cat_index, date, net_index)
+                flag = db.updateCatNetByDate(cat_index, date_str, net_index)
                 if (not flag):
                     logger.info ('[Error] - CatNet update failed')
         time.sleep(1)
@@ -75,6 +77,8 @@ def update(logger):
             logger.info('Create table[%s]'%(holding_table_name))
         for holding_year in holding_year_list:
             temp_list= srq.request_holdings(cat_index, str(holding_year))
+            if (len(temp_list) == 0):
+                logger.info ('[Error] - CatHolding empty:%s'%(cat_index))
             for holdings_index in temp_list:
                 logger.info('Table[%s] update holding:%s'%(holding_table_name, str(holdings_index)))
                 flag = db.insertCatHolding(cat_index, holdings_index)

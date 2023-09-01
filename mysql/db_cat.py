@@ -1,7 +1,7 @@
 import sqlalchemy
 from sqlalchemy import create_engine, MetaData, Table, text
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, String, DATETIME, Text, VARCHAR
+from sqlalchemy import Column, Integer, String, DATETIME, Text, VARCHAR, DATE
 from sqlalchemy.orm import sessionmaker, relationship
 import pymysql
 import datetime
@@ -9,20 +9,20 @@ from pathlib import Path
 import os
 import time
 
-HOSTNAME = '127.0.0.1'
+HOSTNAME = os.environ['HOSTNAME']
 DATABASE = 'kanos_cat'
-PORT = 3306
-USERNAME = 'root'
-PASSWORD = '7cd0a058'
+PORT = int(os.environ['PORT'])
+USERNAME = os.environ['USERNAME']
+PASSWORD = os.environ['PASSWORD']
 DB_URL = 'mysql+pymysql://{}:{}@{}:{}/{}?charset=utf8'.format(USERNAME,PASSWORD,HOSTNAME,PORT,DATABASE)
 engine = create_engine(DB_URL)
 
-Base = declarative_base(engine) 
+Base = declarative_base() 
 
 class CatSurvey(Base):
     __tablename__ = 'cat_survey'
     # Primary key
-    ID = Column(VARCHAR, primary_key=True, autoincrement=True) 
+    ID = Column(VARCHAR, primary_key=True) 
     # Other keys
     Name = Column(Text, nullable=True)
     Type = Column(Text, nullable=True)
@@ -96,7 +96,7 @@ class catdb(object):
         if cat_id not in self.cat_net_class:
             new_class = type('CatNet%s'%(cat_id), (Base, ), dict(
                 __tablename__ = 'cat_net_%s'%(cat_id),
-                NetValueDate = Column(DATETIME, primary_key=True, autoincrement=True),
+                NetValueDate = Column(DATE, primary_key=True),
                 NetValueUnit = Column(Text, nullable=True),
                 NetValueCumulative = Column(Text, nullable=True),
                 DayGrowth = Column(Text, nullable=True),
@@ -112,7 +112,7 @@ class catdb(object):
         if cat_id not in self.cat_net_rt_class:
             new_class = type('CatNetRT%s'%(cat_id), (Base, ), dict(
                 __tablename__ = 'cat_net_rt_%s'%(cat_id),
-                NetValueTime = Column(DATETIME, primary_key=True, autoincrement=True),
+                NetValueTime = Column(DATETIME, primary_key=True),
                 NetValueCurrent = Column(Text, nullable=True),
                 NetValueCurrentGrowth = Column(Text, nullable=True),
                 NetValueUnit = Column(Text, nullable=True),
@@ -125,7 +125,7 @@ class catdb(object):
         if cat_id not in self.cat_holding_class:
             new_class = type('CatHolding%s'%(cat_id), (Base, ), dict(
                 __tablename__ = 'cat_holding_%s'%(cat_id),
-                DogCodeQuarter = Column(String(255), primary_key=True, autoincrement=True),
+                DogCodeQuarter = Column(String(255), primary_key=True),
                 DogName = Column(Text, nullable=True),
                 DogProportion = Column(Text, nullable=True),
                 DogShare = Column(Text, nullable=True),
@@ -334,7 +334,7 @@ class catdb(object):
                 return True
         else:
             cat_dict.update({'NetValueTime':time})
-            return self.insertCatNet(cat_dict)
+            return self.insertCatNet(cat_id, cat_dict)
 
     def updateCatNetByDate(self, cat_id, date, cat_dict):
         if self.session is None:
@@ -350,7 +350,7 @@ class catdb(object):
                 return True
         else:
             cat_dict.update({'NetValueDate':date})
-            return self.insertCatNet(cat_dict)
+            return self.insertCatNet(cat_id, cat_dict)
 
     def updateCatHoldingByCodeQuarter(self, cat_id, code_quarter, cat_dict):
         if self.session is None:
@@ -372,7 +372,7 @@ class catdb(object):
             self.connectdb()
         if (self.countCatByID(cat_dict['ID']) > 0):
             return False
-        cat = self.CatSurvey()
+        cat = CatSurvey()
         cat = self.get_obj_from_dict(cat_dict, cat)
         try:
             self.session.add(cat)
@@ -464,7 +464,7 @@ class catdb(object):
         table_name = Table(
             table_name, meta,
             # Primary key
-            Column('NetValueTime', DATETIME, primary_key=True),
+            Column('NetValueTime', DATE, primary_key=True),
             # Other keys
             Column('NetValueCurrent', Text, nullable=True),
             Column('NetValueCurrentGrowth', Text, nullable=True),
@@ -478,7 +478,7 @@ class catdb(object):
         table_name = Table(
             table_name, meta,
             # Primary key
-            Column('NetValueDate', DATETIME, primary_key=True),
+            Column('NetValueDate', DATE, primary_key=True),
             # Other keys
             Column('NetValueUnit', Text, nullable=True),
             Column('NetValueCumulative', Text, nullable=True),

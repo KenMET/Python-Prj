@@ -68,7 +68,8 @@ def update(logger):
                 flag = db.updateDogMoneyFlowByDate(dog_index, date, money_flow_index)
                 if (not flag):
                     logger.info ('[Error] - CatNet update failed')
-        time.sleep(1)
+            time.sleep(0.1)
+        time.sleep(5)
     db.closeSession()
 
 if __name__ == '__main__':

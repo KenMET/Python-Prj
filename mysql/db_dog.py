@@ -9,15 +9,15 @@ from pathlib import Path
 import os
 import time
 
-HOSTNAME = '127.0.0.1'
+HOSTNAME = os.environ['HOSTNAME']
 DATABASE = 'kanos_dog'
-PORT = 3306
-USERNAME = 'root'
-PASSWORD = '7cd0a058'
+PORT = int(os.environ['PORT'])
+USERNAME = os.environ['USERNAME']
+PASSWORD = os.environ['PASSWORD']
 DB_URL = 'mysql+pymysql://{}:{}@{}:{}/{}?charset=utf8'.format(USERNAME,PASSWORD,HOSTNAME,PORT,DATABASE)
 engine = create_engine(DB_URL)
 
-Base = declarative_base(engine) 
+Base = declarative_base() 
 
 class dogdb(object):
     def __init__(self) -> None:
@@ -63,7 +63,7 @@ class dogdb(object):
         if dog_id not in self.dog_money_flow_class:
             new_class = type('DogMoneyFlow%s'%(dog_id), (Base, ), dict(
                 __tablename__ = 'dog_money_flow_%s'%(dog_id),
-                Date = Column(DATETIME, primary_key=True, autoincrement=True),
+                Date = Column(DATETIME, primary_key=True),
                 CloseValue = Column(Text, nullable=True),
                 CloseRate = Column(Text, nullable=True),
                 MainIn = Column(Text, nullable=True),

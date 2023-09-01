@@ -48,6 +48,7 @@ def is_cat_running():
     return 2 # No need to update, exit
 
 def update_cat(logger):
+    #logger.info ('update_cat enter...')
     if (not is_work_day()):
         logger.info('Not a workday, skip...')
         return
@@ -57,8 +58,9 @@ def update_cat(logger):
     cat_list = cfg_dict.get('cat_list', {}).get('id', [])
     db = cbc.catdb()
     tables = db.queryTable()
-
+    #logger.info ('queryTable done...')
     ret = is_cat_running()
+    #logger.info ('is_cat_running:%s'%(str(ret)))
     if (ret == -1):
         for cat_index in cat_list:
             net_table_name = 'cat_net_rt_%s'%(cat_index)
