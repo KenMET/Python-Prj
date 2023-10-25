@@ -6,6 +6,7 @@ ENV TZ=Asia/Shanghai
 
 RUN apt update && \
 	apt install -y tzdata || true && apt install -y tzdata && \
+        apt install -y cron || true && apt install -y cron && \
 	apt install -y python3 || true && apt install -y python3 && \
 	apt install -y python3-pip || true && apt install -y python3-pip && \
 	python3 -m pip install sqlalchemy pymysql requests bs4
@@ -18,3 +19,21 @@ CMD ["bash"]
 #docker exec -it ubuntu /bin/bash
 #docker stop ubuntu; docker rm ubuntu
 #docker build -t spider:latest .
+
+#nvidia-docker run -itd \
+#    --name spider \
+#    -e PUID=1000 \
+#    -e PGID=1000 \
+#    -e LANG=C.UTF-8 \
+#    -e LC_ALL=C.UTF-8 \
+#    -e PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+#    -e SANITY_ENABLE=TRUE \
+#    -e CAT_FETCH_ENABLE=TRUE \
+#    -e DOG_FETCH_ENABLE=TRUE \
+#    -e HOSTNAME=192.168.10.228 \
+#    -e PORT=8206 \
+#    -e USERNAME=root \
+#    -e PASSWORD=XXXXXXXXXXXXXXX \
+#    -v /home/kanos/workspace/system/Python-Prj:/base \
+#    --restart unless-stopped \
+#    spider

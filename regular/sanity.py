@@ -13,12 +13,14 @@ sys.path.append(r'%s/'%(py_dir))
 sys.path.append(r'%s/../mail'%(py_dir))
 sys.path.append(r'%s/../mysql'%(py_dir))
 sys.path.append(r'%s/../spider'%(py_dir))
+sys.path.append(r'%s/../notification'%(py_dir))
 sys.path.append(r'%s/../common_api/xml_operator'%(py_dir))
 import mail
 import db_cat as cbc
 import db_dog as cbd
 import xml_operator as xo
 import spider_request as srq
+import notification as notify
 
 def is_number(s):
     try:
@@ -182,13 +184,13 @@ def dog_sanity(logger):
 
 def main(logger):
     flag, error = cat_sanity(logger)
-    email_send_flag = False
+    notification_flag = False
     content = ''
     if (not flag):
         logger.info('Cat Database sanity failed!')
         logger.info(error)
         content = 'Cat Database sanity failed! Failed reason:\n'+error+'\n'
-        email_send_flag = True
+        notification_flag = True
     else:
         logger.info('Cat Database sanity pass!')
     flag, error = dog_sanity(logger)
@@ -196,23 +198,31 @@ def main(logger):
         logger.info('Dog Database sanity failed!')
         logger.info(error)
         content += 'Dog Database sanity failed! Failed reason:\n'+error+'\n'
-        email_send_flag = True
+        notification_flag = True
     else:
         logger.info('Dog Database sanity pass!')
 
-    if (email_send_flag):
-        mail_obj = mail.mail()
-        subject = 'This is KenStation Database Sanity email'
-        content_type = 'plain' # or 'html'
-        mail_obj.set_content('ken_processor@outlook.com', subject, content, content_type)
-        flag = mail_obj.send()
-        logger.info('Mail Send Result[%s]'%(str(flag)))
+    if (notification_flag):
+        #mail_obj = mail.mail()
+        #subject = 'This is KenStation Database Sanity email'
+        #content_type = 'plain' # or 'html'
+        #mail_obj.set_content('ken_processor@outlook.com', subject, content, content_type)
+        #flag = mail_obj.send()
+        #logger.info('Mail Send Result[%s]'%(str(flag)))
+
+        bark_obj = notify.bark()
+        flag = bark_obj.send_title_content('Spider Sanity', content)
+        logger.info('Bark Notification Result[%s]'%(str(flag)))
+
+    bark_obj = notify.bark()
+    flag = bark_obj.send_title_content('Spider Sanity', 'All database works normal')
+    logger.info('Bark Notification Result[%s]'%(str(flag)))
 
 if __name__ == '__main__':
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
     log_name = py_dir + '/' + py_name + '.log'
-    fh = logging.FileHandler(log_name, mode='a')
+    fh = logging.FileHandler(log_name, mode='w')
     fh.setLevel(logging.INFO)  # 输出到file的log等级的开关
     formatter = logging.Formatter("%(asctime)s - %(filename)s[line:%(lineno)d] - %(levelname)s: %(message)s")
     fh.setFormatter(formatter)
