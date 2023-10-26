@@ -1,16 +1,18 @@
-FROM ubuntu:22.04 as base
+FROM ubuntu:20.04 as base
 
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 ENV TZ=Asia/Shanghai
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 RUN apt update && \
 	apt install -y tzdata || true && apt install -y tzdata && \
-        apt install -y cron || true && apt install -y cron && \
+    apt install -y nano || true && apt install -y nano && \
+	apt install -y cron || true && apt install -y cron && \
 	apt install -y python3 || true && apt install -y python3 && \
 	apt install -y python3-pip || true && apt install -y python3-pip && \
+	python3 -m pip install sqlalchemy pymysql requests bs4 && \
 	python3 -m pip install sqlalchemy pymysql requests bs4
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 CMD ["bash"]
 
@@ -36,4 +38,5 @@ CMD ["bash"]
 #    -e PASSWORD=XXXXXXXXXXXXXXX \
 #    -v /home/kanos/workspace/system/Python-Prj:/base \
 #    --restart unless-stopped \
-#    spider
+#    spider \
+#    bash -c "service cron start;tail -f /dev/null"
