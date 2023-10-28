@@ -11,8 +11,8 @@ RUN apt update && \
 	apt install -y cron || true && apt install -y cron && \
 	apt install -y python3 || true && apt install -y python3 && \
 	apt install -y python3-pip || true && apt install -y python3-pip && \
-	python3 -m pip install sqlalchemy pymysql requests bs4 && \
-	python3 -m pip install sqlalchemy pymysql requests bs4
+	python3 -m pip install sqlalchemy pymysql requests bs4 cryptography && \
+	python3 -m pip install sqlalchemy pymysql requests bs4 cryptography
 
 CMD ["bash"]
 
