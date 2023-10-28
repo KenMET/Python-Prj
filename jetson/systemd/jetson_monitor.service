@@ -1,0 +1,12 @@
+[Unit]
+Description=Jetson Cube Nano Monitor Service
+
+[Service]
+Type=simple
+User=kanos
+Restart=on-failure
+RestartSec=5s
+ExecStart=/usr/bin/python3 /home/kanos/workspace/data/code/Python-Prj/jetson/monitor.py
+
+[Install]
+WantedBy=multi-user.target
