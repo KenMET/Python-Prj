@@ -1,7 +1,7 @@
 # Run every 8 hours
-0 */8 * * * python3 /home/ken/workspace/code/Python-Prj/regular/cat_fetch.py
-10 */8 * * * python3 /home/ken/workspace/code/Python-Prj/regular/dog_fetch.py
-0 5 * * * python3 /home/ken/workspace/code/Python-Prj/regular/sanity.py
+0 */8 * * * nvidia-docker exec spider /bin/bash -c "python3 /base/regular/cat_fetch.py"
+10 */8 * * * nvidia-docker exec spider /bin/bash -c "python3 /base/regular/dog_fetch.py"
+20 5 * * * nvidia-docker exec spider /bin/bash -c "python3 /base/regular/sanity.py"
 # Run every day at 9:15
-15 9 * * * python3 /home/ken/workspace/code/Python-Prj/regular/cat_day_growth.py
+#15 9 * * * docker exec spider /bin/bash -c "python3 /base/regular/cat_day_growth.py"
 

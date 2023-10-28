@@ -7,8 +7,6 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 RUN apt update && \
 	apt install -y tzdata || true && apt install -y tzdata && \
-    apt install -y nano || true && apt install -y nano && \
-	apt install -y cron || true && apt install -y cron && \
 	apt install -y python3 || true && apt install -y python3 && \
 	apt install -y python3-pip || true && apt install -y python3-pip && \
 	python3 -m pip install sqlalchemy pymysql requests bs4 cryptography && \
@@ -36,7 +34,7 @@ CMD ["bash"]
 #    -e PORT=8206 \
 #    -e USERNAME=root \
 #    -e PASSWORD=XXXXXXXXXXXXXXX \
-#    -v /home/kanos/workspace/system/Python-Prj:/base \
+#    -v /home/kanos/workspace/data/code/Python-Prj:/base \
 #    --restart unless-stopped \
 #    spider \
 #    bash -c "service cron start;tail -f /dev/null"
