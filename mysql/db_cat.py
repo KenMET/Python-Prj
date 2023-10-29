@@ -18,7 +18,7 @@ DB_URL = 'mysql+pymysql://{}:{}@{}:{}/{}?charset=utf8'.format(USERNAME,PASSWORD,
 engine = create_engine(DB_URL)
 
 Base = declarative_base() 
-
+'''
 class CatSurvey(Base):
     __tablename__ = 'cat_survey'
     # Primary key
@@ -49,10 +49,11 @@ class CatSurvey(Base):
     ShareSize = Column(Text, nullable=True)
     TargetTrack = Column(Text, nullable=True)
     Reserve = Column(Text, nullable=True)
-
+'''
 class catdb(object):
     def __init__(self) -> None:
         self.session = None
+        self.cat_survey_class = None
         self.cat_net_class = {}
         self.cat_net_rt_class = {}
         self.cat_holding_class = {}
@@ -70,7 +71,9 @@ class catdb(object):
         mySession = sessionmaker(bind=engine) 
         self.session = mySession()
 
-    def get_dict_from_obj(self, obj):
+    def get_dict_from_obj(self, obj=None):
+        if (obj == None):
+            return None
         temp = {}
         #attr = [a for a in dir(obj) if not a.startswith('_') and not callable(getattr(obj, a))]
         #print ('********************************************')
@@ -84,13 +87,49 @@ class catdb(object):
             temp.update({a:getattr(obj, a)})
         return temp
 
-    def get_obj_from_dict(self, cat_dict, obj=CatSurvey()): 
+    def get_obj_from_dict(self, cat_dict, obj=None): 
+        if (obj == None):
+            return None
         for a in cat_dict:
             try:
                 setattr(obj, a, cat_dict[a])
             except:
                 print ('[%s]:%s'%(a, cat_dict[a]))
         return obj
+
+    def create_cat_survey_class(self):
+        if self.cat_survey_class == None:
+            new_class = type('CatSurvey', (Base, ), dict(
+                __tablename__ = 'cat_survey',
+                ID = Column(String(255), primary_key=True),
+                Name = Column(Text, nullable=True),
+                Type = Column(Text, nullable=True),
+                AssetSize = Column(Text, nullable=True),
+                Custodian = Column(Text, nullable=True),
+                DividendPolicy = Column(Text, nullable=True),
+                EstablishmentDate_Size = Column(Text, nullable=True),
+                EstablishmentDividend = Column(Text, nullable=True),
+                HostingFees = Column(Text, nullable=True),
+                InvestmentObjectives = Column(Text, nullable=True),
+                InvestmentPhilosophy = Column(Text, nullable=True),
+                InvestmentScope = Column(Text, nullable=True),
+                InvestmentStrategy = Column(Text, nullable=True),
+                ManagementFeeRate = Column(Text, nullable=True),
+                Manager = Column(Text, nullable=True),
+                ManagerPerson = Column(Text, nullable=True),
+                MaximumApplyRate = Column(Text, nullable=True),
+                MaximumRedemptionRate = Column(Text, nullable=True),
+                MaximumSubscriptionRate = Column(Text, nullable=True),
+                PerformanceComparisonBase = Column(Text, nullable=True),
+                PublishDate = Column(Text, nullable=True),
+                RiskReturnCharacteristics = Column(Text, nullable=True),
+                SalesServiceRate = Column(Text, nullable=True),
+                ShareSize = Column(Text, nullable=True),
+                TargetTrack = Column(Text, nullable=True),
+                Reserve = Column(Text, nullable=True),
+            ))
+            self.cat_survey_class = new_class
+        return self.cat_survey_class
 
     def create_cat_net_class(self, cat_id):
         if cat_id not in self.cat_net_class:
@@ -186,6 +225,7 @@ class catdb(object):
     def queryCatAll(self):
         if self.session is None:
             self.connectdb()
+        CatSurvey = self.create_cat_survey_class()
         result = self.session.query(CatSurvey).all() 
         try:
             self.session.commit()
@@ -197,6 +237,7 @@ class catdb(object):
     def queryCatByID(self, ID):
         if self.session is None:
             self.connectdb()
+        CatSurvey = self.create_cat_survey_class()
         result = self.session.query(CatSurvey).filter(CatSurvey.ID == ID).all()
         try:
             self.session.commit()
@@ -309,6 +350,7 @@ class catdb(object):
         if self.session is None:
             self.connectdb()
         if (self.countCatByID(ID) > 0):
+            CatSurvey = self.create_cat_survey_class()
             self.session.query(CatSurvey).filter(CatSurvey.ID == ID).update(cat_dict)
             try:
                 self.session.commit()
@@ -372,8 +414,11 @@ class catdb(object):
             self.connectdb()
         if (self.countCatByID(cat_dict['ID']) > 0):
             return False
+        CatSurvey = self.create_cat_survey_class()
         cat = CatSurvey()
         cat = self.get_obj_from_dict(cat_dict, cat)
+        if cat == None:
+            return False
         try:
             self.session.add(cat)
             self.session.commit()
@@ -390,6 +435,8 @@ class catdb(object):
         CatHolding = self.create_cat_holding_class(cat_id)
         cat = CatHolding()
         cat = self.get_obj_from_dict(cat_dict, cat)
+        if cat == None:
+            return False
         try:
             self.session.add(cat)
             self.session.commit()
@@ -406,6 +453,8 @@ class catdb(object):
         CatNet = self.create_cat_net_class(cat_id)
         cat = CatNet()
         cat = self.get_obj_from_dict(cat_dict, cat)
+        if cat == None:
+            return False
         try:
             self.session.add(cat)
             self.session.commit()
@@ -422,6 +471,8 @@ class catdb(object):
         CatNet = self.create_cat_net_rt_class(cat_id)
         cat = CatNet()
         cat = self.get_obj_from_dict(cat_dict, cat)
+        if cat == None:
+            return False
         try:
             self.session.add(cat)
             self.session.commit()
@@ -435,6 +486,7 @@ class catdb(object):
             self.connectdb()
         if ID is None or len(ID.strip()) == 0:
             return None
+        CatSurvey = self.create_cat_survey_class()
         result = self.session.query(CatSurvey).filter(CatSurvey.ID == ID).delete(synchronize_session=False) 
         self.session.flush()
         try:
@@ -458,6 +510,41 @@ class catdb(object):
             return []
         else:
             return result
+
+    def create_survey_table(self):
+        meta = MetaData()
+        table_name = Table(
+            'cat_survey', meta,
+            # Primary key
+            Column('ID', String(255), primary_key=True),
+            # Other keys
+            Column('Name', Text, nullable=True),
+            Column('Type', Text, nullable=True),
+            Column('AssetSize', Text, nullable=True),
+            Column('Custodian', Text, nullable=True),
+            Column('DividendPolicy', Text, nullable=True),
+            Column('EstablishmentDate_Size', Text, nullable=True),
+            Column('EstablishmentDividend', Text, nullable=True),
+            Column('HostingFees', Text, nullable=True),
+            Column('InvestmentObjectives', Text, nullable=True),
+            Column('InvestmentPhilosophy', Text, nullable=True),
+            Column('InvestmentScope', Text, nullable=True),
+            Column('InvestmentStrategy', Text, nullable=True),
+            Column('ManagementFeeRate', Text, nullable=True),
+            Column('Manager', Text, nullable=True),
+            Column('ManagerPerson', Text, nullable=True),
+            Column('MaximumApplyRate', Text, nullable=True),
+            Column('MaximumRedemptionRate', Text, nullable=True),
+            Column('MaximumSubscriptionRate', Text, nullable=True),
+            Column('PerformanceComparisonBase', Text, nullable=True),
+            Column('PublishDate', Text, nullable=True),
+            Column('RiskReturnCharacteristics', Text, nullable=True),
+            Column('SalesServiceRate', Text, nullable=True),
+            Column('ShareSize', Text, nullable=True),
+            Column('TargetTrack', Text, nullable=True),
+            Column('Reserve', Text, nullable=True),
+        )
+        meta.create_all(engine)
 
     def create_net_rt_table(self, table_name):
         meta = MetaData()

@@ -32,7 +32,9 @@ def update(logger):
     tables = db.queryTable()
 
     for cat_index in cat_list:
-        temp_dict = srq.request_base(cat_index)
+        temp_dict = srq.request_cat_survey(cat_index)
+        if ("cat_survey" not in tables):
+            db.create_survey_table(net_table_name)
         flag = db.insertCatSurvey(temp_dict)
         if (not flag):
             id = temp_dict['ID']
@@ -53,7 +55,7 @@ def update(logger):
             delta_days = int((date_now - date_est).days * 5 / 7)
             net_count = delta_days
             logger.info('Create table[%s]'%(net_table_name))
-        temp_list = srq.request_net(cat_index, net_count)
+        temp_list = srq.request_net_history(cat_index, net_count)
         logger.info('Table[%s] insert net [%d] row'%(net_table_name, len(temp_list)))
         for net_index in temp_list:
             logger.info('Table[%s] update net:%s'%(net_table_name, str(net_index)))
@@ -99,4 +101,7 @@ if __name__ == '__main__':
     fh.setFormatter(formatter)
     logger.addHandler(fh)
     logger.info('Logger Creat Success')
+    #logger.debug("this is debug") # Enable to modify fh.setLevel(logging.INFO) to logging.DEDBUG
+    #logger.warning("this is warning")
+    #logging.error("this is error")
     update(logger)

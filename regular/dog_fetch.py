@@ -48,9 +48,16 @@ def update(logger):
     for cat_index in cat_list:
         dog_temp_list = db.queryCatHoldingByQuarter(cat_index, get_last_quarter())
         for index in dog_temp_list:
-            dog_code_list.append(index.DogCodeQuarter[index.DogCodeQuarter.find(':')+1:])
+            dog_id = index.DogCodeQuarter[index.DogCodeQuarter.find(':')+1:]
+            if (dog_id not in dog_code_list):
+                dog_code_list.append(dog_id)
     db.closeSession()
 
+    dog_extra_list = cfg_dict.get('dog_list', {}).get('id', [])
+    for dog_extra_index in dog_extra_list:
+        if (dog_extra_index not in dog_code_list):
+            dog_code_list.append(dog_extra_index)
+ 
     db = cbd.dogdb()
     tables = db.queryTable()
     for dog_index in dog_code_list:
@@ -58,7 +65,7 @@ def update(logger):
         if (dog_table_name not in tables):
             db.create_money_flow_table(dog_table_name)
             logger.info('Create table[%s]'%(dog_table_name))
-        temp_list = srq.request_money_flows(dog_index)
+        temp_list = srq.request_dog_money_flows(dog_index)
         logger.info('Table[%s] insert net [%d] row'%(dog_table_name, len(temp_list)))
         for money_flow_index in temp_list:
             #logger.info('Table[%s] update net:%s'%(dog_table_name, str(money_flow_index)))
@@ -82,4 +89,7 @@ if __name__ == '__main__':
     fh.setFormatter(formatter)
     logger.addHandler(fh)
     logger.info('Logger Creat Success')
+    #logger.debug("this is debug") # Enable to modify fh.setLevel(logging.INFO) to logging.DEDBUG
+    #logger.warning("this is warning")
+    #logging.error("this is error")
     update(logger)

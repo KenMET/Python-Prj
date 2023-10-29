@@ -12,4 +12,33 @@
 		<id>015945</id>
 		<id>011840</id>
     </cat_list>
+	<dog_list>
+        <id>002935</id>
+		<id>002261</id>
+		<id>300750</id>
+		<id>603893</id>
+		<id>002594</id>
+		<id>600584</id>
+		<id>600183</id>
+		<id>688981</id>
+		<id>300458</id>
+		<id>300552</id>
+		<id>002869</id>
+		<id>000901</id>
+		<id>002977</id>
+		<id>002338</id>
+		<id>600600</id>
+		<id>000729</id>
+		<id>600754</id>
+		<id>600809</id>
+		<id>000568</id>
+		<id>600859</id>
+		<id>600519</id>
+		<id>000858</id>
+		<id>600085</id>
+		<id>600196</id>
+		<id>688026</id>
+    </dog_list>
+	<news_config>
+	</news_config>
 </contents>

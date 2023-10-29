@@ -80,7 +80,7 @@ def update_cat(logger):
         elif (ret == 2):
             break
         for cat_index in cat_list:
-            temp_dict = srq.request_daily2(cat_index)
+            temp_dict = srq.request_daily_growth(cat_index)
 
             net_table_name = 'cat_net_rt_%s'%(cat_index)
             if (net_table_name not in tables):
