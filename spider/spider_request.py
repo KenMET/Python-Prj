@@ -278,8 +278,9 @@ def request_top_news(count):
     return temp_list
 
 def request_top_news_content(url):
-    if (url.find('stock.eastmoney.com') >= 0):
+    if (url.find('stock.eastmoney.com') >= 0 or url.find('futures.eastmoney.com') >= 0):
         url = url.replace('stock.eastmoney.com', 'finance.eastmoney.com')
+        url = url.replace('futures.eastmoney.com', 'finance.eastmoney.com')
     header = {'Accept': 'text/html',
               'Accept-Encoding': 'gzip, deflate',
               'Accept-Language': 'zh-CN,zh;q=0.9',
