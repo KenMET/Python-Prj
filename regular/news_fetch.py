@@ -34,7 +34,7 @@ def main(logger):
     if 'top_news' not in tables:
         db.create_top_news_table()
 
-    news_list = srq.request_top_news(60)
+    news_list = srq.request_top_news(100)
     for new_index in news_list:
         time.sleep(1)
         news_full_dict = {}
@@ -45,7 +45,8 @@ def main(logger):
             bark_obj = notify.bark()
             flag = bark_obj.send_title_content('Spider Top News', 'Content fetch failed[%s]'%(news_full_dict['Title']))
             logger.info('Content fetch failed[bark:%s]:%s, title:%s'%(str(flag), news_full_dict['Url'], news_full_dict['Title']))
-        news_full_dict.update({'OriginContent':content})
+        else:
+            news_full_dict.update({'OriginContent':content})
         flag = db.insertTopNews(news_full_dict)
         logger.info('insert[%s], [%s]Title:%s'%(str(flag), news_full_dict['Time'], news_full_dict['Title']))
 

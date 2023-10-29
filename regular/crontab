@@ -1,7 +1,10 @@
 # Run every 8 hours
 0 */8 * * * nvidia-docker exec spider /bin/bash -c "python3 /base/regular/cat_fetch.py"
 10 */8 * * * nvidia-docker exec spider /bin/bash -c "python3 /base/regular/dog_fetch.py"
+# Run every day at 05:20:00
 20 5 * * * nvidia-docker exec spider /bin/bash -c "python3 /base/regular/sanity.py"
+# Run every half hour
+*/30 * * * * nvidia-docker exec spider /bin/bash -c "python3 /base/regular/news_fetch.py"
 # Run every day at 9:15
 #15 9 * * * docker exec spider /bin/bash -c "python3 /base/regular/cat_day_growth.py"
 
