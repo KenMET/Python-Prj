@@ -22,7 +22,21 @@ import xml_operator as xo
 import spider_request as srq
 import notification as notify
 
-# '161725'
+
+def insert_content(db, logger, news_dict):
+    news_full_dict = {}
+    news_full_dict.update(news_dict)
+    news_url = news_full_dict['Url']
+    content = srq.request_top_news_content(news_url)
+    if (content == ""):
+        bark_obj = notify.bark()
+        flag = bark_obj.send_title_content('Spider Top News', 'Content fetch failed[%s]'%(news_full_dict['Title']))
+        logger.info('Content fetch failed[bark:%s]:%s, title:%s'%(str(flag), news_full_dict['Url'], news_full_dict['Title']))
+    else:
+        news_full_dict.update({'OriginContent':content})
+    flag = db.insertTopNews(news_full_dict)
+    logger.info('insert[%s], [%s]Title:%s'%(str(flag), news_full_dict['Time'], news_full_dict['Title']))
+
 def main(logger):
     file_name = '%s/config.xml'%(py_dir)
     cfg = xo.operator(file_name)
@@ -37,18 +51,20 @@ def main(logger):
     news_list = srq.request_top_news(100)
     for new_index in news_list:
         time.sleep(1)
-        news_full_dict = {}
-        news_full_dict.update(new_index)
-        news_url = news_full_dict['Url']
-        content = srq.request_top_news_content(news_url)
-        if (content == ""):
-            bark_obj = notify.bark()
-            flag = bark_obj.send_title_content('Spider Top News', 'Content fetch failed[%s]'%(news_full_dict['Title']))
-            logger.info('Content fetch failed[bark:%s]:%s, title:%s'%(str(flag), news_full_dict['Url'], news_full_dict['Title']))
-        else:
-            news_full_dict.update({'OriginContent':content})
-        flag = db.insertTopNews(news_full_dict)
-        logger.info('insert[%s], [%s]Title:%s'%(str(flag), news_full_dict['Time'], news_full_dict['Title']))
+        insert_content(db, logger, new_index)
+
+def update_failed_news(logger):
+    db = cbn.newsdb()
+    tables = db.queryTable()
+    if 'top_news' not in tables:
+        db.create_top_news_table()
+
+    temp_list = db.queryTopNewsNoneContent()
+    for index in temp_list:
+        time.sleep(1)
+        new_index = db.get_dict_from_obj(index)
+        new_index.update({'Time':str(new_index['Time'])})
+        insert_content(db, logger, new_index)
 
 if __name__ == '__main__':
     logger = logging.getLogger()
@@ -64,3 +80,8 @@ if __name__ == '__main__':
     #logger.warning("this is warning")
     #logging.error("this is error")
     main(logger)
+    #update_failed_news(logger)
+    #url = 'http://stock.eastmoney.com/a/202310302887417614.html'
+    #content = srq.request_top_news_content(url)
+    #print (content)
+

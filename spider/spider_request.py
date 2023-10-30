@@ -281,11 +281,14 @@ def request_top_news_content(url):
     if (url.find('stock.eastmoney.com') >= 0 or url.find('futures.eastmoney.com') >= 0):
         url = url.replace('stock.eastmoney.com', 'finance.eastmoney.com')
         url = url.replace('futures.eastmoney.com', 'finance.eastmoney.com')
+    if (url.find('fund.eastmoney.com') >= 0):
+        url = url.replace('http://', 'https://')
     header = {'Accept': 'text/html',
               'Accept-Encoding': 'gzip, deflate',
               'Accept-Language': 'zh-CN,zh;q=0.9',
               'Connection': 'keep-alive',
-              'Host': url[:url.find('.com')+4].replace('http://', ''),
+              'Host': 'finance.eastmoney.com',
+              #'Host': url[:url.find('.com')+4].replace('http://', ''),
               #'Referer': 'https://roll.eastmoney.com/',
               'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
                       'AppleWebKit/537.36 (KHTML, like Gecko) '
@@ -293,8 +296,14 @@ def request_top_news_content(url):
     response = requests.get(url=url, headers=header)
     response.encoding = 'utf-8'
     if (response.status_code != 200):
-        print ('Request[%s] error:[%d]'%(url, response.status_code))
-        return ""
+        print ('Request http failed[%s] error:[%d], retry https'%(url, response.status_code))
+        url = url.replace('http://', 'https://')
+        response = requests.get(url=url, headers=header)
+        response.encoding = 'utf-8'
+        if (response.status_code != 200): 
+            print ('Request https still failed[%s] error:[%d]'%(url, response.status_code))
+            return ""
+
     soup = BeautifulSoup(response.text, 'html.parser')
     content_div = soup.find('div', {"id":'ContentBody'})
     p = content_div.find_all('p')
@@ -304,6 +313,11 @@ def request_top_news_content(url):
         if (line_str == None or len(line_str.strip()) == 0):
             continue
         content += line_str.strip() + '; '
+
+    if (len(content.strip()) == 0):
+        #print ('using content_div.text')
+        return content_div.text.strip()
+
     return content
 
 def request_cat_news(code):

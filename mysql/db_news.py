@@ -130,6 +130,18 @@ class newsdb(object):
         else:
             return result
 
+    def queryTopNewsNoneContent(self):
+        if self.session is None:
+            self.connectdb()
+        NewsTop = self.create_top_news_class()
+        result = self.session.query(NewsTop).filter(NewsTop.OriginContent == None).all()
+        try:
+            self.session.commit()
+        except:
+            return []
+        else:
+            return result
+
     def insertTopNews(self, news_dict):
         if self.session is None:
             self.connectdb()
