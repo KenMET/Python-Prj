@@ -281,13 +281,15 @@ def request_top_news_content(url):
     if (url.find('stock.eastmoney.com') >= 0 or url.find('futures.eastmoney.com') >= 0):
         url = url.replace('stock.eastmoney.com', 'finance.eastmoney.com')
         url = url.replace('futures.eastmoney.com', 'finance.eastmoney.com')
+    host = 'finance.eastmoney.com'
     if (url.find('fund.eastmoney.com') >= 0):
         url = url.replace('http://', 'https://')
+        host = 'fund.eastmoney.com'
     header = {'Accept': 'text/html',
               'Accept-Encoding': 'gzip, deflate',
               'Accept-Language': 'zh-CN,zh;q=0.9',
               'Connection': 'keep-alive',
-              'Host': 'finance.eastmoney.com',
+              'Host': host,
               #'Host': url[:url.find('.com')+4].replace('http://', ''),
               #'Referer': 'https://roll.eastmoney.com/',
               'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
