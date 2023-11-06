@@ -1,7 +1,7 @@
 import sqlalchemy
 from sqlalchemy import create_engine, MetaData, Table, text
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, String, DATETIME, Text, VARCHAR
+from sqlalchemy import Column, Integer, String, DATETIME, Text, VARCHAR, JSON
 from sqlalchemy.orm import sessionmaker, relationship
 import pymysql
 import datetime
@@ -23,6 +23,7 @@ class dogdb(object):
     def __init__(self) -> None:
         self.session = None
         self.dog_money_flow_class = {}
+        self.dog_lable_class = None
 
     def openSession(self):
         if self.session is None: 
@@ -59,6 +60,15 @@ class dogdb(object):
                 print ('[%s]:%s'%(a, dog_dict[a]))
         return obj
 
+    def queryTable(self):
+        with engine.connect() as conn:
+            table_list = []
+            result = conn.execute(text("show tables"))
+            for index in result:
+                table_list.append(index[0])
+            return table_list
+
+################### Dog Money Part Start #############################
     def create_dog_money_flow_class(self, dog_id):
         if dog_id not in self.dog_money_flow_class:
             new_class = type('DogMoneyFlow%s'%(dog_id), (Base, ), dict(
@@ -79,6 +89,40 @@ class dogdb(object):
             ))
             self.dog_money_flow_class.update({dog_id:new_class})
         return self.dog_money_flow_class[dog_id]
+
+    def create_money_flow_table(self, table_name):
+        meta = MetaData()
+        table_name = Table(
+            table_name, meta,
+            # Primary key
+            Column('Date', DATETIME, primary_key=True),
+            # Other keys
+            Column('CloseValue', Text, nullable=True),
+            Column('CloseRate', Text, nullable=True),
+            Column('MainIn', Text, nullable=True),
+            Column('MainPer', Text, nullable=True),
+            Column('BigPlusIn', Text, nullable=True),
+            Column('BigPlusPer', Text, nullable=True),
+            Column('BigIn', Text, nullable=True),
+            Column('BigPer', Text, nullable=True),
+            Column('MiddIn', Text, nullable=True),
+            Column('MiddPer', Text, nullable=True),
+            Column('LittleIn', Text, nullable=True),
+            Column('LittlePer', Text, nullable=True),
+        )
+        meta.create_all(engine)
+
+    def queryDogMoneyFlowAll(self, dog_id):
+        if self.session is None:
+            self.connectdb()
+        DogMoneyFlow = self.create_dog_money_flow_class(dog_id)
+        result = self.session.query(DogMoneyFlow).all()
+        try:
+            self.session.commit()
+        except:
+            return []
+        else:
+            return result
 
     def queryLastDogMoneyFlow(self, dog_id):
         if self.session is None:
@@ -142,36 +186,94 @@ class dogdb(object):
         else:
             return True
 
-    def create_money_flow_table(self, table_name):
+################### Dog Money Part End ###############################
+################### Dog Money Part Start #############################
+    def create_dog_lable_class(self):
+        if self.dog_lable_class == None:
+            new_class = type('DogLables', (Base, ), dict(
+                __tablename__ = 'dog_lables',
+                ID = Column(String(255), primary_key=True),
+                BestAction = Column(JSON, nullable=True),
+                Reserve = Column(Text, nullable=True),
+            ))
+            self.dog_lable_class = new_class
+        return self.dog_lable_class
+
+    def create_lable_table(self):
         meta = MetaData()
         table_name = Table(
-            table_name, meta,
+            'dog_lables', meta,
             # Primary key
-            Column('Date', DATETIME, primary_key=True),
+            Column('ID', String(255), primary_key=True),
             # Other keys
-            Column('CloseValue', Text, nullable=True),
-            Column('CloseRate', Text, nullable=True),
-            Column('MainIn', Text, nullable=True),
-            Column('MainPer', Text, nullable=True),
-            Column('BigPlusIn', Text, nullable=True),
-            Column('BigPlusPer', Text, nullable=True),
-            Column('BigIn', Text, nullable=True),
-            Column('BigPer', Text, nullable=True),
-            Column('MiddIn', Text, nullable=True),
-            Column('MiddPer', Text, nullable=True),
-            Column('LittleIn', Text, nullable=True),
-            Column('LittlePer', Text, nullable=True),
+            Column('BestAction', JSON, nullable=True),
+            Column('Reserve', Text, nullable=True),
         )
         meta.create_all(engine)
 
-    def queryTable(self):
-        with engine.connect() as conn:
-            table_list = []
-            result = conn.execute(text("show tables"))
-            for index in result:
-                table_list.append(index[0])
-            return table_list
+    def queryDogLablesAll(self):
+        if self.session is None:
+            self.connectdb()
+        DogLables = self.create_dog_lable_class()
+        result = self.session.query(DogLables).all()
+        try:
+            self.session.commit()
+        except:
+            return []
+        else:
+            return result
 
+    def queryDogLablesById(self, dog_id):
+        if self.session is None:
+            self.connectdb()
+        DogLables = self.create_dog_lable_class()
+        result = self.session.query(DogLables).filter(DogLables.ID == dog_id).all()
+        try:
+            self.session.commit()
+        except:
+            return []
+        else:
+            return result
+
+    def countDogLablesById(self, dog_id):
+        ret = self.queryDogLablesById(dog_id)
+        count = 0
+        for index in ret:
+            count += 1
+        return count
+
+    def updateDogLablesByID(self, dog_id, dog_lables_dict):
+        if self.session is None:
+            self.connectdb()
+        if (self.countDogLablesById(dog_id) == 1):
+            DogLables = self.create_dog_lable_class()
+            self.session.query(DogLables).filter(DogLables.id == dog_id).update(dog_lables_dict)
+            try:
+                self.session.commit()
+            except:
+                return False
+            else:
+                return True
+        else:
+            return self.insertDogLables(dog_id, dog_lables_dict)
+
+    def insertDogLables(self, dog_id, dog_lables_dict):
+        if self.session is None:
+            self.connectdb()
+        if (self.countDogLablesById(dog_id) == 1):
+            return False
+        DogLables = self.create_dog_lable_class()
+        dog = DogLables()
+        dog = self.get_obj_from_dict(dog_lables_dict, dog)
+        try:
+            self.session.add(dog)
+            self.session.commit()
+        except:
+            return False
+        else:
+            return True
+
+################### Dog Lables Part End ###############################
 
 if __name__ == '__main__':
     db = dogdb()

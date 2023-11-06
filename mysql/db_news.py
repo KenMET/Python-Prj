@@ -130,11 +130,35 @@ class newsdb(object):
         else:
             return result
 
+    def queryTopNewsByTitleSimilar(self, similar_title):
+        if self.session is None:
+            self.connectdb()
+        NewsTop = self.create_top_news_class()
+        result = self.session.query(NewsTop).filter(NewsTop.Title.like('%{0}%'.format(similar_title))).all()
+        try:
+            self.session.commit()
+        except:
+            return []
+        else:
+            return result
+
     def queryTopNewsNoneContent(self):
         if self.session is None:
             self.connectdb()
         NewsTop = self.create_top_news_class()
         result = self.session.query(NewsTop).filter(NewsTop.OriginContent == None).all()
+        try:
+            self.session.commit()
+        except:
+            return []
+        else:
+            return result
+
+    def queryLastNew(self):
+        if self.session is None:
+            self.connectdb()
+        NewsTop = self.create_top_news_class()
+        result = self.session.query(NewsTop).order_by(sqlalchemy.desc(NewsTop.Time)).first()
         try:
             self.session.commit()
         except:
@@ -167,6 +191,20 @@ class newsdb(object):
         else:
             return True
 
+    def deleteNewsByTitle(self, title):
+        if self.session is None:
+            self.connectdb()
+        if title is None or len(title.strip()) == 0:
+            return None
+        NewsTop = self.create_top_news_class()
+        result = self.session.query(NewsTop).filter(NewsTop.Title == title).delete(synchronize_session=False) 
+        self.session.flush()
+        try:
+            self.session.commit()
+        except:
+            return False
+        else:
+            return True
 
 '''
     def queryNewsByDate(self, date):
@@ -215,18 +253,4 @@ class newsdb(object):
         else:
             return True
 
-    def deleteNewsByName(self, ID):
-        if self.session is None:
-            self.connectdb()
-        if ID is None or len(ID.strip()) == 0:
-            return None
-        CatSurvey = self.create_cat_survey_class()
-        result = self.session.query(CatSurvey).filter(CatSurvey.ID == ID).delete(synchronize_session=False) 
-        self.session.flush()
-        try:
-            self.session.commit()
-        except:
-            return []
-        else:
-            return result
 '''

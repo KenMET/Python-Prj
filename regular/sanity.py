@@ -18,6 +18,7 @@ sys.path.append(r'%s/../common_api/xml_operator'%(py_dir))
 import mail
 import db_cat as cbc
 import db_dog as cbd
+import db_news as cbn
 import xml_operator as xo
 import spider_request as srq
 import notification as notify
@@ -42,56 +43,67 @@ def cat_survey(logger, db, table_name):
     for index in ret:
         temp_dict = db.get_dict_from_obj(index)
         #print (temp_dict)
-    return True, None
+    return True
 
 def cat_net_rt(logger, db, table_name):
     ret = db.queryLastCatRT(table_name.replace('cat_net_rt_', ''))
     temp_dict = db.get_dict_from_obj(ret)
     NetValueTime = temp_dict.get('NetValueTime')
     if NetValueTime == None:
-        return False, "%s [NetValueTime] return None"%(table_name)
+        logger.info("%s [NetValueTime] return None"%(table_name))
+        return False
     else:
         if type(NetValueTime) != datetime.date:
-            return False, "table_name [NetValueTime] type incorrect[%s]"%(str(type(NetValueTime)))
+            logger.info("%s [NetValueTime] type incorrect[%s]"%(table_name, str(type(NetValueTime))))
+            return False
     del temp_dict['NetValueTime']
     del temp_dict['Reserve']
     for number_index in temp_dict:
         number_str = temp_dict.get(number_index)
         if number_str == None:
-            return False, "%s [%s] return None"%(table_name, number_index)
+            logger.info("%s [%s] return None"%(table_name, number_index))
+            return False
         if (number_str.find('(') > 0):
             number_str = number_str[:number_str.find('(')]
         if (not is_number(number_str.replace('%', '').replace(',', ''))):
-            return False, "%s [%s] is not a number[%s]"%(table_name, number_index, number_str)
-    return True, None
+            logger.info("%s [%s] is not a number[%s]"%(table_name, number_index, number_str))
+            return False
+    return True
 
 def cat_holding(logger, db, table_name):
     ret = db.queryLastCatHolding(table_name.replace('cat_holding_', ''))
     temp_dict = db.get_dict_from_obj(ret)
     DogCodeQuarter = temp_dict.get('DogCodeQuarter')
     if DogCodeQuarter == None:
-        return False, "%s [DogCodeQuarter] return None"%(table_name)
+        logger.info("%s [DogCodeQuarter] return None"%(table_name))
+        return False
     else:
         if type(DogCodeQuarter) != type('string'):
-            return False, "table_name [NetValueTime] type incorrect[%s]"%(str(type(DogCodeQuarter)))
+            logger.info("%s [NetValueTime] type incorrect[%s]"%(table_name, str(type(DogCodeQuarter))))
+            return False
         if (len(DogCodeQuarter) != len('2015-09-30:300017')):
-            return False, "table_name [DogCodeQuarter] length incorrect[%s]"%(str(len(DogCodeQuarter)))
+            logger.info("%s [DogCodeQuarter] length incorrect[%s]"%(table_name, str(len(DogCodeQuarter))))
+            return False
     del temp_dict['DogCodeQuarter']
     DogName = temp_dict.get('DogName')
     if DogName == None:
-        return False, "%s [DogName] return None"%(table_name)
+        logger.info("%s [DogName] return None"%(table_name))
+        return False
     else:
         if type(DogCodeQuarter) != type('string'):
-            return False, "table_name [DogName] type incorrect[%s]"%(str(type(DogCodeQuarter)))
+            logger.info("%s [DogName] type incorrect[%s]"%(table_name, str(type(DogCodeQuarter))))
+            return False
     del temp_dict['DogName']
     for number_index in temp_dict:
         number_str = temp_dict.get(number_index)
         if number_str == None:
-            return False, "%s [%s] return None"%(table_name, number_index)
+            logger.info("%s [%s] return None"%(table_name, number_index))
+            return False
         if (number_str.find('(') > 0):
             number_str = number_str[:number_str.find('(')]
         if (not is_number(number_str.replace('%', '').replace(',', ''))):
-            return False, "%s [%s] is not a number[%s]"%(table_name, number_index, number_str)
+            logger.info("%s [%s] is not a number[%s]"%(table_name, number_index, number_str))
+            return False
     return True, None
 
 def cat_net(logger, db, table_name):
@@ -99,123 +111,149 @@ def cat_net(logger, db, table_name):
     temp_dict = db.get_dict_from_obj(ret)
     NetValueDate = temp_dict.get('NetValueDate')
     if NetValueDate == None:
-        return False, "%s [NetValueDate] return None"%(table_name)
+        logger.info("%s [NetValueDate] return None"%(table_name))
+        return False
     else:
         if type(NetValueDate) != datetime.date:
-            return False, "table_name [NetValueDate] type incorrect[%s]"%(str(type(NetValueDate)))
+            logger.info("table_name [NetValueDate] type incorrect[%s]"%(str(type(NetValueDate))))
+            return False
     del temp_dict['NetValueDate']
     SubscriptionStatus = temp_dict.get('SubscriptionStatus')
     if SubscriptionStatus == None:
-        return False, "%s [SubscriptionStatus] return None"%(table_name)
+        logger.info("%s [SubscriptionStatus] return None"%(table_name))
+        return False
     else:
         if type(SubscriptionStatus) != type('string'):
-            return False, "table_name [SubscriptionStatus] type incorrect[%s]"%(str(type(SubscriptionStatus)))
+            logger.info("table_name [SubscriptionStatus] type incorrect[%s]"%(str(type(SubscriptionStatus))))
+            return False
     del temp_dict['SubscriptionStatus']
     RedemptionStatus = temp_dict.get('RedemptionStatus')
     if RedemptionStatus == None:
-        return False, "%s [RedemptionStatus] return None"%(table_name)
+        logger.info("%s [RedemptionStatus] return None"%(table_name))
+        return False
     else:
         if type(RedemptionStatus) != type('string'):
-            return False, "table_name [RedemptionStatus] type incorrect[%s]"%(str(type(RedemptionStatus)))
+            logger.info("table_name [RedemptionStatus] type incorrect[%s]"%(str(type(RedemptionStatus))))
+            return False
     del temp_dict['RedemptionStatus']
     del temp_dict['DividendsSending']
     del temp_dict['Reserve']
     for number_index in temp_dict:
         number_str = temp_dict.get(number_index)
         if number_str == None:
-            return False, "%s [%s] return None"%(table_name, number_index)
+            logger.info("%s [%s] return None"%(table_name, number_index))
+            return False
         if (number_str.find('(') > 0):
             number_str = number_str[:number_str.find('(')]
         if (not is_number(number_str.replace('%', '').replace(',', ''))):
-            return False, "%s [%s] is not a number[%s]"%(table_name, number_index, number_str)
-    return True, None
-
-def cat_sanity(logger):
-    db = cbc.catdb()
-    tables = db.queryTable()
-    for table_index in tables:
-        if (table_index.find('survey') > 0):
-            flag, error = cat_survey(logger, db, table_index)
-            if (not flag):
-                return flag, error
-        elif (table_index.find('net_rt') > 0 and is_number(table_index.replace('cat_net_rt_', ''))):
-            flag, error = cat_net_rt(logger, db, table_index)
-            if (not flag):
-                return flag, error
-        elif (table_index.find('holding') > 0):
-            flag, error = cat_holding(logger, db, table_index)
-            if (not flag):
-                return flag, error
-        elif (table_index.find('net') > 0 and is_number(table_index.replace('cat_net_', ''))):
-            flag, error = cat_net(logger, db, table_index)
-            if (not flag):
-                return flag, error
-    return True, None
+            logger.info("%s [%s] is not a number[%s]"%(table_name, number_index, number_str))
+            return False
+    return True
 
 def dog_money_flow(logger, db, table_name):
     ret = db.queryLastDogMoneyFlow(table_name.replace('dog_money_flow_', ''))
     temp_dict = db.get_dict_from_obj(ret)
     Date = temp_dict.get('Date')
     if Date == None:
-        return False, "%s [Date] return None"%(table_name)
+        logger.info("%s [Date] return None"%(table_name))
+        return False
     else:
         if type(Date) != datetime.datetime:
-            return False, "table_name [Date] type incorrect[%s]"%(str(type(Date)))
+            logger.info("%s [Date] type incorrect[%s]"%(table_name, str(type(Date))))
+            return False
     del temp_dict['Date']
     for number_index in temp_dict:
         number_str = temp_dict.get(number_index)
         if number_str == None:
-            return False, "%s [%s] return None"%(table_name, number_index)
+            logger.info("%s [%s] return None"%(table_name, number_index))
+            return False
         if (not is_number(number_str)):
-            return False, "%s [%s] is not a number[%s]"%(table_name, number_index, number_str)
-    return True, None
+            logger.info("%s [%s] is not a number[%s]"%(table_name, number_index, number_str))
+            return False
+    return True
+
+def top_news(logger, db):
+    ret = db.queryLastNew()
+    temp_dict = db.get_dict_from_obj(ret)
+    Time = temp_dict.get('Time')
+    if Time == None:
+        logger.info("Top_news [Time] return None")
+        return False, "Top_news [Time] return None"
+    else:
+        if type(Time) != datetime.datetime:
+            logger.info("[Time] type incorrect[%s]"%(str(type(Time))))
+            return False, "[Time] type incorrect[%s]"%(str(type(Time)))
+        if (datetime.datetime.now()-Time) > datetime.timedelta(days=1):
+            logger.info("[Time] latest update over 1 day"%(str(type(Time))))
+            return False, "[Time] latest update over 1 day"%(str(type(Time)))
+    return True, ''
+
+def cat_sanity(logger):
+    db = cbc.catdb()
+    tables = db.queryTable()
+    for table_index in tables:
+        if (table_index.find('survey') >= 0):
+            flag = cat_survey(logger, db, table_index)
+            if (not flag):
+                return flag, 'CatSurvey Sanity failed'
+        elif (table_index.find('net_rt') >= 0 and is_number(table_index.replace('cat_net_rt_', ''))):
+            flag = cat_net_rt(logger, db, table_index)
+            if (not flag):
+                return flag, 'Cat[%s] Sanity failed'%(table_index)
+        elif (table_index.find('holding') >= 0):
+            flag = cat_holding(logger, db, table_index)
+            if (not flag):
+                return flag, 'Cat[%s] Sanity failed'%(table_index)
+        elif (table_index.find('net') >= 0 and is_number(table_index.replace('cat_net_', ''))):
+            flag = cat_net(logger, db, table_index)
+            if (not flag):
+                return flag, 'Cat[%s] Sanity failed'%(table_index)
+    return True, ''
 
 def dog_sanity(logger):
     db = cbd.dogdb()
     tables = db.queryTable()
+    for table_index in tables:
+        if (table_index.find('money_flow') >= 0):
+            flag = dog_money_flow(logger, db, table_index)
+            if (not flag):
+                return flag, 'Dog[%s] Sanity failed'%(table_index)
+    return True, ''
+
+def news_sanity(logger):
+    db = cbn.newsdb()
     tables = db.queryTable()
     for table_index in tables:
-        if (table_index.find('money_flow') > 0):
-            flag, error = dog_money_flow(logger, db, table_index)
+        if (table_index.find('top_news') >= 0):
+            flag, error = top_news(logger, db)
             if (not flag):
-                return flag, error
-    return True, None
-
+                return flag, 'TopNews Sanity failed:%s'%(error)
+    return True, ''
 
 def main(logger):
-    flag, error = cat_sanity(logger)
-    notification_flag = False
     content = ''
+    flag, error = cat_sanity(logger)
     if (not flag):
-        logger.info('Cat Database sanity failed!')
-        logger.info(error)
-        content = 'Cat Database sanity failed! Failed reason:\n'+error+'\n'
-        notification_flag = True
+        content += error + '\n'
     else:
         logger.info('Cat Database sanity pass!')
+
     flag, error = dog_sanity(logger)
     if (not flag):
-        logger.info('Dog Database sanity failed!')
-        logger.info(error)
-        content += 'Dog Database sanity failed! Failed reason:\n'+error+'\n'
-        notification_flag = True
+        content += error + '\n'
     else:
         logger.info('Dog Database sanity pass!')
 
-    if (notification_flag):
-        #mail_obj = mail.mail()
-        #subject = 'This is KenStation Database Sanity email'
-        #content_type = 'plain' # or 'html'
-        #mail_obj.set_content('ken_processor@outlook.com', subject, content, content_type)
-        #flag = mail_obj.send()
-        #logger.info('Mail Send Result[%s]'%(str(flag)))
+    flag, error = news_sanity(logger)
+    if (not flag):
+        content += error + '\n'
+    else:
+        logger.info('News Database sanity pass!')
 
-        bark_obj = notify.bark()
-        flag = bark_obj.send_title_content('Spider Sanity', content)
-        logger.info('Bark Notification Result[%s]'%(str(flag)))
-
+    if (len(content) == 0):
+        content = 'All database works normal. ^_^ '
     bark_obj = notify.bark()
-    flag = bark_obj.send_title_content('Spider Sanity', 'All database works normal')
+    flag = bark_obj.send_title_content('Spider Sanity', content)
     logger.info('Bark Notification Result[%s]'%(str(flag)))
 
 if __name__ == '__main__':

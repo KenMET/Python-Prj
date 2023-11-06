@@ -22,6 +22,12 @@ import xml_operator as xo
 import spider_request as srq
 import notification as notify
 
+title_skip = [
+    '新发公告',
+    '发行结果',
+    '盘中播报',
+    '调研快报',
+]
 
 def insert_content(db, logger, news_dict):
     news_full_dict = {}
@@ -48,8 +54,15 @@ def main(logger):
     if 'top_news' not in tables:
         db.create_top_news_table()
 
+    title_skip = news_config_dict.get('skip_title', {}).get('text', [])
     news_list = srq.request_top_news(100)
     for new_index in news_list:
+        title = new_index.get('Title', '')
+        if (title == ''):
+            continue
+        for index in title_skip:
+            if (index in title):
+                continue
         time.sleep(1)
         insert_content(db, logger, new_index)
 
@@ -66,6 +79,25 @@ def update_failed_news(logger):
         new_index.update({'Time':str(new_index['Time'])})
         insert_content(db, logger, new_index)
 
+def remove_old_skip_news(logger):
+    file_name = '%s/config.xml'%(py_dir)
+    cfg = xo.operator(file_name)
+    cfg_dict = cfg.walk_node(cfg.root_node)
+    news_config_dict = cfg_dict.get('news_config', {})
+
+    db = cbn.newsdb()
+    tables = db.queryTable()
+    if 'top_news' not in tables:
+        db.create_top_news_table()
+
+    title_skip = news_config_dict.get('skip_title', {}).get('text', [])
+    for index in title_skip:
+        temp_list = db.queryTopNewsByTitleSimilar(index)
+        for skip_index in temp_list:
+            skip_item = db.get_dict_from_obj(skip_index)
+            db.deleteNewsByTitle(skip_item.get('Title', None))
+            print (skip_item.get('Title', None))
+
 if __name__ == '__main__':
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
@@ -80,6 +112,7 @@ if __name__ == '__main__':
     #logger.warning("this is warning")
     #logging.error("this is error")
     main(logger)
+    #remove_old_skip_news(logger)
     #update_failed_news(logger)
     #url = 'http://stock.eastmoney.com/a/202310302887417614.html'
     #content = srq.request_top_news_content(url)

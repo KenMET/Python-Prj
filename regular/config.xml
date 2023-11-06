@@ -40,5 +40,32 @@
 		<id>688026</id>
     </dog_list>
 	<news_config>
+		<skip_title>
+			<text>新发公告</text>
+			<text>发行结果</text>
+			<text>调研快报</text>
+			<text>加速下跌</text>
+			<text>快速反弹</text>
+			<text>快速回调</text>
+			<text>快速上涨</text>
+			<text>盘中</text>
+			<text>跌幅</text>
+			<text>涨停</text>
+			<text>跌停</text>
+			<text>龙虎榜</text>
+			<text>涨停板</text>
+			<text>回购股份</text>
+			<text>回购股票</text>
+			<text>回购公司股份</text>
+			<text>中签号码</text>
+			<text>鸣锣上市</text>
+			<text>股东户数</text>
+			<text>新股</text>
+			<text>业绩说明</text>
+			<text>设立全资子公司</text>
+			<text>评级</text>
+			<text>主力资金</text>
+			<text>交易异动</text>
+		</skip_title>
 	</news_config>
 </contents>
