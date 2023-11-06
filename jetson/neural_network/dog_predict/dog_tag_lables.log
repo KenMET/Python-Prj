@@ -1,0 +1,5 @@
+2023-11-05 16:11:04,233 - dog_tag_lables.py[line:53] - INFO: Logger Creat Success
+2023-11-05 16:11:04,247 - dog_tag_lables.py[line:67] - INFO: Dog table count: 126
+2023-11-05 16:11:04,266 - dog_tag_lables.py[line:78] - INFO: Cannot found dog lables: 000568, Start saving the growing
+2023-11-05 16:11:04,539 - category.py[line:225] - INFO: Using categorical units to plot a list of strings that are all parsable as floats or dates. If these strings should be plotted as numbers, cast to the appropriate data type before plotting.
+2023-11-05 16:11:04,548 - category.py[line:225] - INFO: Using categorical units to plot a list of strings that are all parsable as floats or dates. If these strings should be plotted as numbers, cast to the appropriate data type before plotting.

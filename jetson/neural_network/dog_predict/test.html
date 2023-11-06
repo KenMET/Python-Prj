@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>股票数据曲线图</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div style="width: 80%; margin: auto;">
+        <canvas id="stockChart"></canvas>
+    </div>
+    <script>
+        // 示例股票数据
+        var dates = ["2023-01-01", "2023-01-02", "2023-01-03", "2023-01-04", "2023-01-05"];
+        var marketValues = [100, 120, 90, 110, 130];
+
+        // 创建股票数据曲线图
+        var ctx = document.getElementById('stockChart').getContext('2d');
+        var stockChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: dates,
+                datasets: [{
+                    label: '市值',
+                    data: marketValues,
+                    borderColor: 'blue',
+                    borderWidth: 2,
+                    fill: false,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: [{
+                        ticks: {
+                            maxRotation: 0,
+                            minRotation: 0
+                        }
+                    }],
+                    y: [{
+                        ticks: {
+                            beginAtZero: true
+                        }
+                    }]
+                },
+                tooltips: {
+                    enabled: true,
+                    mode: 'index',
+                    intersect: false,
+                    callbacks: {
+                        label: function (tooltipItem, data) {
+                            var date = data.labels[tooltipItem.index];
+                            var marketValue = data.datasets[tooltipItem.datasetIndex].data[tooltipItem.index];
+                            return date + ': ￥' + marketValue;
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
