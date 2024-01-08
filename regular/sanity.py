@@ -10,12 +10,10 @@ import threading, multiprocessing, subprocess
 py_dir = os.path.dirname(os.path.realpath(__file__))
 py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
 sys.path.append(r'%s/'%(py_dir))
-sys.path.append(r'%s/../mail'%(py_dir))
 sys.path.append(r'%s/../mysql'%(py_dir))
 sys.path.append(r'%s/../spider'%(py_dir))
 sys.path.append(r'%s/../notification'%(py_dir))
 sys.path.append(r'%s/../common_api/xml_operator'%(py_dir))
-import mail
 import db_cat as cbc
 import db_dog as cbd
 import db_news as cbn
@@ -184,8 +182,8 @@ def top_news(logger, db):
             logger.info("[Time] type incorrect[%s]"%(str(type(Time))))
             return False, "[Time] type incorrect[%s]"%(str(type(Time)))
         if (datetime.datetime.now()-Time) > datetime.timedelta(days=1):
-            logger.info("[Time] latest update over 1 day"%(str(type(Time))))
-            return False, "[Time] latest update over 1 day"%(str(type(Time)))
+            logger.info("[Time] latest update over 1 day [%s]"%(str(type(Time))))
+            return False, "[Time] latest update over 1 day [%s]"%(str(type(Time)))
     return True, ''
 
 def cat_sanity(logger):

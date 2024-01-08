@@ -11,11 +11,9 @@ import threading, multiprocessing, subprocess
 py_dir = os.path.dirname(os.path.realpath(__file__))
 py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
 sys.path.append(r'%s/'%(py_dir))
-sys.path.append(r'%s/../mail'%(py_dir))
 sys.path.append(r'%s/../mysql'%(py_dir))
 sys.path.append(r'%s/../spider'%(py_dir))
 sys.path.append(r'%s/../common_api/xml_operator'%(py_dir))
-import mail
 import db_cat as cbc
 import xml_operator as xo
 import spider_request as srq
