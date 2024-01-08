@@ -19,6 +19,16 @@ from CubeNanoLib import CubeNano
 
 line_str = ['None', 'None', 'None', 'None']
 
+def is_night_time():
+    current_time = datetime.datetime.now().time()
+
+    night_start = datetime.time(21, 0)  # 20:00
+    night_end = datetime.time(8, 0)     # 8:00
+
+    if night_start <= current_time or current_time < night_end:
+        return True
+    else:
+        return False
 
 # Read the CPU usage rate
 def getCPULoadRate(index):
@@ -127,6 +137,10 @@ def oled_flash(oled, scroll_speed=0):
     line_scroll_cnt = [0, 0, 0, 0]
     while True:
         oled.clear()
+        if (is_night_time()):
+            oled.refresh()
+            time.sleep(60 * 5)
+            continue
         for line_index in range(4):
             line_str = get_line_string(line_index)
             if (len(line_str) > char2scroll):
@@ -141,18 +155,26 @@ def oled_flash(oled, scroll_speed=0):
         oled.refresh()
         time.sleep(scroll_speed)
 
+
+
+
 def oled_thread(logger, i2c_bus):
     oled = Yahboom_OLED(i2c_bus=7, clear=True)
     oled.begin()
     threading.Thread(target=oled_flash, args=(oled, 0.05)).start()
     while True:
-        set_line_string(0, 'Welcome to Jetson(' + getLocalIP() + ")")
-        set_line_string(1, getCPULoadRate(4) + '   ' + getUsagedRAM())
-        set_line_string(2, getUsagedDisk())
-        set_line_string(3, "Time:" + getSystemTime())
-        time.sleep(1)
+        if (is_night_time()):
+            time.sleep(60 * 5)  # 5 min to re-check
+        else:
+            set_line_string(0, 'Welcome to Jetson(' + getLocalIP() + ")")
+            set_line_string(1, getCPULoadRate(4) + '   ' + getUsagedRAM())
+            set_line_string(2, getUsagedDisk())
+            set_line_string(3, "Time:" + getSystemTime())
+            time.sleep(1)
 
 def main(logger):
+    bot = CubeNano(i2c_bus=7)
+    bot.set_RGB_Effect(0) 
     oled_t = threading.Thread(target=oled_thread, args=(logger, 7, ))
     oled_t.start()
     oled_t.join()
