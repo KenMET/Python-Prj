@@ -32,7 +32,7 @@ def update(logger):
     for cat_index in cat_list:
         temp_dict = srq.request_cat_survey(cat_index)
         if ("cat_survey" not in tables):
-            db.create_survey_table(net_table_name)
+            db.create_survey_table()
         flag = db.insertCatSurvey(temp_dict)
         if (not flag):
             id = temp_dict['ID']
