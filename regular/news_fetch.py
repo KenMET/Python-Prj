@@ -61,7 +61,7 @@ def main(logger):
         if (title == ''):
             continue
         for index in title_skip:
-            if (index in title):
+            if (title.find(index) >= 0):
                 continue
         time.sleep(1)
         insert_content(db, logger, new_index)
@@ -96,7 +96,7 @@ def remove_old_skip_news(logger):
         for skip_index in temp_list:
             skip_item = db.get_dict_from_obj(skip_index)
             db.deleteNewsByTitle(skip_item.get('Title', None))
-            print (skip_item.get('Title', None))
+            logger.info('Skip:' + skip_item.get('Title', None))
 
 if __name__ == '__main__':
     logger = logging.getLogger()
