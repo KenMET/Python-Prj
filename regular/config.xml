@@ -38,15 +38,15 @@
         <id>600085</id>
         <id>600196</id>
         <id>688026</id>
-		<id>513850</id>
-		<id>513520</id>
-		<id>159518</id>
-		<id>513500</id>
-		<id>159655</id>
-		<id>159509</id>
-		<id>159632</id>
-		<id>513870</id>
-		<id>159995</id>
+        <id>513850</id>
+        <id>513520</id>
+        <id>159518</id>
+        <id>513500</id>
+        <id>159655</id>
+        <id>159509</id>
+        <id>159632</id>
+        <id>513870</id>
+        <id>159995</id>
     </dog_list>
     <news_config>
         <skip_title>
@@ -61,7 +61,8 @@
             <text>跌幅</text>
             <text>涨停</text>
             <text>跌停</text>
-            <text>龙虎榜</text>
+            <text>快报</text>
+            <text>虎榜</text>
             <text>涨停板</text>
             <text>回购股份</text>
             <text>回购股票</text>
@@ -75,6 +76,7 @@
             <text>评级</text>
             <text>主力资金</text>
             <text>交易异动</text>
+            <text>利润分配股权</text>
         </skip_title>
     </news_config>
 </contents>

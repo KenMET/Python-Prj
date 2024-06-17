@@ -122,7 +122,7 @@ def request_net_history(code, days):
     response = requests.get(url=url2, headers=header)
     response.encoding = 'utf-8'
     if (response.status_code != 200):
-        print ('Request Net error:[%d]'%(response.status_code))
+        print ('Request Net History error:[%s][%d]'%(code, response.status_code))
         return []
     data_full = response.text
     data_json = data_full[data_full.find('(')+1 : data_full.rfind(')')]  # remove head, the rest is the json data
@@ -148,7 +148,7 @@ def request_holdings(code, year):
     response = requests.get(url=url1, headers=header)
     response.encoding = 'utf-8'
     if (response.status_code != 200):
-        print ('Request Net error:[%d]'%(response.status_code))
+        print ('Request Holdings error:[%s][%d]'%(code, response.status_code))
         return []
     data_full = response.text
     data_json = data_full.replace('var apidata={ content:"', '').replace('', '')
@@ -214,7 +214,7 @@ def request_dog_money_flows(code):
     response = requests.get(url=url1, headers=header)
     response.encoding = 'utf-8'
     if (response.status_code != 200):
-        print ('Request Net error:[%d]'%(response.status_code))
+        print ('Request Dog Flows stage-1 error:[%s][%d]'%(code, response.status_code))
         return []
     main_data = json.loads(response.text).get('data')
     if main_data == None:
@@ -222,7 +222,7 @@ def request_dog_money_flows(code):
         response = requests.get(url=url1.replace('secid=0', 'secid=1'), headers=header)
         response.encoding = 'utf-8'
         if (response.status_code != 200):
-            print ('Request Net error:[%d]'%(response.status_code))
+            print ('Request Dog Flows stage-2 error:[%s][%d]'%(code, response.status_code))
             return []
         main_data = json.loads(response.text).get('data')
         if main_data == None:
@@ -269,7 +269,8 @@ def request_top_news(count):
         response = requests.get(url=url1, headers=header)
         response.encoding = 'utf-8'
         if (response.status_code != 200):
-            print ('Request Net error:[%d]'%(response.status_code))
+            print ('Request Top News error:[%d][%d]'%(count, response.status_code))
+            
             return []
         news_list = json.loads(response.text)
         for index in news_list:

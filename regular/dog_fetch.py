@@ -1,23 +1,26 @@
-import hashlib
-import os, sys
+#!/bin/python3
+
+# System lib
+import os
+import sys
 import json
+import random
 import logging
-import tempfile
-import optparse
+import hashlib
 import datetime, time
-import threading, multiprocessing, subprocess
 
-
+# Customsized lib
 py_dir = os.path.dirname(os.path.realpath(__file__))
 py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
 sys.path.append(r'%s/'%(py_dir))
 sys.path.append(r'%s/../mysql'%(py_dir))
+import db_cat as dbc
+import db_dog as dbd
 sys.path.append(r'%s/../spider'%(py_dir))
-sys.path.append(r'%s/../common_api/xml_operator'%(py_dir))
-import db_cat as cbc
-import db_dog as cbd
-import xml_operator as xo
 import spider_request as srq
+sys.path.append(r'%s/../common_api/xml_operator'%(py_dir))
+import xml_operator as xo
+import db_cat as dbc
 
 def get_last_quarter():
     date_now = datetime.datetime.now()
@@ -39,7 +42,7 @@ def update(logger):
     cfg = xo.operator(file_name)
     cfg_dict = cfg.walk_node(cfg.root_node)
     cat_list = cfg_dict.get('cat_list', {}).get('id', [])
-    db = cbc.catdb()
+    db = dbc.catdb('kanos_cat')
     tables = db.queryTable()
 
     dog_code_list = []
@@ -56,7 +59,7 @@ def update(logger):
         if (dog_extra_index not in dog_code_list):
             dog_code_list.append(dog_extra_index)
  
-    db = cbd.dogdb()
+    db = dbd.dogdb('kanos_dog')
     tables = db.queryTable()
     for dog_index in dog_code_list:
         dog_table_name = 'dog_money_flow_%s'%(dog_index)
@@ -74,7 +77,8 @@ def update(logger):
                 if (not flag):
                     logger.info ('[Error] - CatNet update failed')
             time.sleep(0.1)
-        time.sleep(5)
+
+        time.sleep(round(random.uniform(1, 5), 1)) # 1s - 5s, keep 1 float, such as 1.6 and 2.8
     db.closeSession()
 
 if __name__ == '__main__':

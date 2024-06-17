@@ -1,23 +1,24 @@
-import hashlib
-import os, sys
+#!/bin/python3
+
+# System lib
+import os
+import sys
 import json
+import random
 import logging
-import tempfile
-import optparse
+import hashlib
 import datetime, time
-import threading, multiprocessing, subprocess
 
-
+# Customsized lib
 py_dir = os.path.dirname(os.path.realpath(__file__))
 py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
 sys.path.append(r'%s/'%(py_dir))
 sys.path.append(r'%s/../mysql'%(py_dir))
+import db_cat as dbc
 sys.path.append(r'%s/../spider'%(py_dir))
-sys.path.append(r'%s/../common_api/xml_operator'%(py_dir))
-import db_cat as cbc
-import xml_operator as xo
 import spider_request as srq
-
+sys.path.append(r'%s/../common_api/xml_operator'%(py_dir))
+import xml_operator as xo
 
 def update(logger):
     file_name = '%s/config.xml'%(py_dir)
@@ -26,7 +27,7 @@ def update(logger):
     cat_list = cfg_dict.get('cat_list', {}).get('id', [])
     if type(cat_list) == type(''):
         cat_list = [cat_list, ]
-    db = cbc.catdb()
+    db = dbc.catdb('kanos_cat')
     tables = db.queryTable()
 
     for cat_index in cat_list:

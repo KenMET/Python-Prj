@@ -1,80 +1,19 @@
-import sqlalchemy
-from sqlalchemy import create_engine, MetaData, Table, text
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, String, DATETIME, Text, VARCHAR, DATE
-from sqlalchemy.orm import sessionmaker, relationship
-import pymysql
-import datetime
-from pathlib import Path
-import os
-import time
+#!/bin/python3
 
-HOSTNAME = os.environ['HOSTNAME']
-DATABASE = 'kanos_news'
-PORT = int(os.environ['PORT'])
-USERNAME = os.environ['USERNAME']
-PASSWORD = os.environ['PASSWORD']
-DB_URL = 'mysql+pymysql://{}:{}@{}:{}/{}?charset=utf8'.format(USERNAME,PASSWORD,HOSTNAME,PORT,DATABASE)
-engine = create_engine(DB_URL)
+# System lib
+import os, sys
+import time, datetime
+from sqlalchemy import Column, Integer, String, DATETIME, DATE, Text, VARCHAR, JSON
 
-Base = declarative_base() 
+# Customsized lib
+import db_base as dbb
 
-class newsdb(object):
-    def __init__(self) -> None:
-        self.session = None
-        self.top_news_class = None
-
-    def openSession(self):
-        if self.session is None: 
-            self.connectdb()
-        return self.session
-
-    def closeSession(self):
-        if self.session is None:
-            self.session.close()
-
-    def connectdb(self):
-        mySession = sessionmaker(bind=engine) 
-        self.session = mySession()
-
-    def get_dict_from_obj(self, obj=None):
-        if (obj == None):
-            return None
-        temp = {}
-        #attr = [a for a in dir(obj) if not a.startswith('_') and not callable(getattr(obj, a))]
-        #print ('********************************************')
-        #for a in attr:
-        #    print (a, getattr(obj, a), type(getattr(obj, a)))
-        attr = [a for a in dir(obj) if not a.startswith('_') and not callable(getattr(obj, a)) and 
-                (type(getattr(obj, a)) == type('strings') or
-                type(getattr(obj, a)) == datetime.datetime or 
-                type(getattr(obj, a)) == datetime.date)]
-        for a in attr:
-            temp.update({a:getattr(obj, a)})
-        return temp
-
-    def get_obj_from_dict(self, cat_dict, obj=None): 
-        if (obj == None):
-            return None
-        for a in cat_dict:
-            try:
-                setattr(obj, a, cat_dict[a])
-            except:
-                print ('[%s]:%s'%(a, cat_dict[a]))
-        return obj
-
-    def queryTable(self):
-        with engine.connect() as conn:
-            table_list = []
-            result = conn.execute(text("show tables"))
-            for index in result:
-                table_list.append(index[0])
-            return table_list
-
+class newsdb(dbb.basedb):
     def create_top_news_class(self):
-        if self.top_news_class == None:
-            new_class = type('NewsTop', (Base, ), dict(
-                __tablename__ = 'top_news',
+        table_name = 'top_news'
+        if table_name not in self.db_class:
+            new_class = type('NewsTop', (self.Base, ), dict(
+                __tablename__ = table_name,
                 Title = Column(String(255), primary_key=True),
                 Type = Column(Text, nullable=True),
                 Time = Column(DATETIME, nullable=True),
@@ -85,8 +24,8 @@ class newsdb(object):
                 OriginContent = Column(Text, nullable=True),
                 Reserve = Column(Text, nullable=True),
             ))
-            self.top_news_class = new_class
-        return self.top_news_class
+            self.db_class.update({table_name:new_class})
+        return self.db_class[table_name]
 
     def create_top_news_table(self):
         meta = MetaData()
@@ -104,7 +43,7 @@ class newsdb(object):
             Column('OriginContent', Text, nullable=True),
             Column('Reserve', Text, nullable=True),
         )
-        meta.create_all(engine)
+        meta.create_all(self.engine)
 
     def queryTopNewsAll(self):
         if self.session is None:

@@ -1,26 +1,26 @@
-import hashlib
-import os, sys
+#!/bin/python3
+
+# System lib
+import os
+import sys
 import json
+import random
 import logging
-import tempfile
-import optparse
+import hashlib
 import datetime, time
-import threading, multiprocessing, subprocess
 
-
+# Customsized lib
 py_dir = os.path.dirname(os.path.realpath(__file__))
 py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
 sys.path.append(r'%s/'%(py_dir))
-sys.path.append(r'%s/../mail'%(py_dir))
 sys.path.append(r'%s/../mysql'%(py_dir))
+import db_news as dbn
 sys.path.append(r'%s/../spider'%(py_dir))
-sys.path.append(r'%s/../notification'%(py_dir))
-sys.path.append(r'%s/../common_api/xml_operator'%(py_dir))
-
-import db_news as cbn
-import xml_operator as xo
 import spider_request as srq
+sys.path.append(r'%s/../notification'%(py_dir))
 import notification as notify
+sys.path.append(r'%s/../common_api/xml_operator'%(py_dir))
+import xml_operator as xo
 
 title_skip = [
     '新发公告',
@@ -49,7 +49,7 @@ def main(logger):
     cfg_dict = cfg.walk_node(cfg.root_node)
     news_config_dict = cfg_dict.get('news_config', {})
 
-    db = cbn.newsdb()
+    db = dbn.newsdb('kanos_news')
     tables = db.queryTable()
     if 'top_news' not in tables:
         db.create_top_news_table()
@@ -60,14 +60,16 @@ def main(logger):
         title = new_index.get('Title', '')
         if (title == ''):
             continue
+        logger.info('Checking Title:%s'%(title))
         for index in title_skip:
             if (title.find(index) >= 0):
                 continue
         time.sleep(1)
+        logger.info('Starting Insert Title:%s'%(title))
         insert_content(db, logger, new_index)
 
 def update_failed_news(logger):
-    db = cbn.newsdb()
+    db = dbn.newsdb('kanos_news')
     tables = db.queryTable()
     if 'top_news' not in tables:
         db.create_top_news_table()
@@ -85,7 +87,7 @@ def remove_old_skip_news(logger):
     cfg_dict = cfg.walk_node(cfg.root_node)
     news_config_dict = cfg_dict.get('news_config', {})
 
-    db = cbn.newsdb()
+    db = dbn.newsdb('kanos_news')
     tables = db.queryTable()
     if 'top_news' not in tables:
         db.create_top_news_table()

@@ -11,15 +11,15 @@ py_dir = os.path.dirname(os.path.realpath(__file__))
 py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
 sys.path.append(r'%s/'%(py_dir))
 sys.path.append(r'%s/../mysql'%(py_dir))
+import db_cat as dbc
+import db_dog as dbd
+import db_news as dbn
 sys.path.append(r'%s/../spider'%(py_dir))
-sys.path.append(r'%s/../notification'%(py_dir))
-sys.path.append(r'%s/../common_api/xml_operator'%(py_dir))
-import db_cat as cbc
-import db_dog as cbd
-import db_news as cbn
-import xml_operator as xo
 import spider_request as srq
+sys.path.append(r'%s/../notification'%(py_dir))
 import notification as notify
+sys.path.append(r'%s/../common_api/xml_operator'%(py_dir))
+import xml_operator as xo
 
 def is_number(s):
     try:
@@ -187,7 +187,7 @@ def top_news(logger, db):
     return True, ''
 
 def cat_sanity(logger):
-    db = cbc.catdb()
+    db = dbc.catdb('kanos_cat')
     tables = db.queryTable()
     for table_index in tables:
         if (table_index.find('survey') >= 0):
@@ -209,7 +209,7 @@ def cat_sanity(logger):
     return True, ''
 
 def dog_sanity(logger):
-    db = cbd.dogdb()
+    db = dbd.dogdb('kanos_dog')
     tables = db.queryTable()
     for table_index in tables:
         if (table_index.find('money_flow') >= 0):
@@ -219,7 +219,7 @@ def dog_sanity(logger):
     return True, ''
 
 def news_sanity(logger):
-    db = cbn.newsdb()
+    db = dbn.newsdb('kanos_news')
     tables = db.queryTable()
     for table_index in tables:
         if (table_index.find('top_news') >= 0):

@@ -18,9 +18,9 @@ py_dir = os.path.dirname(os.path.realpath(__file__))
 py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
 sys.path.append(r'%s/'%(py_dir))
 sys.path.append(r'%s/../mysql'%(py_dir))
-import db_cat as cbc
-import db_dog as cbd
-import db_peak as cbp
+import db_cat as dbc
+import db_dog as dbd
+import db_peak as dbp
 sys.path.append(r'%s/../common_api/xml_operator'%(py_dir))
 import xml_operator as xo
 
@@ -74,7 +74,7 @@ def paint_data(dog_code, origin_data, h_label, padding_data=[]):
     fig.savefig('plot_peaks_%s.png'%(dog_code), facecolor='white')
 
 def get_dog_origin(code, all_date=False):
-    db = cbd.dogdb()
+    db = dbd.dogdb('kanos_dog')
 
     dog_data = []
     dog_objs = db.queryDogMoneyFlowAll(code)
@@ -119,8 +119,8 @@ def get_peaks(data, method=0):
         bottom_peaks = scipy.signal.find_peaks_cwt(flipped_curve, widths, window_size=window_size)
         sorted_peaks = np.sort(np.concatenate((top_peaks, bottom_peaks)))
         for i in range(len(sorted_peaks) - 1):
-            front = sorted_peaks[i]
-            rear = sorted_peaks[i+1]
+            front = int(round(sorted_peaks[i]))     # make sure it is int
+            rear = int(round(sorted_peaks[i+1]))    # make sure it is int
             if (rear - front) < min_distance:
                 front_val = curve[front]
                 rear_val = curve[rear]
@@ -133,7 +133,7 @@ def get_peaks(data, method=0):
     return {'top':top_padding_list, 'bottom':bottom_padding_list}
 
 def main(logger):
-    db = cbp.peakdb()
+    db = dbp.peakdb('kanos_peak')
     tables = db.queryTable()
     if ("dog_peaks" not in tables):
         db.create_peak_table()
@@ -143,7 +143,7 @@ def main(logger):
     cfg = xo.operator(file_name)
     cfg_dict = cfg.walk_node(cfg.root_node)
     cat_list = cfg_dict.get('cat_list', {}).get('id', [])
-    db = cbc.catdb()
+    db = dbc.catdb('kanos_cat')
     dog_code_list = []
     for cat_index in cat_list:
         dog_temp_list = db.queryCatHoldingByQuarter(cat_index, get_last_quarter())
@@ -158,7 +158,7 @@ def main(logger):
         if (dog_extra_index not in dog_code_list):
             dog_code_list.append(dog_extra_index)
  
-    db = cbp.peakdb()
+    db = dbp.peakdb('kanos_peak')
     for code_index in dog_code_list:
         origin_data, date_list = get_dog_origin(code_index)
         padding_dict = get_peaks(origin_data)
