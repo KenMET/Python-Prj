@@ -43,6 +43,7 @@ class basedb(object):
         #    print (a, getattr(obj, a), type(getattr(obj, a)))
         attr = [a for a in dir(obj) if not a.startswith('_') and not callable(getattr(obj, a)) and 
                 (type(getattr(obj, a)) == type('strings') or
+                type(getattr(obj, a)) == type(['list']) or
                 type(getattr(obj, a)) == datetime.datetime or 
                 type(getattr(obj, a)) == datetime.date)]
         for a in attr:

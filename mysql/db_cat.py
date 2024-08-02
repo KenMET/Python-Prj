@@ -3,7 +3,9 @@
 # System lib
 import os, sys
 import time, datetime
+from sqlalchemy import MetaData, Table
 from sqlalchemy import Column, Integer, String, DATETIME, DATE, Text, VARCHAR, JSON
+
 
 # Customsized lib
 import db_base as dbb

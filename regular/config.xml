@@ -11,6 +11,9 @@
         <id>002168</id>
         <id>015945</id>
         <id>011840</id>
+        <id>001102</id>
+        <id>018044</id>
+        <id>007844</id>
     </cat_list>
     <dog_list>
         <id>002935</id>
@@ -47,6 +50,7 @@
         <id>159632</id>
         <id>513870</id>
         <id>159995</id>
+        <id>600938</id>
     </dog_list>
     <news_config>
         <skip_title>

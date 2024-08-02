@@ -73,6 +73,28 @@ def paint_data(dog_code, origin_data, h_label, padding_data=[]):
     plt.title('[%s] Curve Plot'%(dog_code))
     fig.savefig('plot_peaks_%s.png'%(dog_code), facecolor='white')
 
+def get_dog_list():
+    file_name = '%s/config.xml'%(py_dir)
+    cfg = xo.operator(file_name)
+    cfg_dict = cfg.walk_node(cfg.root_node)
+    cat_list = cfg_dict.get('cat_list', {}).get('id', [])
+
+    db = dbc.catdb('kanos_cat')
+    dog_code_list = []
+    for cat_index in cat_list:
+        dog_temp_list = db.queryCatHoldingByQuarter(cat_index, get_last_quarter())
+        for index in dog_temp_list:
+            dog_id = index.DogCodeQuarter[index.DogCodeQuarter.find(':')+1:]
+            if (dog_id not in dog_code_list):
+                dog_code_list.append(dog_id)
+    db.closeSession()
+
+    dog_extra_list = cfg_dict.get('dog_list', {}).get('id', [])
+    for dog_extra_index in dog_extra_list:
+        if (dog_extra_index not in dog_code_list):
+            dog_code_list.append(dog_extra_index)
+    reutrn dog_code_list
+
 def get_dog_origin(code, all_date=False):
     db = dbd.dogdb('kanos_dog')
 
@@ -99,6 +121,16 @@ def get_dog_origin(code, all_date=False):
             origin_data.append([index[1], index[2], index[3], index[4], index[5], index[6]])  
             date_list.append(index[0])      # Date
     return origin_data, date_list
+
+def get_dog_peak(code):
+    db = dbp.peakdb('kanos_peak')
+    origin_obj_list = db.queryDogPeaksByID(code)
+    if (len(origin_obj_list) != 1):
+        return [], []
+    origin_data = db.get_dict_from_obj(origin_obj_list[0])
+    input_data = origin_data.get('Input', [])
+    output_data = origin_data.get('Output', [])
+    return input_data, output_data
 
 def get_peaks(data, method=0):
     # Pre-process
@@ -139,24 +171,7 @@ def main(logger):
         db.create_peak_table()
     # db.closeSession() No need to close due to never open now.
 
-    file_name = '%s/config.xml'%(py_dir)
-    cfg = xo.operator(file_name)
-    cfg_dict = cfg.walk_node(cfg.root_node)
-    cat_list = cfg_dict.get('cat_list', {}).get('id', [])
-    db = dbc.catdb('kanos_cat')
-    dog_code_list = []
-    for cat_index in cat_list:
-        dog_temp_list = db.queryCatHoldingByQuarter(cat_index, get_last_quarter())
-        for index in dog_temp_list:
-            dog_id = index.DogCodeQuarter[index.DogCodeQuarter.find(':')+1:]
-            if (dog_id not in dog_code_list):
-                dog_code_list.append(dog_id)
-    db.closeSession()
-
-    dog_extra_list = cfg_dict.get('dog_list', {}).get('id', [])
-    for dog_extra_index in dog_extra_list:
-        if (dog_extra_index not in dog_code_list):
-            dog_code_list.append(dog_extra_index)
+    dog_code_list = get_dog_list()
  
     db = dbp.peakdb('kanos_peak')
     for code_index in dog_code_list:
