@@ -9,15 +9,16 @@ RUN apt update && \
 	apt install -y tzdata || true && apt install -y tzdata && \
 	apt install -y python3 || true && apt install -y python3 && \
 	apt install -y python3-pip || true && apt install -y python3-pip && \
-	python3 -m pip install sqlalchemy pymysql requests bs4 cryptography && \
-	python3 -m pip install sqlalchemy pymysql requests bs4 cryptography
+	python3 -m pip install sqlalchemy pymysql requests bs4 cryptography numpy matplotlib scipy && \
+	python3 -m pip install sqlalchemy pymysql requests bs4 cryptography numpy matplotlib scipy
+
 
 CMD ["bash"]
 
 #git clone git@github.com:KenMET/Python-Prj.git
 #docker run -itd -v /data:/data --name ubuntu ubuntu:22.04 /usr/bin/init
-#docker exec -it ubuntu /bin/bash
-#docker stop ubuntu; docker rm ubuntu
+#docker exec -it spider /bin/bash
+#docker stop spider; docker rm spider
 #docker build -t spider:latest .
 
 #nvidia-docker run -itd \

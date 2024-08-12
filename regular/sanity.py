@@ -69,11 +69,22 @@ def cat_net_rt(logger, db, table_name):
     return True
 
 def cat_holding(logger, db, table_name):
-    ret = db.queryLastCatHolding(table_name.replace('cat_holding_', ''))
+    file_name = '%s/config.xml'%(py_dir)
+    cfg = xo.operator(file_name)
+    cfg_dict = cfg.walk_node(cfg.root_node)
+    skip_cat_list = cfg_dict.get('sanity_config', {}).get('skip_cat', {}).get('id', [])
+    cat_code = table_name.replace('cat_holding_', '')
+    if cat_code in skip_cat_list:
+        return True
+
+    ret = db.queryLastCatHolding(cat_code)
     temp_dict = db.get_dict_from_obj(ret)
+    if temp_dict == None:
+        logger.info("%s [queryLastCatHolding] return dict None"%(table_name))
+        return False
     DogCodeQuarter = temp_dict.get('DogCodeQuarter')
     if DogCodeQuarter == None:
-        logger.info("%s [DogCodeQuarter] return None"%(table_name))
+        logger.info("%s [DogCodeQuarter] return dict None"%(table_name))
         return False
     else:
         if type(DogCodeQuarter) != type('string'):

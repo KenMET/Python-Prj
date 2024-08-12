@@ -3,7 +3,7 @@
 # System lib
 import os, sys
 import time, datetime
-from sqlalchemy import MetaData, Table
+from sqlalchemy import MetaData, Table, desc
 from sqlalchemy import Column, Integer, String, DATETIME, DATE, Text, VARCHAR, JSON
 
 # Customsized lib
@@ -70,7 +70,7 @@ class dogdb(dbb.basedb):
         if self.session is None:
             self.connectdb()
         DogMoneyFlow = self.create_dog_money_flow_class(dog_id)
-        result = self.session.query(DogMoneyFlow).order_by(sqlalchemy.desc(DogMoneyFlow.Date)).first()
+        result = self.session.query(DogMoneyFlow).order_by(desc(DogMoneyFlow.Date)).first()
         try:
             self.session.commit()
         except:

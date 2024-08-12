@@ -93,7 +93,7 @@ def get_dog_list():
     for dog_extra_index in dog_extra_list:
         if (dog_extra_index not in dog_code_list):
             dog_code_list.append(dog_extra_index)
-    reutrn dog_code_list
+    return dog_code_list
 
 def get_dog_origin(code, all_date=False):
     db = dbd.dogdb('kanos_dog')

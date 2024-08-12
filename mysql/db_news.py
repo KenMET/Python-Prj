@@ -3,7 +3,7 @@
 # System lib
 import os, sys
 import time, datetime
-from sqlalchemy import MetaData, Table
+from sqlalchemy import MetaData, Table, desc
 from sqlalchemy import Column, Integer, String, DATETIME, DATE, Text, VARCHAR, JSON
 
 # Customsized lib
@@ -98,7 +98,7 @@ class newsdb(dbb.basedb):
         if self.session is None:
             self.connectdb()
         NewsTop = self.create_top_news_class()
-        result = self.session.query(NewsTop).order_by(sqlalchemy.desc(NewsTop.Time)).first()
+        result = self.session.query(NewsTop).order_by(desc(NewsTop.Time)).first()
         try:
             self.session.commit()
         except:

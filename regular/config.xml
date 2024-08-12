@@ -52,6 +52,12 @@
         <id>159995</id>
         <id>600938</id>
     </dog_list>
+    <sanity_config>
+        <skip_cat>
+            <id>007844</id>
+            <id>018044</id>
+        </skip_cat>
+    </sanity_config>
     <news_config>
         <skip_title>
             <text>新发公告</text>

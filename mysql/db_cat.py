@@ -3,7 +3,7 @@
 # System lib
 import os, sys
 import time, datetime
-from sqlalchemy import MetaData, Table
+from sqlalchemy import MetaData, Table, desc
 from sqlalchemy import Column, Integer, String, DATETIME, DATE, Text, VARCHAR, JSON
 
 
@@ -185,7 +185,7 @@ class catdb(dbb.basedb):
         if self.session is None:
             self.connectdb()
         CatNet = self.create_cat_net_class(cat_id)
-        result = self.session.query(CatNet).order_by(sqlalchemy.desc(CatNet.NetValueDate)).first()
+        result = self.session.query(CatNet).order_by(desc(CatNet.NetValueDate)).first()
         try:
             self.session.commit()
         except:
@@ -209,7 +209,7 @@ class catdb(dbb.basedb):
         if self.session is None:
             self.connectdb()
         CatHolding = self.create_cat_holding_class(cat_id)
-        result = self.session.query(CatHolding).order_by(sqlalchemy.desc(CatHolding.DogCodeQuarter)).first()
+        result = self.session.query(CatHolding).order_by(desc(CatHolding.DogCodeQuarter)).first()
         try:
             self.session.commit()
         except:
