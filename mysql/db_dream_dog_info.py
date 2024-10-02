@@ -11,9 +11,9 @@ import db_base as dbb
 
 class db(dbb.basedb):
                  
-############# Dog Info US Start ########################
-    def create_dog_us_info_class(self):
-        table_name = 'dog_us_info'
+############# Dog Info Start ########################
+    def create_dog_info_class(self, market):
+        table_name = 'dog_%s_info'%(market)
         if table_name not in self.db_class:
             new_class = type(table_name, (self.Base, ), dict(
                 __tablename__ = table_name,
@@ -28,10 +28,10 @@ class db(dbb.basedb):
             self.db_class.update({table_name:new_class})
         return self.db_class[table_name]
 
-    def create_dog_us_info_table(self):
+    def create_dog_info_table(self, market):
         meta = MetaData()
         tmp = Table(
-            'dog_us_info', meta,
+            'dog_%s_info'%(market), meta,
             # Primary key
             Column('Code', String(255), primary_key=True),
             # Other keys
@@ -44,16 +44,16 @@ class db(dbb.basedb):
         )
         meta.create_all(self.engine)
 
-    def is_table_exist(self):
+    def is_table_exist(self, market):
         tables = self.queryTable()
-        if ('dog_us_info' not in tables):
+        if ('dog_%s_info'%(market) not in tables):
             return False
         return True
 
-    def delete_dog_us_all(self):
+    def delete_dog_all(self, market):
         if self.session is None:
             self.connectdb()
-        dog_info = self.create_dog_us_info_class()
+        dog_info = self.create_dog_info_class(market)
         result = self.session.query(dog_info).delete() 
         try:
             self.session.commit()
@@ -62,10 +62,10 @@ class db(dbb.basedb):
         else:
             return True
 
-    def query_dog_fullcode_by_code(self, dog_code):
+    def query_dog_fullcode_by_code(self, market, dog_code):
         if self.session is None:
             self.connectdb()
-        dog_info = self.create_dog_us_info_class()
+        dog_info = self.create_dog_info_class(market)
         result = self.session.query(dog_info).filter(dog_info.Code.like('%{0}%'.format(dog_code))).all()
         try:
             self.session.commit()
@@ -74,12 +74,12 @@ class db(dbb.basedb):
         else:
             return result
 
-    def insert_dog_us(self, dog_us_dict):
+    def insert_dog(self, market, dog_dict):
         if self.session is None:
             self.connectdb()
-        DogUS = self.create_dog_us_info_class()
-        new = DogUS()
-        new = self.get_obj_from_dict(dog_us_dict, new)
+        Dog = self.create_dog_info_class(market)
+        new = Dog()
+        new = self.get_obj_from_dict(dog_dict, new)
         if new == None:
             return False
         try:
