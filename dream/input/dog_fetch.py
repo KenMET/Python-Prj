@@ -148,7 +148,7 @@ def main():
     dog_list = get_dog_list_from_db()
     dog_list = list(set(dog_list).union(get_dog_list_from_config()))
 
-    db = dbdd.dogdb('dream_dog')
+    db = dbdd.db('dream_dog')
     for dog_index in dog_list:
         if (not db.is_table_exist(dog_index)):      # New a table to insert
             get_logger().info('Dog not exist, new a table...')

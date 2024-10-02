@@ -9,7 +9,7 @@ from sqlalchemy import Column, Integer, String, DATETIME, DATE, Text, VARCHAR, J
 # Customsized lib
 import db_base as dbb
 
-class dogdb(dbb.basedb):
+class db(dbb.basedb):
 
 ############# Dog Market Start ########################
     def create_dog_market_class(self, dog_id):
@@ -102,7 +102,7 @@ class dogdb(dbb.basedb):
         else:
             return result
 
-    def updateDogMoneyFlowByDate(self, dog_id, date, dog_dict):
+    def update_dog_market_by_date(self, dog_id, date, dog_dict):
         if self.session is None:
             self.connectdb()
         if (self.is_date_exist(dog_id, date)):
@@ -115,7 +115,7 @@ class dogdb(dbb.basedb):
             else:
                 return True
         else:
-            return self.insertDogMoneyFlow(dog_id, dog_dict)
+            return self.insert_dog_market(dog_id, dog_dict)
 
     def insert_dog_market(self, dog_id, dog_dict):
         if self.session is None:
