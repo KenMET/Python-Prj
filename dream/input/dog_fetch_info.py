@@ -122,7 +122,6 @@ def main():
         flag = db.insert_dog_us(dog_index)
         if (not flag):
             get_logger().info('US dog insert failed: %s'%(str(dog_index)))
-        time.sleep(0.1)
 
 if __name__ == '__main__':
     main()
