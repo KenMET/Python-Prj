@@ -121,7 +121,7 @@ class db(dbb.basedb):
         if self.session is None:
             self.connectdb()
         if (self.is_date_exist(dog_id, dog_dict['Date'])):      # Skip if exist
-            return False
+            return True
         dog_market = self.create_dog_market_class(dog_id)
         dog = dog_market()
         dog = self.get_obj_from_dict(dog_dict, dog)
