@@ -23,6 +23,7 @@ sys.path.append(r'%s/../../mysql'%(py_dir))
 import db_cat as dbc
 import db_dream_dog as dbdd
 import db_dream_dog_info as dbddi
+import db_dream_secret as dbds
 sys.path.append(r'%s/../../common_api/xml_operator'%(py_dir))
 import xml_operator as xo
 
@@ -195,10 +196,23 @@ def get_dog_us_daily_hist(dog_id, **kwargs):
         except Exception as e:
             return pd.DataFrame()
 
+def quantitative_init(quant_type):
+    db = dbds.db('dream_sentiment')
+    if (not db.is_table_exist()):
+        get_logger().info('Quantitative table not exist, new a table...')
+        db.create_secret_table()
+    res = db.query_secret_by_type(quant_type)
+    if len(res) != 1:
+        return
+    os.environ['LONGPORT_APP_KEY'] = res[0].App_Key
+    os.environ['LONGPORT_APP_SECRET'] = res[0].App_Secret
+    os.environ['LONGPORT_ACCESS_TOKEN'] = res[0].Access_Token
 
 def main(args):
     logger_init()
     get_logger().info('Logger Creat Success')
+
+    quantitative_init(args.quantitative)
 
     dog_list = []
     if (args.market == 'us'):
@@ -260,6 +274,7 @@ if __name__ == '__main__':
     
     # Append arguments
     parser.add_argument('--market', type=str, default='cn_a', help='Now supported: "cn_a"(default),"us"')
+    parser.add_argument('--quantitative', type=str, default='simulation', help='Now supported: "simulation"(default),"formal"')
     
     # 解析命令行参数
     args = parser.parse_args()
