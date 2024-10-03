@@ -145,7 +145,7 @@ def get_dog_cn_a_daily_hist(dog_id, **kwargs):
                 return df
             except Exception as e:
                 get_logger().info('Dog[%s] fetch failed...'%(dog_id))
-                return None
+                return pd.DataFrame()
 
 def get_dog_cn_a_capital_flow(dog_id):
     try:
@@ -158,7 +158,7 @@ def get_dog_cn_a_capital_flow(dog_id):
         return df
     except Exception as e:
         get_logger().info('Dog[%s] capital fetch failed...'%(dog_id))
-        return None
+        return pd.DataFrame()
 
 def get_dog_us_daily_hist(dog_id, **kwargs): 
     try:
@@ -170,7 +170,7 @@ def get_dog_us_daily_hist(dog_id, **kwargs):
         return df
     except Exception as e:
         get_logger().info('Dog[%s] fetch failed...'%(dog_id))
-        return None
+        return pd.DataFrame()
 
 
 def main(args):
@@ -197,10 +197,10 @@ def main(args):
                 df = get_dog_us_daily_hist(dog_full_code)
             elif (args.market == 'cn_a'):
                 df1 = get_dog_cn_a_daily_hist(dog_index)
-                if (df1 == None):
+                if (df1.empty):
                     continue
                 df2 = get_dog_cn_a_capital_flow(dog_index)
-                if (df2 == None):
+                if (df2.empty):
                     df = df1
                 else:
                     df = pd.merge(df1, df2, on='Date', how='left')
@@ -215,10 +215,10 @@ def main(args):
                 df = get_dog_us_daily_hist(dog_full_code, start_date=start_date, end_date=current_date)
             elif (args.market == 'cn_a'):
                 df1 = get_dog_cn_a_daily_hist(dog_index, start_date=start_date, end_date=current_date)
-                if (df1 == None):
+                if (df1.empty):
                     continue
                 df2 = get_dog_cn_a_capital_flow(dog_index)
-                if (df2 == None):
+                if (df2.empty):
                     df = df1
                 else:
                     df = pd.merge(df1, df2, on='Date', how='left')
