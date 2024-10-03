@@ -88,6 +88,19 @@
         <id>BIDU</id>
         <id>PDD</id>
         <id>BILI</id>
+        <id>YANG</id>
+        <id>SPY</id>
+        <id>SPXL</id>
+        <id>XOP</id>
+        <id>TQQQ</id>
+        <id>ARKB</id>
+        <id>DIG</id>
+        <id>SOXL</id>
+        <id>UVIX</id>
+        <id>YINN</id>
+        <id>UBSFY</id>
+        <id>NTDOY</id>
+        <id>XIACY</id>
     </dog_us_list>
     <sanity_config>
         <skip_cat>

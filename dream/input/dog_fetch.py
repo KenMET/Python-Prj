@@ -9,14 +9,16 @@ import logging
 import hashlib
 import argparse
 import datetime, time
+import pandas as pd
+from decimal import Decimal
 
 # Customsized lib
 py_dir = os.path.dirname(os.path.realpath(__file__))
 py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
 sys.path.append(r'%s/'%(py_dir))
-import akshare as ak
 import adata
-import pandas as pd
+import akshare as ak
+import longport.openapi
 sys.path.append(r'%s/../../mysql'%(py_dir))
 import db_cat as dbc
 import db_dream_dog as dbdd
@@ -114,7 +116,7 @@ def get_us_fullcode(dod_id):
     res = db_info.query_dog_fullcode_by_code(args.market, dod_id)
     if len(res) == 0:
         get_logger().error('Dog not found [%s]'%(dod_id))
-        return '' 
+        return dod_id 
     elif len(res) != 1:
         tmp_list = [i.Code for i in res]
         dog_full_code = [item for item in tmp_list if item.endswith('.' + dod_id)][0]
@@ -169,8 +171,29 @@ def get_dog_us_daily_hist(dog_id, **kwargs):
         df.rename(columns={'最低': 'Low', '成交额': 'Amount'}, inplace=True) # Replace title
         return df
     except Exception as e:
-        get_logger().info('Dog[%s] fetch failed...'%(dog_id))
-        return pd.DataFrame()
+        try:
+            get_logger().info('Dog[%s] fetch failed, trying to get from longport...'%(dog_id))
+            quote_ctx = longport.openapi.QuoteContext(longport.openapi.Config.from_env())
+            if 'start_date' in kwargs and 'end_date' in kwargs:
+                start = datetime.datetime.strptime(kwargs['start_date'], '%Y%m%d').date()
+                end = datetime.datetime.strptime(kwargs['end_date'], '%Y%m%d').date()
+                resp = quote_ctx.history_candlesticks_by_date("%s.US"%(dog_id), longport.openapi.Period.Day,
+                    longport.openapi.AdjustType.ForwardAdjust, start = start, end = end)
+            else:
+                resp = quote_ctx.history_candlesticks_by_date("%s.US"%(dog_id), longport.openapi.Period.Day, 
+                    longport.openapi.AdjustType.ForwardAdjust)
+            df_list = []
+            for index in resp:
+                tmp_dict = {
+                    'Date':index.timestamp.date(), 'Amount':str(index.turnover),
+                    'Open':str(index.open), 'Close':str(index.close),
+                    'High':str(index.high),'Low':str(index.low),    
+                }
+                df_list.append(tmp_dict)
+            df = pd.DataFrame(df_list)
+            return df
+        except Exception as e:
+            return pd.DataFrame()
 
 
 def main(args):
@@ -192,9 +215,9 @@ def main(args):
             db.create_dog_market_table(dog_index)
             if (args.market == 'us'):
                 dog_full_code = get_us_fullcode(dog_index)
-                if dog_full_code == '':
-                    continue
                 df = get_dog_us_daily_hist(dog_full_code)
+                if (df.empty):  
+                    continue 
             elif (args.market == 'cn_a'):
                 df1 = get_dog_cn_a_daily_hist(dog_index)
                 if (df1.empty):
@@ -210,9 +233,9 @@ def main(args):
             start_date = (datetime.datetime.now() - datetime.timedelta(days=10)).strftime('%Y%m%d')    # 10 days ago
             if (args.market == 'us'):
                 dog_full_code = get_us_fullcode(dog_index)
-                if dog_full_code == '':
-                    continue
                 df = get_dog_us_daily_hist(dog_full_code, start_date=start_date, end_date=current_date)
+                if (df.empty):  
+                    continue 
             elif (args.market == 'cn_a'):
                 df1 = get_dog_cn_a_daily_hist(dog_index, start_date=start_date, end_date=current_date)
                 if (df1.empty):
