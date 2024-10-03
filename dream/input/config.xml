@@ -15,7 +15,7 @@
         <id>018044</id>
         <id>007844</id>
     </cat_list>
-    <dog_list>
+    <dog_cn_a_list>
         <id>002935</id>
         <id>002261</id>
         <id>300750</id>
@@ -51,7 +51,44 @@
         <id>513870</id>
         <id>159995</id>
         <id>600938</id>
-    </dog_list>
+    </dog_cn_a_list>
+    <dog_us_list>
+        <id>TTWO</id>
+        <id>AAPL</id>
+        <id>TSLA</id>
+        <id>NVDA</id>
+        <id>MSFT</id>
+        <id>GOOG</id>
+        <id>QCOM</id>
+        <id>ARM</id>
+        <id>AMD</id>
+        <id>AMBA</id>
+        <id>RDDT</id>
+        <id>META</id>
+        <id>PYPL</id>
+        <id>AMZN</id>
+        <id>COIN</id>
+        <id>WDC</id>
+        <id>MU</id>
+        <id>INTC</id>
+        <id>TSM</id>
+        <id>TXN</id>
+        <id>NXPI</id>
+        <id>ASML</id>
+        <id>NFLX</id>
+        <id>BSX</id>
+        <id>ORCL</id>
+        <id>MCD</id>
+        <id>GOLD</id>
+        <id>GME</id>
+        <id>SONY</id>
+        <id>JNJ</id>
+        <id>ZH</id>
+        <id>BABA</id>
+        <id>BIDU</id>
+        <id>PDD</id>
+        <id>BILI</id>
+    </dog_us_list>
     <sanity_config>
         <skip_cat>
             <id>007844</id>
