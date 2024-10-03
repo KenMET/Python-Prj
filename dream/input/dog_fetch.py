@@ -148,13 +148,17 @@ def get_dog_cn_a_daily_hist(dog_id, **kwargs):
                 return None
 
 def get_dog_cn_a_capital_flow(dog_id):
-    df = ak.stock_individual_fund_flow(stock=dog_id, market=get_market(dog_id))
-    df.drop(columns=['收盘价', '涨跌幅'], inplace=True)
-    df = df.drop(columns=df.filter(like='净占比').columns)
-    df.rename(columns={'主力净流入-净额': 'Inflow_Main', '超大单净流入-净额': 'Inflow_Max'}, inplace=True) # Replace title
-    df.rename(columns={'大单净流入-净额':'Inflow_Lg', '中单净流入-净额': 'Inflow_Mid'}, inplace=True) # Replace title
-    df.rename(columns={'小单净流入-净额': 'Inflow_Sm', '日期': 'Date'}, inplace=True) # Replace title
-    return df
+    try:
+        df = ak.stock_individual_fund_flow(stock=dog_id, market=get_market(dog_id))
+        df.drop(columns=['收盘价', '涨跌幅'], inplace=True)
+        df = df.drop(columns=df.filter(like='净占比').columns)
+        df.rename(columns={'主力净流入-净额': 'Inflow_Main', '超大单净流入-净额': 'Inflow_Max'}, inplace=True) # Replace title
+        df.rename(columns={'大单净流入-净额':'Inflow_Lg', '中单净流入-净额': 'Inflow_Mid'}, inplace=True) # Replace title
+        df.rename(columns={'小单净流入-净额': 'Inflow_Sm', '日期': 'Date'}, inplace=True) # Replace title
+        return df
+    except Exception as e:
+        get_logger().info('Dog[%s] capital fetch failed...'%(dog_id))
+        return None
 
 def get_dog_us_daily_hist(dog_id, **kwargs): 
     try:
@@ -193,9 +197,14 @@ def main(args):
                 df = get_dog_us_daily_hist(dog_full_code)
             elif (args.market == 'cn_a'):
                 df1 = get_dog_cn_a_daily_hist(dog_index)
+                if (df1 == None):
+                    continue
                 df2 = get_dog_cn_a_capital_flow(dog_index)
-                df = pd.merge(df1, df2, on='Date', how='left')
-                df.fillna(0, inplace=True)
+                if (df2 == None):
+                    df = df1
+                else:
+                    df = pd.merge(df1, df2, on='Date', how='left')
+                    df.fillna(0, inplace=True)
         else:
             current_date = datetime.datetime.now().strftime('%Y%m%d')
             start_date = (datetime.datetime.now() - datetime.timedelta(days=10)).strftime('%Y%m%d')    # 10 days ago
@@ -206,9 +215,14 @@ def main(args):
                 df = get_dog_us_daily_hist(dog_full_code, start_date=start_date, end_date=current_date)
             elif (args.market == 'cn_a'):
                 df1 = get_dog_cn_a_daily_hist(dog_index, start_date=start_date, end_date=current_date)
+                if (df1 == None):
+                    continue
                 df2 = get_dog_cn_a_capital_flow(dog_index)
-                df = pd.merge(df1, df2, on='Date', how='left')
-                df.fillna(0, inplace=True)
+                if (df2 == None):
+                    df = df1
+                else:
+                    df = pd.merge(df1, df2, on='Date', how='left')
+                    df.fillna(0, inplace=True)
         dog_update_list = df.to_dict(orient='records')
         get_logger().info('Start insert for [%s]'%(dog_index))
         for dog_update_index in dog_update_list:
