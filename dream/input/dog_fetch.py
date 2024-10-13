@@ -5,7 +5,6 @@ import os
 import sys
 import json
 import random
-import logging
 import hashlib
 import argparse
 import datetime, time
@@ -26,33 +25,8 @@ import db_dream_dog_info as dbddi
 import db_dream_secret as dbds
 sys.path.append(r'%s/../../common_api/xml_operator'%(py_dir))
 import xml_operator as xo
-
-logger = None
-def get_logger():
-    global logger
-    return logger
-def set_logger(logger_tmp):
-    global logger
-    logger = logger_tmp
-def logger_init(log_name=py_name):
-    logger_tmp = logging.getLogger()
-    logger_tmp.setLevel(logging.INFO)
-    log_file = py_dir + '/' + log_name + '.log'
-    # file_handler = logging.FileHandler(log_file, mode='a')  # Continue writing the file
-    file_handler = logging.FileHandler(log_file, mode='w')  # start over writing the file
-    file_handler.setLevel(logging.INFO)
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.INFO)
-    formatter = logging.Formatter("%(asctime)s - %(filename)s[line:%(lineno)d] - %(levelname)s: %(message)s")
-    file_handler.setFormatter(formatter)
-    console_handler.setFormatter(formatter)
-    logger_tmp.addHandler(file_handler)
-    logger_tmp.addHandler(console_handler)
-    #logger_tmp.info('Logger Creat Success')
-    #logger.debug("this is debug") # Enable to modify fh.setLevel(logging.INFO) to logging.DEDBUG
-    #logger.warning("this is warning")
-    #logging.error("this is error")
-    set_logger(logger_tmp)
+sys.path.append(r'%s/../../common_api/log'%(py_dir))
+import log
 
 def get_config_dict():
     file_name = '%s/config.xml'%(py_dir)
@@ -116,7 +90,7 @@ def get_us_fullcode(dod_id):
     db_info = dbddi.db('dream_dog')
     res = db_info.query_dog_fullcode_by_code(args.market, dod_id)
     if len(res) == 0:
-        get_logger().error('Dog not found [%s]'%(dod_id))
+        log.get(py_name).error('Dog not found [%s]'%(dod_id))
         return dod_id 
     elif len(res) != 1:
         tmp_list = [i.Code for i in res]
@@ -147,7 +121,7 @@ def get_dog_cn_a_daily_hist(dog_id, **kwargs):
                 df['Amount'] = ((df['Open'] + df['Close'] + df['High'] + df['Low']) / 4) * df['Amount'] * 100
                 return df
             except Exception as e:
-                get_logger().info('Dog[%s] fetch failed...'%(dog_id))
+                log.get(py_name).info('Dog[%s] fetch failed...'%(dog_id))
                 return pd.DataFrame()
 
 def get_dog_cn_a_capital_flow(dog_id):
@@ -160,7 +134,7 @@ def get_dog_cn_a_capital_flow(dog_id):
         df.rename(columns={'小单净流入-净额': 'Inflow_Sm', '日期': 'Date'}, inplace=True) # Replace title
         return df
     except Exception as e:
-        get_logger().info('Dog[%s] capital fetch failed...'%(dog_id))
+        log.get(py_name).info('Dog[%s] capital fetch failed...'%(dog_id))
         return pd.DataFrame()
 
 def get_dog_us_daily_hist(dog_id, **kwargs): 
@@ -173,7 +147,7 @@ def get_dog_us_daily_hist(dog_id, **kwargs):
         return df
     except Exception as e:
         try:
-            get_logger().info('Dog[%s] fetch failed, trying to get from longport...'%(dog_id))
+            log.get(py_name).info('Dog[%s] fetch failed, trying to get from longport...'%(dog_id))
             quote_ctx = longport.openapi.QuoteContext(longport.openapi.Config.from_env())
             if 'start_date' in kwargs and 'end_date' in kwargs:
                 start = datetime.datetime.strptime(kwargs['start_date'], '%Y%m%d').date()
@@ -199,7 +173,7 @@ def get_dog_us_daily_hist(dog_id, **kwargs):
 def quantitative_init(quant_type):
     db = dbds.db('dream_sentiment')
     if (not db.is_table_exist()):
-        get_logger().info('Quantitative table not exist, new a table...')
+        log.get(py_name).info('Quantitative table not exist, new a table...')
         db.create_secret_table()
     res = db.query_secret_by_type(quant_type)
     if len(res) != 1:
@@ -209,15 +183,15 @@ def quantitative_init(quant_type):
     os.environ['LONGPORT_ACCESS_TOKEN'] = res[0].Access_Token
 
 def main(args):
-    logger_init()
-    get_logger().info('Logger Creat Success')
+    log.init(py_dir, py_name, log_mode='w', log_level='info', console_enable=True)
+    log.get(py_name).info('Logger Creat Success')
 
     quantitative_init(args.quantitative)
 
     dog_list = []
     if (args.market == 'us'):
         dog_list = get_dog_list_from_config(args.market)
-        get_logger().info(dog_list)
+        log.get(py_name).info(dog_list)
     elif (args.market == 'cn_a'):
         dog_list = get_dog_list_from_db()
         dog_list = list(set(dog_list).union(get_dog_list_from_config(args.market)))
@@ -225,7 +199,7 @@ def main(args):
     db = dbdd.db('dream_dog')
     for dog_index in dog_list:
         if (not db.is_table_exist(dog_index)):      # New a table to insert
-            get_logger().info('Dog[%s] not exist, new a table...'%(dog_index))
+            log.get(py_name).info('Dog[%s] not exist, new a table...'%(dog_index))
             db.create_dog_market_table(dog_index)
             if (args.market == 'us'):
                 dog_full_code = get_us_fullcode(dog_index)
@@ -261,12 +235,12 @@ def main(args):
                     df = pd.merge(df1, df2, on='Date', how='left')
                     df.fillna(0, inplace=True)
         dog_update_list = df.to_dict(orient='records')
-        get_logger().info('Start insert for [%s]'%(dog_index))
+        log.get(py_name).info('Start insert for [%s]'%(dog_index))
         for dog_update_index in dog_update_list:
-            #get_logger().info(dog_update_index)
+            #log.get(py_name).info(dog_update_index)
             flag = db.insert_dog_market(dog_index, dog_update_index)
             if (not flag):
-                get_logger().info('dog insert failed: %s'%(str(dog_update_index)))
+                log.get(py_name).info('dog insert failed: %s'%(str(dog_update_index)))
 
 if __name__ == '__main__':
     # Create ArgumentParser Object

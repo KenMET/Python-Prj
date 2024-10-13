@@ -5,7 +5,6 @@ import os
 import sys
 import json
 import random
-import logging
 import hashlib
 import argparse
 import datetime, time
@@ -23,33 +22,8 @@ import db_dream_dog as dbdd
 import db_dream_dog_info as dbddi
 sys.path.append(r'%s/../../common_api/xml_operator'%(py_dir))
 import xml_operator as xo
-
-logger = None
-def get_logger():
-    global logger
-    return logger
-def set_logger(logger_tmp):
-    global logger
-    logger = logger_tmp
-def logger_init(log_name=py_name):
-    logger_tmp = logging.getLogger()
-    logger_tmp.setLevel(logging.INFO)
-    log_file = py_dir + '/' + log_name + '.log'
-    # file_handler = logging.FileHandler(log_file, mode='a')  # Continue writing the file
-    file_handler = logging.FileHandler(log_file, mode='w')  # start over writing the file
-    file_handler.setLevel(logging.INFO)
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.INFO)
-    formatter = logging.Formatter("%(asctime)s - %(filename)s[line:%(lineno)d] - %(levelname)s: %(message)s")
-    file_handler.setFormatter(formatter)
-    console_handler.setFormatter(formatter)
-    logger_tmp.addHandler(file_handler)
-    logger_tmp.addHandler(console_handler)
-    #logger_tmp.info('Logger Creat Success')
-    #logger.debug("this is debug") # Enable to modify fh.setLevel(logging.INFO) to logging.DEDBUG
-    #logger.warning("this is warning")
-    #logging.error("this is error")
-    set_logger(logger_tmp)
+sys.path.append(r'%s/../../common_api/log'%(py_dir))
+import log
 
 def get_config_dict():
     file_name = '%s/config.xml'%(py_dir)
@@ -101,8 +75,8 @@ def get_dog_list_from_db():         # From cat holding
 
 
 def main(args):
-    logger_init()
-    get_logger().info('Logger Creat Success')
+    log.init(py_dir, py_name, log_mode='w', log_level='info', console_enable=True)
+    log.get(py_name).info('Logger Creat Success')
 
     if (args.market == 'cn_a'):
         df = ak.stock_zh_a_spot_em()
@@ -123,14 +97,14 @@ def main(args):
 
     db = dbddi.db('dream_dog')
     if (not db.is_table_exist(args.market)):
-        get_logger().info('%s dog info table not exist, create...'%(args.market))
+        log.get(py_name).info('%s dog info table not exist, create...'%(args.market))
         db.create_dog_info_table(args.market)
     db.delete_dog_all(args.market)
 
     for dog_index in dog_list:
         flag = db.insert_dog(args.market, dog_index)
         if (not flag):
-            get_logger().info('%s dog insert failed: %s'%(args.market, str(dog_index)))
+            log.get(py_name).info('%s dog insert failed: %s'%(args.market, str(dog_index)))
 
 if __name__ == '__main__':
     # Create ArgumentParser Object
