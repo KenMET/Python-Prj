@@ -3,7 +3,7 @@
 # System lib
 import os, sys
 import time, datetime
-from sqlalchemy import MetaData, Table, desc
+from sqlalchemy import MetaData, Table, desc, and_
 from sqlalchemy import Column, Integer, String, DATETIME, DATE, Text, VARCHAR, JSON
 
 # Customsized lib
@@ -44,11 +44,11 @@ class db(dbb.basedb):
             return False
         return True
 
-    def query_secret_by_type(self, quant_type):
+    def query_secret_by_type(self, quant_type, user):
         if self.session is None:
             self.connectdb()
         query_class = self.create_secret_class()
-        result = self.session.query(query_class).filter(query_class.Type == quant_type).all()
+        result = self.session.query(query_class).filter(and_(query_class.Type == quant_type, query_class.Reserved == user)).all()
         try:
             self.session.commit()
         except:

@@ -108,6 +108,9 @@
             <id>018044</id>
         </skip_cat>
     </sanity_config>
+    <house_config>
+        <id>Kanos</id>
+    </house_config>
     <news_config>
         <skip_title>
             <text>新发公告</text>
