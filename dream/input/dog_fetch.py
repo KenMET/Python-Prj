@@ -177,7 +177,7 @@ def quantitative_init(quant_type):
     if (not db.is_table_exist()):
         log.get(py_name).info('Quantitative table not exist, new a table...')
         db.create_secret_table()
-    res = db.query_secret_by_type(quant_type)
+    res = db.query_secret_by_type(quant_type, 'Kanos')  # Using for fetch dog info only, so static as Kanos
     if len(res) != 1:
         return
     os.environ['LONGPORT_APP_KEY'] = res[0].App_Key
