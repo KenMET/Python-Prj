@@ -67,3 +67,14 @@ class basedb(object):
             for index in result:
                 table_list.append(index[0])
             return table_list
+
+    # Cannot use now....
+    def dropTable(self, table_name):
+        try:
+            metadata = MetaData()
+            # 反射获取表结构
+            table = Table(table_name, metadata, autoload_with=self.engine)
+            table.drop(self.engine)
+            return True
+        except Exception as e:
+            return False

@@ -78,7 +78,7 @@ class db(dbb.basedb):
         else:
             return result
 
-    def query_dog_markey_last(self, dog_id):
+    def query_dog_market_last(self, dog_id):
         if self.session is None:
             self.connectdb()
         dog_market = self.create_dog_market_class(dog_id)
@@ -86,7 +86,7 @@ class db(dbb.basedb):
         try:
             self.session.commit()
         except:
-            return []
+            return None
         else:
             return result
 

@@ -109,16 +109,18 @@ def get_dog_cn_a_daily_hist(dog_id, **kwargs):
         df.rename(columns={'最低': 'Low', '成交额': 'Amount'}, inplace=True) # Replace title
         return df
     except Exception as e:
+        log.get(py_name).info('Exception level-1, try opt-2...')
         try:
-            df = ak.stock_zh_a_daily(symbol=get_market(dog_id)+dog_id, adjust="qfq", **kwargs)
-            df.drop(columns=['volume', 'outstanding_share', 'turnover'], inplace=True)
+            df = ak.stock_zh_a_hist_tx(symbol=get_market(dog_id)+dog_id, adjust="qfq", **kwargs)
             df.columns = df.columns.str.title()
+            df['Amount'] = ((df['Open'] + df['Close'] + df['High'] + df['Low']) / 4) * df['Amount'] * 100
             return df
         except Exception as e:
+            log.get(py_name).info('Exception level-2, try opt-3...')
             try:
-                df = ak.stock_zh_a_hist_tx(symbol=get_market(dog_id)+dog_id, adjust="qfq", **kwargs)
+                df = ak.stock_zh_a_daily(symbol=get_market(dog_id)+dog_id, adjust="qfq", **kwargs)
+                df.drop(columns=['volume', 'outstanding_share', 'turnover'], inplace=True)
                 df.columns = df.columns.str.title()
-                df['Amount'] = ((df['Open'] + df['Close'] + df['High'] + df['Low']) / 4) * df['Amount'] * 100
                 return df
             except Exception as e:
                 log.get(py_name).info('Dog[%s] fetch failed...'%(dog_id))
@@ -193,7 +195,8 @@ def main(args):
         dog_list = get_dog_list_from_config(args.market)
         log.get(py_name).info(dog_list)
     elif (args.market == 'cn_a'):
-        dog_list = get_dog_list_from_db()
+        #dog_list = get_dog_list_from_db()      # Get from cat holding db
+        dog_list = []
         dog_list = list(set(dog_list).union(get_dog_list_from_config(args.market)))
 
     db = dbdd.db('dream_dog')
@@ -242,6 +245,16 @@ def main(args):
             if (not flag):
                 log.get(py_name).info('dog insert failed: %s'%(str(dog_update_index)))
 
+def test():
+    log.init(py_dir, py_name, log_mode='w', log_level='info', console_enable=True)
+    log.get(py_name).info('Test Logger Creat Success')
+    current_date = datetime.datetime.now().strftime('%Y%m%d')
+    start_date = (datetime.datetime.now() - datetime.timedelta(days=10)).strftime('%Y%m%d')    # 10 days ago
+    #dog_full_code = get_us_fullcode(dog_index)
+    #df = get_dog_us_daily_hist(dog_full_code, start_date=start_date, end_date=current_date)
+    df = get_dog_cn_a_daily_hist('000958', start_date=start_date, end_date=current_date)
+    log.get(py_name).info(df)
+
 if __name__ == '__main__':
     # Create ArgumentParser Object
     parser = argparse.ArgumentParser(description="A input module for dog info fetch")
@@ -253,3 +266,4 @@ if __name__ == '__main__':
     # 解析命令行参数
     args = parser.parse_args()
     main(args)
+    #test()
