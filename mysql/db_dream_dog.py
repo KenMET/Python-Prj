@@ -102,6 +102,18 @@ class db(dbb.basedb):
         else:
             return result
 
+    def query_dog_markey_by_daterange(self, dog_id, start, end):
+        if self.session is None:
+            self.connectdb()
+        dog_market = self.create_dog_market_class(dog_id)
+        result = self.session.query(dog_market).filter(dog_market.Date.between(start, end)).all()
+        try:
+            self.session.commit()
+        except:
+            return []
+        else:
+            return result
+
     def update_dog_market_by_date(self, dog_id, date, dog_dict):
         if self.session is None:
             self.connectdb()
