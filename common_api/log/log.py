@@ -12,7 +12,8 @@ def get(log_name):
     log_temp = logger_objs.get(log_name, None)
     if log_temp == None:
         print ('Log not init, using default logger, please init first...')
-        if logger_objs.get('default', None):
+        if logger_objs.get('default', None) == None:
+            print ('Default logger not init yet, start init')
             init(py_dir, 'default')
         return logger_objs.get('default', None)
     return log_temp

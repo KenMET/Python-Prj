@@ -28,23 +28,17 @@ import log
 sys.path.append(r'%s/../../common_api/xml_operator'%(py_dir))
 import xml_operator as xo
 
-def get_config_dict():
-    file_name = '%s/config.xml'%(py_dir)
+
+def get_house_setup_from_config():     # From config file(default)
+    file_name = '%s/../config/user.xml'%(py_dir)
     cfg = xo.operator(file_name)
     cfg_dict = cfg.walk_node(cfg.root_node)
     return cfg_dict
 
-def get_house_list_from_config():     # From config file(default)
-    cfg_dict = get_config_dict()
-    house_list = cfg_dict.get('house_config', {}).get('id', [])
-    if type(house_list) == type(''):
-        house_list = [house_list, ]
-    return house_list
-
 def quantitative_init(quant_type, user):
     db = dbds.db('dream_sentiment')
     if (not db.is_table_exist()):
-        log.get(py_name).info('Quantitative table not exist, new a table...')
+        #log.get(py_name).info('Quantitative table not exist, new a table...')
         db.create_secret_table()
     res = db.query_secret_by_type(quant_type, user)
     if len(res) != 1:
@@ -95,7 +89,7 @@ def get_house(name):
     db = dbda.db('dream_sentiment')
     temp = db.query_house_by_name(name)
     if len(temp) != 1:
-        log.get(py_name).info('House get exception: %s'%(name))
+        #log.get(py_name).info('House get exception: %s'%(name))
         return
     return db.get_dict_from_obj(temp[0])
 
@@ -103,7 +97,7 @@ def get_holding(name):
     db = dbda.db('dream_sentiment')
     temp = db.query_house_by_name(name)
     if len(temp) != 1:
-        log.get(py_name).info('House get exception: %s'%(name))
+        #log.get(py_name).info('House get exception: %s'%(name))
         return
     account_dict = db.get_dict_from_obj(temp[0])
     return ast.literal_eval(account_dict['Holding'])
@@ -114,34 +108,35 @@ def main(args):
     log.get(py_name).info('Logger Creat Success')
 
     quantitative_type = ['simulation', 'formal']
-    house_list = get_house_list_from_config()
-    for index in house_list:
-        if args.quantitative != '':
-            quantitative_init(args.quantitative, index)
-            house_name = '%s-%s'%(args.quantitative, index)
-            log.get(py_name).info('start update house: %s'%(house_name))
-            house_update(house_name)
-            house = get_house(house_name)
-            house_holding = get_holding(house_name)
-            log.get(py_name).info(house)
-            log.get(py_name).info(house_holding)
-        else:
+    house_dict = get_house_setup_from_config()
+    for user_name in house_dict:
+        quent_type = house_dict[user_name].get('quent_type', 'simulation')
+        if quent_type == 'both':
             for q_type in quantitative_type:
-                quantitative_init(q_type, index)
-                house_name = '%s-%s'%(q_type, index)
+                quantitative_init(q_type, user_name)
+                house_name = '%s-%s'%(q_type, user_name)
                 log.get(py_name).info('start update house: %s'%(house_name))
                 house_update(house_name)
                 house = get_house(house_name)
                 house_holding = get_holding(house_name)
                 log.get(py_name).info(house)
                 log.get(py_name).info(house_holding)
+        else:
+            quantitative_init(quent_type, user_name)
+            house_name = '%s-%s'%(quent_type, user_name)
+            log.get(py_name).info('start update house: %s'%(house_name))
+            house_update(house_name)
+            house = get_house(house_name)
+            house_holding = get_holding(house_name)
+            log.get(py_name).info(house)
+            log.get(py_name).info(house_holding)
 
 if __name__ == '__main__':
     # Create ArgumentParser Object
     parser = argparse.ArgumentParser(description="A inference module for dog")
     
     # Append arguments
-    parser.add_argument('--quantitative', type=str, default='', help='Now supported: "simulation"(default),"formal"')
+    # parser.add_argument('--quantitative', type=str, default='', help='Now supported: "simulation"(default),"formal"')
     
     # 解析命令行参数
     args = parser.parse_args()

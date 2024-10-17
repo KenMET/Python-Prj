@@ -19,6 +19,7 @@ sys.path.append(r'%s/'%(py_dir))
 import adata
 import akshare as ak
 import longport.openapi
+from strategy import get_strategy, basic
 sys.path.append(r'%s/../../mysql'%(py_dir))
 import db_dream_dog as dbdd
 import db_dream_dog_info as dbddi
@@ -39,13 +40,14 @@ def get_market_by_range(target, start, end):
     # Make sure date soted
     df['Date'] = pd.to_datetime(df['Date'])
     df = df.sort_values('Date')
+    df['Close'] = pd.to_numeric(df['Close'], errors='coerce')           # 确保 Close 列为数值类型
 
     return df
 
 def get_portfolio(df):
     # 初始资金和参数
     capital = 10000.0   # 初始化资金
-    df['Close'] = pd.to_numeric(df['Close'], errors='coerce')           # 确保 Close 列为数值类型
+    
     shares = 0  # 初始化持仓
     transaction_fee = 5  # 每次交易的手续费
     total_capital = capital
@@ -91,59 +93,47 @@ def get_portfolio(df):
                 log.get(py_name).info('Sell:%s, value:%.3f qty:%d(%0.3f) hold:%d cap:%.3f'%(df['Date'].iloc[i].date(), 
                     current_price, sell_shares, diff, shares, total_capital))
 
-    # 输出最终的投资组合价值
-    log.get(py_name).info('Final capital:%.3f'%(total_capital))
+    return total_capital
 
-def backtest(df):
-    # 设置参数
-    short_window = 5
-    long_window = 20
-    threshold = 5  # 信号触发的阈值, 百分比
-    cool_down_period = 2  # 冷却期, 天
-    last_signal_day = -cool_down_period  # 初始化最近的信号发生时间为负值
+def get_stategy_handle(target):
+    strategy_dict = get_strategy(target)
+    strategy_type = strategy_dict['class']
+    if strategy_type == 'basic':
+        short = int(strategy_dict['short_window'])
+        long = int(strategy_dict['long_window'])
+        th = float(strategy_dict['threshold'])
+        trade_interval = int(strategy_dict['cool_down_period'])
+        stategy_handle = basic(short, long, th, trade_interval)
+    elif strategy_type == 'xxxx':   # to be update
+        pass
+    return stategy_handle
 
-    # 计算移动平均线
-    df['Short_MA'] = df['Close'].rolling(window=short_window, min_periods=1).mean()
-    df['Long_MA'] = df['Close'].rolling(window=long_window, min_periods=1).mean()
+def backtest(target, df):
+    stategy_handle = get_stategy_handle(target)
+    if stategy_handle == None:
+        log.get(py_name).error('stategy_handle Null')
+        return
 
-    # 初始化信号列（买入=1，卖出=-1，持仓=0）
-    df['Signal'] = 0
-
-    # 当短期均线上穿长期均线时，发出买入信号
-    #df.loc[short_window:, 'Signal'] = np.where(df['Short_MA'][short_window:] > df['Long_MA'][short_window:], 1, 0)
-    # 卖出信号：短期均线向下穿过长期均线
-    #df.loc[short_window:, 'Signal'] = np.where(df['Short_MA'][short_window:] < df['Long_MA'][short_window:], -1, df['Signal'][short_window:])
-    # 启用 阈值和冷却期 ，不然很容易产生频繁交易
-    for i in range(len(df)):
-        short_ma = df['Short_MA'].iloc[i]
-        long_ma = df['Long_MA'].iloc[i]
-
-        # 距离上一次操作是否超过冷却期
-        if i - last_signal_day >= cool_down_period:
-            # 如果短期均线比长期均线高，并且差距大于阈值，则生成卖出信号
-            if (short_ma - long_ma)/short_ma > (threshold/100):
-                df.loc[i, 'Signal'] = -1  # 卖出信号
-                last_signal_day = i  # 更新最近的信号时间
-
-            # 如果短期均线比长期均线低，并且差距大于阈值，则生成买入信号
-            elif (long_ma - short_ma)/long_ma > (threshold/100):
-                df.loc[i, 'Signal'] = 1  # 买入信号
-                last_signal_day = i  # 更新最近的信号时间
-        else:
-            df.loc[i, 'Signal'] = 0  # 在冷却期内不产生信号
-
-    # 生成买入/卖出的实际交易信号， 防止一个信号在一段时间内重复交易的
-    df['Position'] = df['Signal'].diff()
-
-    # 输出交易信号的数据
+    df = stategy_handle.mean_reversion(df)
+    # Output the data of the trading signal
     trades = df[df['Signal'] != 0]
     log.get(py_name).info(trades)
-    
-    return df
+
+    final_capital = get_portfolio(df)
+    log.get(py_name).info('Final capital:%.3f'%(final_capital))
+
+def pridct_next(target, df):
+    stategy_handle = get_stategy_handle(target)
+    if stategy_handle == None:
+        log.get(py_name).error('stategy_handle Null')
+        return
+
+    next_predict = stategy_handle.mean_reversion_expect(df)
+    log.get(py_name).info(next_predict)
 
 def main(args):
     log.init(py_dir, py_name, log_mode='w', log_level='info', console_enable=True)
-    log.get(py_name).info('Logger Creat Success...')
+    log.get(py_name).info('Logger Creat Success...[%s]'%(py_name))
     
     if (args.target == ''):
         log.get(py_name).error('Target Null, please setup target by "--target XXX"')
@@ -161,9 +151,9 @@ def main(args):
         return
 
     df = get_market_by_range(args.target, start_date, end_date)
+    backtest(args.target, df)
+    #pridct_next(args.target, df)
     
-    df = backtest(df)
-    get_portfolio(df)
 
 if __name__ == '__main__':
     # Create ArgumentParser Object

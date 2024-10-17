@@ -29,7 +29,7 @@ sys.path.append(r'%s/../../common_api/log'%(py_dir))
 import log
 
 def get_config_dict():
-    file_name = '%s/config.xml'%(py_dir)
+    file_name = '%s/../config/animal.xml'%(py_dir)
     cfg = xo.operator(file_name)
     cfg_dict = cfg.walk_node(cfg.root_node)
     return cfg_dict

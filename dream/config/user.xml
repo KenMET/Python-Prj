@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<contents>
+    <Kanos>     <!--Defined as house name-->
+        <quent_type>both</quent_type>   <!--"simulation","formal","both"-->
+    </Kanos>
+</contents>
