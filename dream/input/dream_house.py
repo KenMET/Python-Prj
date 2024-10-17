@@ -113,22 +113,35 @@ def main(args):
     log.init(py_dir, py_name, log_mode='w', log_level='info', console_enable=True)
     log.get(py_name).info('Logger Creat Success')
 
+    quantitative_type = ['simulation', 'formal']
     house_list = get_house_list_from_config()
     for index in house_list:
-        quantitative_init(args.quantitative, index)
-        house_name = '%s-%s'%(args.quantitative, index)
-        house_update(house_name)
-        house = get_house(house_name)
-        house_holding = get_holding(house_name)
-        log.get(py_name).info(house)
-
+        if args.quantitative != '':
+            quantitative_init(args.quantitative, index)
+            house_name = '%s-%s'%(args.quantitative, index)
+            log.get(py_name).info('start update house: %s'%(house_name))
+            house_update(house_name)
+            house = get_house(house_name)
+            house_holding = get_holding(house_name)
+            log.get(py_name).info(house)
+            log.get(py_name).info(house_holding)
+        else:
+            for q_type in quantitative_type:
+                quantitative_init(q_type, index)
+                house_name = '%s-%s'%(q_type, index)
+                log.get(py_name).info('start update house: %s'%(house_name))
+                house_update(house_name)
+                house = get_house(house_name)
+                house_holding = get_holding(house_name)
+                log.get(py_name).info(house)
+                log.get(py_name).info(house_holding)
 
 if __name__ == '__main__':
     # Create ArgumentParser Object
     parser = argparse.ArgumentParser(description="A inference module for dog")
     
     # Append arguments
-    parser.add_argument('--quantitative', type=str, default='simulation', help='Now supported: "simulation"(default),"formal"')
+    parser.add_argument('--quantitative', type=str, default='', help='Now supported: "simulation"(default),"formal"')
     
     # 解析命令行参数
     args = parser.parse_args()
