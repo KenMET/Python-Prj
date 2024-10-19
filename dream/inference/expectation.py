@@ -2,33 +2,25 @@
 
 # System lib
 import os
-import sys
-import json
-import random
-import hashlib
-import argparse
-import datetime, time
 import re
-import numpy as np
+import sys
+import argparse
+import datetime
 import pandas as pd
-from decimal import Decimal
 
 # Customsized lib
 py_dir = os.path.dirname(os.path.realpath(__file__))
 py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
 sys.path.append(r'%s/'%(py_dir))
-import adata
-import akshare as ak
-import longport.openapi
-from strategy import get_strategy, basic
+from strategy import basic
 sys.path.append(r'%s/../input'%(py_dir))
-from dream_house import get_house_setup_from_config, get_holding
+from house import get_holding
 sys.path.append(r'%s/../../mysql'%(py_dir))
 import db_dream_dog as dbdd
 sys.path.append(r'%s/../../notification'%(py_dir))
 import notification as notify
-sys.path.append(r'%s/../../common_api/xml_operator'%(py_dir))
-import xml_operator as xo
+sys.path.append(r'%s/../common'%(py_dir))
+from config import get_house, get_strategy
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
 import log
 
@@ -85,8 +77,8 @@ def pridct_next(quent_type, user_name):
         bark_obj = notify.bark()
         content = ''
         for index in notify_dict:
-            content += '%s: [0,%.3f]&[%.3f,+∞]\n'%(index, index.get('buy',-1), index.get('sell',-1))
-        bark_obj.send_title_content('Kanos Stock House', content)
+            content += '%s: [0,%.3f]&[%.3f,+∞]\n'%(index, notify_dict[index].get('buy',-1), notify_dict[index].get('sell',-1))
+        #bark_obj.send_title_content('Kanos Stock House', content)
 
 
 def main(args):
@@ -94,11 +86,13 @@ def main(args):
     log.get(py_name).info('Logger Creat Success...[%s]'%(py_name))
     
     quantitative_type = ['simulation', 'formal']
-    house_dict = get_house_setup_from_config()
+    house_dict = get_house()
     for user_name in house_dict:
+        log.get(py_name).info('*******************************************************')
         quent_type = house_dict[user_name].get('quent_type', 'simulation')
         if quent_type == 'both':
             for q_type in quantitative_type:
+                log.get(py_name).info('------------------------------------------')
                 pridct_next(q_type, user_name)
         else:
             pridct_next(quent_type, user_name)
@@ -109,8 +103,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="A input module for dog info fetch")
 
     # Append arguments
-    parser.add_argument('--start', type=str, default='', help='Start Date, for example: 20241001')
-    parser.add_argument('--end', type=str, default='', help='End Date, null as today')
+    #parser.add_argument('--start', type=str, default='', help='Start Date, for example: 20241001')
+    #parser.add_argument('--end', type=str, default='', help='End Date, null as today')
     #parser.add_argument('--target', type=str, default='', help='Backtest dog name')
 
     # 解析命令行参数

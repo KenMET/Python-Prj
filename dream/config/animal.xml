@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <contents>
+    <cat_cn_list>
+        <id>001593</id><id>001629</id><id>161028</id><id>008888</id><id>161725</id>
+        <id>003096</id><id>002979</id><id>002168</id><id>015945</id><id>011840</id>
+        <id>001102</id><id>018044</id><id>007844</id>
+    </cat_cn_list>
     <dog_cn_a_list>
         <id>002935</id><id>002261</id><id>002594</id><id>002869</id><id>000901</id>     <!--Start with '0'-->
         <id>002977</id><id>002338</id><id>000729</id><id>000568</id><id>000858</id>

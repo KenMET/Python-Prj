@@ -14,11 +14,23 @@ from decimal import Decimal
 py_dir = os.path.dirname(os.path.realpath(__file__))
 py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
 sys.path.append(r'%s/'%(py_dir))
-sys.path.append(r'%s/../../common_api/xml_operator'%(py_dir))
-import xml_operator as xo
+sys.path.append(r'%s/../common'%(py_dir))
+from config import get_strategy
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
 import log
 
+def get_stategy_handle(target):
+    strategy_dict = get_strategy(target)
+    strategy_type = strategy_dict['class']
+    if strategy_type == 'basic':
+        short = int(strategy_dict['short_window'])
+        long = int(strategy_dict['long_window'])
+        th = float(strategy_dict['threshold'])
+        trade_interval = int(strategy_dict['cool_down_period'])
+        stategy_handle = basic(short, long, th, trade_interval)
+    elif strategy_type == 'xxxx':   # to be update
+        pass
+    return stategy_handle
 
 '''
 ************************************  Rule  ************************************
@@ -29,41 +41,6 @@ import log
     output: DataFrame with Signal column(Buy=1, Sell=-1, Hold=0)
 ********************************************************************************
 '''
-
-def get_strategy(dog_id, default_none=True):
-    file_name = '%s/../config/strategy.xml'%(py_dir)
-    cfg = xo.operator(file_name)
-    cfg_dict = cfg.walk_node(cfg.root_node)
-
-    default_config = {'class': 'basic',
-        'short_window' : 5, 'long_window' : 20,
-        'threshold' : 1, 'cool_down_period' : 5,
-    }
-
-    dog_config = cfg_dict.get('dog_strategy', {}).get(dog_id, {})
-    strategy_type = dog_config.get('type', None)
-    if strategy_type == None:
-        return default_config if default_none else {}
-    strategy_item = dog_config.get('item', None)
-    if strategy_item == None:
-        return default_config if default_none else {}
-
-    strategy_config = cfg_dict.get(strategy_type, None)
-    if strategy_config == None:
-        return default_config if default_none else {}
-    item_config = strategy_config.get(strategy_item, None)
-    if item_config == None:
-        return default_config if default_none else {}
-
-    strategy_dict = item_config.get('parameter', default_config)
-    if strategy_dict.get('class', '') != '':
-        return strategy_dict
-
-    # Append more class define here
-    if strategy_type == 'mean_reversion':
-        strategy_dict.update({'class': 'basic'})
-
-    return strategy_dict
 
 class basic:
     def __init__(self, short, long, th, trade_interval):

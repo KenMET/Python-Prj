@@ -2,35 +2,28 @@
 
 # System lib
 import os
+import re
 import sys
 import json
-import random
-import hashlib
+import datetime
 import argparse
 import subprocess
-import datetime, time
-import re
-import numpy as np
+
 import pandas as pd
-from decimal import Decimal
 
 # Customsized lib
 py_dir = os.path.dirname(os.path.realpath(__file__))
 py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
 sys.path.append(r'%s/'%(py_dir))
-import adata
-import akshare as ak
 import longport.openapi
-from strategy import get_strategy, basic
+
 sys.path.append(r'%s/../input'%(py_dir))
-from dream_house import get_house_setup_from_config, get_holding, get_house
+from house import get_holding, get_house_detail
+sys.path.append(r'%s/../inference'%(py_dir))
+from strategy import get_stategy_handle
 sys.path.append(r'%s/../../mysql'%(py_dir))
 import db_dream_dog as dbdd
 import db_dream_secret as dbds
-sys.path.append(r'%s/../../notification'%(py_dir))
-import notification as notify
-sys.path.append(r'%s/../../common_api/xml_operator'%(py_dir))
-import xml_operator as xo
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
 import log
 
@@ -57,19 +50,6 @@ def get_market_by_range(target, start, end):
     df['Close'] = pd.to_numeric(df['Close'], errors='coerce')           # 确保 Close 列为数值类型
 
     return df
-
-def get_stategy_handle(target):
-    strategy_dict = get_strategy(target)
-    strategy_type = strategy_dict['class']
-    if strategy_type == 'basic':
-        short = int(strategy_dict['short_window'])
-        long = int(strategy_dict['long_window'])
-        th = float(strategy_dict['threshold'])
-        trade_interval = int(strategy_dict['cool_down_period'])
-        stategy_handle = basic(short, long, th, trade_interval)
-    elif strategy_type == 'xxxx':   # to be update
-        pass
-    return stategy_handle
 
 def pridct_next(quent_type, user_name):
     house_name = '%s-%s'%(quent_type, user_name)
@@ -138,22 +118,20 @@ def trade(ctx, house_dict, dog_opt, dog_id):
                 remark = "Sell",
             )
 
-
-
 def main(args):
     log.init('%s/../log'%(py_dir), py_name, log_mode='w', log_level='info', console_enable=True)
     log.get(py_name).info('Logger Creat Success...[%s]'%(py_name))
-    exit()
+
     if args.user == '':
         log.get(py_name).error('User Null')
         return 
 
-    result = subprocess.run(["python3", "%s/../input/dream_house.py"], capture_output=True, text=True)
+    result = subprocess.run(["python3", "%s/../input/house.py"], capture_output=True, text=True)
     quantitative_init(args.quantitative, args.user)
     predict_dict = pridct_next(args.quantitative, args.user)
     log.get(py_name).info(predict_dict)
 
-    house_dict = get_house('%s-%s'%(args.quantitative, args.user))
+    house_dict = get_house_detail('%s-%s'%(args.quantitative, args.user))
 
     ctx = longport.openapi.TradeContext(longport.openapi.Config.from_env())
     # Submit order

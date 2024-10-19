@@ -4,36 +4,21 @@
 import os
 import sys
 import ast
-import json
-import random
 import argparse
-import datetime, time
 
 # Customsized lib
 py_dir = os.path.dirname(os.path.realpath(__file__))
 py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
 sys.path.append(r'%s/'%(py_dir))
-import pandas as pd
-from decimal import Decimal
-import adata
-import akshare as ak
 import longport.openapi
 sys.path.append(r'%s/../../mysql'%(py_dir))
-import db_dream_dog as dbdd
-import db_dream_dog_info as dbddi
 import db_dream_secret as dbds
 import db_dream_account as dbda
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
 import log
-sys.path.append(r'%s/../../common_api/xml_operator'%(py_dir))
-import xml_operator as xo
+sys.path.append(r'%s/../common'%(py_dir))
+from config import get_house
 
-
-def get_house_setup_from_config():     # From config file(default)
-    file_name = '%s/../config/user.xml'%(py_dir)
-    cfg = xo.operator(file_name)
-    cfg_dict = cfg.walk_node(cfg.root_node)
-    return cfg_dict
 
 def quantitative_init(quant_type, user):
     db = dbds.db('dream_sentiment')
@@ -85,7 +70,7 @@ def house_update(name):
     house_dict.update({'Holding':str(holding_list)})
     db.update_house_by_name(name, house_dict)
 
-def get_house(name):
+def get_house_detail(name):
     db = dbda.db('dream_sentiment')
     temp = db.query_house_by_name(name)
     if len(temp) != 1:
@@ -108,7 +93,7 @@ def main(args):
     log.get(py_name).info('Logger Creat Success')
 
     quantitative_type = ['simulation', 'formal']
-    house_dict = get_house_setup_from_config()
+    house_dict = get_house()
     for user_name in house_dict:
         quent_type = house_dict[user_name].get('quent_type', 'simulation')
         if quent_type == 'both':
@@ -117,7 +102,7 @@ def main(args):
                 house_name = '%s-%s'%(q_type, user_name)
                 log.get(py_name).info('start update house: %s'%(house_name))
                 house_update(house_name)
-                house = get_house(house_name)
+                house = get_house_detail(house_name)
                 house_holding = get_holding(house_name)
                 log.get(py_name).info(house)
                 log.get(py_name).info(house_holding)
@@ -126,7 +111,7 @@ def main(args):
             house_name = '%s-%s'%(quent_type, user_name)
             log.get(py_name).info('start update house: %s'%(house_name))
             house_update(house_name)
-            house = get_house(house_name)
+            house = get_house_detail(house_name)
             house_holding = get_holding(house_name)
             log.get(py_name).info(house)
             log.get(py_name).info(house_holding)

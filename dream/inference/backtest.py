@@ -3,31 +3,18 @@
 # System lib
 import os
 import sys
-import json
-import random
-import hashlib
 import argparse
-import datetime, time
-import numpy as np
+import datetime
 import pandas as pd
-from decimal import Decimal
 
 # Customsized lib
 py_dir = os.path.dirname(os.path.realpath(__file__))
 py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
 sys.path.append(r'%s/'%(py_dir))
-import adata
-import akshare as ak
 import longport.openapi
-from strategy import get_strategy, basic
+from strategy import get_stategy_handle
 sys.path.append(r'%s/../../mysql'%(py_dir))
 import db_dream_dog as dbdd
-import db_dream_dog_info as dbddi
-import db_dream_secret as dbds
-sys.path.append(r'%s/../../notification'%(py_dir))
-import notification as notify
-sys.path.append(r'%s/../../common_api/xml_operator'%(py_dir))
-import xml_operator as xo
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
 import log
 
@@ -94,19 +81,6 @@ def get_portfolio(df):
                     current_price, sell_shares, diff, shares, total_capital))
 
     return total_capital
-
-def get_stategy_handle(target):
-    strategy_dict = get_strategy(target)
-    strategy_type = strategy_dict['class']
-    if strategy_type == 'basic':
-        short = int(strategy_dict['short_window'])
-        long = int(strategy_dict['long_window'])
-        th = float(strategy_dict['threshold'])
-        trade_interval = int(strategy_dict['cool_down_period'])
-        stategy_handle = basic(short, long, th, trade_interval)
-    elif strategy_type == 'xxxx':   # to be update
-        pass
-    return stategy_handle
 
 def backtest(target, df):
     stategy_handle = get_stategy_handle(target)

@@ -3,30 +3,18 @@
 # System lib
 import os
 import sys
-import json
-import random
-import hashlib
 import argparse
-import datetime, time
-import pandas as pd
-from decimal import Decimal
+import datetime
 
 # Customsized lib
 py_dir = os.path.dirname(os.path.realpath(__file__))
 py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
 sys.path.append(r'%s/'%(py_dir))
-import adata
-import akshare as ak
-import longport.openapi
 sys.path.append(r'%s/../../mysql'%(py_dir))
-import db_cat as dbc
 import db_dream_dog as dbdd
 import db_dream_dog_info as dbddi
-import db_dream_secret as dbds
 sys.path.append(r'%s/../../notification'%(py_dir))
 import notification as notify
-sys.path.append(r'%s/../../common_api/xml_operator'%(py_dir))
-import xml_operator as xo
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
 import log
 
@@ -80,8 +68,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="A input module for dog info fetch")
     
     # Append arguments
-    parser.add_argument('--market', type=str, default='cn_a', help='Now supported: "cn_a"(default),"us"')
-    parser.add_argument('--quantitative', type=str, default='simulation', help='Now supported: "simulation"(default),"formal"')
+    #parser.add_argument('--market', type=str, default='cn_a', help='Now supported: "cn_a"(default),"us"')
+    #parser.add_argument('--quantitative', type=str, default='simulation', help='Now supported: "simulation"(default),"formal"')
     
     # 解析命令行参数
     args = parser.parse_args()
