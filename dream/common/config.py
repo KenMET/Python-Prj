@@ -39,6 +39,20 @@ def get_dog(market='cn_a'):
         tmp_list = [tmp_list, ]
     return tmp_list
 
+def get_trade_list(market='cn'):
+    cfg = config('animal')
+    tmp_list = cfg.get('trade_list', {}).get(market, {}).get('id', [])
+    if type(tmp_list) == type(''):
+        tmp_list = [tmp_list, ]
+    return tmp_list
+
+def get_notify_list(market='cn'):
+    cfg = config('animal')
+    tmp_list = cfg.get('notify_list', {}).get(market, {}).get('id', [])
+    if type(tmp_list) == type(''):
+        tmp_list = [tmp_list, ]
+    return tmp_list
+
 def get_strategy(id):
     cfg = config('strategy')
     tmp = cfg.get('strategy', {})
