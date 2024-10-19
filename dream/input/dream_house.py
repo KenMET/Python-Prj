@@ -50,16 +50,16 @@ def quantitative_init(quant_type, user):
 def house_update(name):
     db = dbda.db('dream_sentiment')
     if (not db.is_table_exist()):      # New a table to insert
-        log.get(py_name).info('House not exist, new a table...')
+        #log.get(py_name).info('House not exist, new a table...')
         db.create_dog_house_table()
     trade_ctx = longport.openapi.TradeContext(longport.openapi.Config.from_env())
     resp = trade_ctx.account_balance(currency='USD')
     if len(resp) != 1:
-        log.get(py_name).info('Account Balance exception: %s'%(str(resp)))
+        #log.get(py_name).info('Account Balance exception: %s'%(str(resp)))
         return
     house = resp[0]
     if len(house.cash_infos) != 1:
-        log.get(py_name).info('Account Balance Cash Infos exception: %s'%(str(resp)))
+        #log.get(py_name).info('Account Balance Cash Infos exception: %s'%(str(resp)))
         return
     house_cash_infos = house.cash_infos[0]
     house_dict = {
@@ -76,7 +76,7 @@ def house_update(name):
     }
     resp = trade_ctx.stock_positions()
     if len(resp.channels) != 1:
-        log.get(py_name).info('Stock Positions exception: %s'%(str(resp)))
+        #log.get(py_name).info('Stock Positions exception: %s'%(str(resp)))
         return
     positions = resp.channels[0].positions
     holding_list = []
@@ -104,7 +104,7 @@ def get_holding(name):
 
 
 def main(args):
-    log.init(py_dir, py_name, log_mode='w', log_level='info', console_enable=True)
+    log.init('%s/../log'%(py_dir), py_name, log_mode='w', log_level='info', console_enable=True)
     log.get(py_name).info('Logger Creat Success')
 
     quantitative_type = ['simulation', 'formal']

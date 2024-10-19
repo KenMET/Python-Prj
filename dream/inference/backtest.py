@@ -132,7 +132,7 @@ def pridct_next(target, df):
     log.get(py_name).info(next_predict)
 
 def main(args):
-    log.init(py_dir, py_name, log_mode='w', log_level='info', console_enable=True)
+    log.init('%s/../log'%(py_dir), py_name, log_mode='w', log_level='info', console_enable=True)
     log.get(py_name).info('Logger Creat Success...[%s]'%(py_name))
     
     if (args.target == ''):

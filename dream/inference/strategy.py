@@ -135,12 +135,12 @@ class basic:
         threshold = (1 - self.th)
         expect_buy = sum(short_df) * self.long - threshold * self.short * sum(long_df)
         expect_buy /= threshold * self.short - self.long
-        log.get('backtest').info('expect_buy:[0, %.2f]'%(expect_buy))
+        #log.get('backtest').info('expect_buy:[0, %.2f]'%(expect_buy))
         
         threshold = (1 + self.th)
         expect_sell = sum(short_df) * self.long - threshold * self.short * sum(long_df)
         expect_sell /= threshold * self.short - self.long
-        log.get('backtest').info('expect_sell: [%.2f, +∞]'%(expect_sell))
+        #log.get('backtest').info('expect_sell: [%.2f, +∞]'%(expect_sell))
 
         ret_dict = {}
         if expect_buy > 0 and abs((last - expect_buy) / last) < 0.2:         # expect > 0 or diff under 20%

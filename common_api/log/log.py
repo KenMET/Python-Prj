@@ -18,11 +18,13 @@ def get(log_name):
         return logger_objs.get('default', None)
     return log_temp
 
-def init(py_dir, log_name, log_mode='w', log_level='info', console_enable=True):
+def init(log_dir, log_name, log_mode='w', log_level='info', console_enable=True):
     def set_logger(log_name, logger_tmp):
         global logger_objs
         logger_objs.update({log_name:logger_tmp})
-    log_file = py_dir + '/' + log_name + '.log'
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+    log_file = log_dir + '/' + log_name + '.log'
     logger_tmp = logging.getLogger()
     formatter = logging.Formatter("%(asctime)s - %(filename)s[line:%(lineno)d] - %(levelname)s: %(message)s")
 

@@ -185,7 +185,7 @@ def quantitative_init(quant_type):
     os.environ['LONGPORT_ACCESS_TOKEN'] = res[0].Access_Token
 
 def main(args):
-    log.init(py_dir, py_name, log_mode='w', log_level='info', console_enable=True)
+    log.init('%s/../log'%(py_dir), py_name, log_mode='w', log_level='info', console_enable=True)
     log.get(py_name).info('Logger Creat Success')
 
     quantitative_init(args.quantitative)
@@ -246,7 +246,7 @@ def main(args):
                 log.get(py_name).info('dog insert failed: %s'%(str(dog_update_index)))
 
 def test():
-    log.init(py_dir, py_name, log_mode='w', log_level='info', console_enable=True)
+    log.init('%s/../log'%(py_dir), py_name, log_mode='w', log_level='info', console_enable=True)
     log.get(py_name).info('Test Logger Creat Success')
     current_date = datetime.datetime.now().strftime('%Y%m%d')
     start_date = (datetime.datetime.now() - datetime.timedelta(days=10)).strftime('%Y%m%d')    # 10 days ago

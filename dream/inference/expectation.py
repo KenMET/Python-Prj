@@ -85,12 +85,12 @@ def pridct_next(quent_type, user_name):
         bark_obj = notify.bark()
         content = ''
         for index in notify_dict:
-            content += '%s: [0,%.3f]&[%.2f,+∞]\n'%(index, 1.2, 8.8)
+            content += '%s: [0,%.3f]&[%.3f,+∞]\n'%(index, index.get('buy',-1), index.get('sell',-1))
         bark_obj.send_title_content('Kanos Stock House', content)
 
 
 def main(args):
-    log.init(py_dir, py_name, log_mode='w', log_level='info', console_enable=True)
+    log.init('%s/../log'%(py_dir), py_name, log_mode='w', log_level='info', console_enable=True)
     log.get(py_name).info('Logger Creat Success...[%s]'%(py_name))
     
     quantitative_type = ['simulation', 'formal']
