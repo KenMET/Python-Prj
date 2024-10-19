@@ -5,31 +5,17 @@ import os
 import sys
 import argparse
 import datetime
-import pandas as pd
 
 # Customsized lib
 py_dir = os.path.dirname(os.path.realpath(__file__))
 py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
 sys.path.append(r'%s/'%(py_dir))
-import longport.openapi
 from strategy import get_stategy_handle
-sys.path.append(r'%s/../../mysql'%(py_dir))
-import db_dream_dog as dbdd
+sys.path.append(r'%s/../common'%(py_dir))
+from database import get_market_by_range
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
 import log
 
-
-def get_market_by_range(target, start, end):
-    db = dbdd.db('dream_dog')
-    ret = db.query_dog_markey_by_daterange(target, start, end)
-    df = pd.DataFrame([db.get_dict_from_obj(i) for i in ret])
-    
-    # Make sure date soted
-    df['Date'] = pd.to_datetime(df['Date'])
-    df = df.sort_values('Date')
-    df['Close'] = pd.to_numeric(df['Close'], errors='coerce')           # 确保 Close 列为数值类型
-
-    return df
 
 def get_portfolio(df):
     # 初始资金和参数
@@ -63,7 +49,7 @@ def get_portfolio(df):
                 diff = additional_shares * current_price + transaction_fee  # 扣除买入金额和手续费
                 capital -= diff
                 shares += additional_shares  # 更新持仓
-                log.get(py_name).info('Buy:%s, value:%.3f qty:%d(%0.3f) hold:%d cap:%.3f'%(df['Date'].iloc[i].date(), 
+                log.get().info('Buy:%s, value:%.3f qty:%d(%0.3f) hold:%d cap:%.3f'%(df['Date'].iloc[i].date(), 
                     current_price, additional_shares, diff, shares, total_capital))
 
         # 卖出逻辑
@@ -77,7 +63,7 @@ def get_portfolio(df):
                 diff = sell_shares * current_price - transaction_fee    # 增加卖出金额，扣除手续费
                 capital += diff
                 shares -= sell_shares  # 更新持仓
-                log.get(py_name).info('Sell:%s, value:%.3f qty:%d(%0.3f) hold:%d cap:%.3f'%(df['Date'].iloc[i].date(), 
+                log.get().info('Sell:%s, value:%.3f qty:%d(%0.3f) hold:%d cap:%.3f'%(df['Date'].iloc[i].date(), 
                     current_price, sell_shares, diff, shares, total_capital))
 
     return total_capital
@@ -85,35 +71,35 @@ def get_portfolio(df):
 def backtest(target, df):
     stategy_handle = get_stategy_handle(target)
     if stategy_handle == None:
-        log.get(py_name).error('stategy_handle Null')
+        log.get().error('stategy_handle Null')
         return
 
     df = stategy_handle.mean_reversion(df)
     # Output the data of the trading signal
     trades = df[df['Signal'] != 0]
-    log.get(py_name).info(trades)
+    log.get().info(trades)
 
     final_capital = get_portfolio(df)
-    log.get(py_name).info('Final capital:%.3f'%(final_capital))
+    log.get().info('Final capital:%.3f'%(final_capital))
 
 def pridct_next(target, df):
     stategy_handle = get_stategy_handle(target)
     if stategy_handle == None:
-        log.get(py_name).error('stategy_handle Null')
+        log.get().error('stategy_handle Null')
         return
 
     next_predict = stategy_handle.mean_reversion_expect(df)
-    log.get(py_name).info(next_predict)
+    log.get().info(next_predict)
 
 def main(args):
     log.init('%s/../log'%(py_dir), py_name, log_mode='w', log_level='info', console_enable=True)
-    log.get(py_name).info('Logger Creat Success...[%s]'%(py_name))
+    log.get().info('Logger Creat Success...[%s]'%(py_name))
     
     if (args.target == ''):
-        log.get(py_name).error('Target Null, please setup target by "--target XXX"')
+        log.get().error('Target Null, please setup target by "--target XXX"')
         return
     if (args.start == ''):
-        log.get(py_name).error('Start Date Null, please setup start date "--start 20240101"')
+        log.get().error('Start Date Null, please setup start date "--start 20240101"')
         return
     end_date = datetime.date.today()
     if (args.end != ''):
@@ -121,7 +107,7 @@ def main(args):
     start_date = datetime.datetime.strptime(args.start, "%Y%m%d").date()
 
     if ((end_date - start_date).days < 30):
-        log.get(py_name).error('Start day too fucking less, set "start" to a date before 1 fucking month')
+        log.get().error('Start day too fucking less, set "start" to a date before 1 fucking month')
         return
 
     df = get_market_by_range(args.target, start_date, end_date)

@@ -2,14 +2,19 @@
 
 import os, sys
 import logging
+import inspect
 
 py_dir = os.path.dirname(os.path.realpath(__file__))
 py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
 
 logger_objs = {}
-def get(log_name):
+def get():
     global logger_objs
-    log_temp = logger_objs.get(log_name, None)
+    stack = inspect.stack()
+    entry_frame = stack[-1]
+    file_name = entry_frame.filename
+    file_name = file_name[file_name.rfind('/')+1:file_name.rfind('.py')]
+    log_temp = logger_objs.get(file_name, None)
     if log_temp == None:
         print ('Log not init, using default logger, please init first...')
         if logger_objs.get('default', None) == None:

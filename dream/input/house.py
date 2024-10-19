@@ -10,41 +10,25 @@ import argparse
 py_dir = os.path.dirname(os.path.realpath(__file__))
 py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
 sys.path.append(r'%s/'%(py_dir))
-import longport.openapi
 sys.path.append(r'%s/../../mysql'%(py_dir))
-import db_dream_secret as dbds
 import db_dream_account as dbda
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
 import log
 sys.path.append(r'%s/../common'%(py_dir))
 from config import get_house
-
-
-def quantitative_init(quant_type, user):
-    db = dbds.db('dream_sentiment')
-    if (not db.is_table_exist()):
-        #log.get(py_name).info('Quantitative table not exist, new a table...')
-        db.create_secret_table()
-    res = db.query_secret_by_type(quant_type, user)
-    if len(res) != 1:
-        return
-    os.environ['LONGPORT_APP_KEY'] = res[0].App_Key
-    os.environ['LONGPORT_APP_SECRET'] = res[0].App_Secret
-    os.environ['LONGPORT_ACCESS_TOKEN'] = res[0].Access_Token
+from longport_api import quantitative_init, get_trade_context
+from database import create_if_house_inexist, get_house_detail, get_holding
 
 def house_update(name):
-    db = dbda.db('dream_sentiment')
-    if (not db.is_table_exist()):      # New a table to insert
-        #log.get(py_name).info('House not exist, new a table...')
-        db.create_dog_house_table()
-    trade_ctx = longport.openapi.TradeContext(longport.openapi.Config.from_env())
+    db = create_if_house_inexist()
+    trade_ctx = get_trade_context()
     resp = trade_ctx.account_balance(currency='USD')
     if len(resp) != 1:
-        #log.get(py_name).info('Account Balance exception: %s'%(str(resp)))
+        #log.get().info('Account Balance exception: %s'%(str(resp)))
         return
     house = resp[0]
     if len(house.cash_infos) != 1:
-        #log.get(py_name).info('Account Balance Cash Infos exception: %s'%(str(resp)))
+        #log.get().info('Account Balance Cash Infos exception: %s'%(str(resp)))
         return
     house_cash_infos = house.cash_infos[0]
     house_dict = {
@@ -61,7 +45,7 @@ def house_update(name):
     }
     resp = trade_ctx.stock_positions()
     if len(resp.channels) != 1:
-        #log.get(py_name).info('Stock Positions exception: %s'%(str(resp)))
+        #log.get().info('Stock Positions exception: %s'%(str(resp)))
         return
     positions = resp.channels[0].positions
     holding_list = []
@@ -70,27 +54,9 @@ def house_update(name):
     house_dict.update({'Holding':str(holding_list)})
     db.update_house_by_name(name, house_dict)
 
-def get_house_detail(name):
-    db = dbda.db('dream_sentiment')
-    temp = db.query_house_by_name(name)
-    if len(temp) != 1:
-        #log.get(py_name).info('House get exception: %s'%(name))
-        return
-    return db.get_dict_from_obj(temp[0])
-
-def get_holding(name):
-    db = dbda.db('dream_sentiment')
-    temp = db.query_house_by_name(name)
-    if len(temp) != 1:
-        #log.get(py_name).info('House get exception: %s'%(name))
-        return
-    account_dict = db.get_dict_from_obj(temp[0])
-    return ast.literal_eval(account_dict['Holding'])
-
-
 def main(args):
     log.init('%s/../log'%(py_dir), py_name, log_mode='w', log_level='info', console_enable=True)
-    log.get(py_name).info('Logger Creat Success')
+    log.get().info('Logger Creat Success')
 
     quantitative_type = ['simulation', 'formal']
     house_dict = get_house()
@@ -100,20 +66,20 @@ def main(args):
             for q_type in quantitative_type:
                 quantitative_init(q_type, user_name)
                 house_name = '%s-%s'%(q_type, user_name)
-                log.get(py_name).info('start update house: %s'%(house_name))
+                log.get().info('start update house: %s'%(house_name))
                 house_update(house_name)
                 house = get_house_detail(house_name)
                 house_holding = get_holding(house_name)
-                log.get(py_name).info(house)
-                log.get(py_name).info(house_holding)
+                log.get().info(house)
+                log.get().info(house_holding)
         else:
             quantitative_init(quent_type, user_name)
             house_name = '%s-%s'%(quent_type, user_name)
-            log.get(py_name).info('start update house: %s'%(house_name))
+            log.get().info('start update house: %s'%(house_name))
             house_update(house_name)
             house = get_house_detail(house_name)
             house_holding = get_holding(house_name)
-            log.get(py_name).info(house)
+            log.get().info(house)
             log.get(py_name).info(house_holding)
 
 if __name__ == '__main__':

@@ -71,10 +71,10 @@ def get_house(user=None):
 
 def main():
     log.init('%s/../log'%(py_dir), py_name, log_mode='w', log_level='info', console_enable=True)
-    log.get(py_name).info('Logger Creat Success...')
+    log.get().info('Logger Creat Success...')
 
     
-    log.get(py_name).info(get_strategy('NVDA'))
+    log.get().info(get_strategy('NVDA'))
 
 
 if __name__ == '__main__':

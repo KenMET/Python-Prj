@@ -15,43 +15,17 @@ import pandas as pd
 py_dir = os.path.dirname(os.path.realpath(__file__))
 py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
 sys.path.append(r'%s/'%(py_dir))
-import longport.openapi
-
-sys.path.append(r'%s/../input'%(py_dir))
-from house import get_holding, get_house_detail
 sys.path.append(r'%s/../inference'%(py_dir))
 from strategy import get_stategy_handle
-sys.path.append(r'%s/../../mysql'%(py_dir))
-import db_dream_dog as dbdd
-import db_dream_secret as dbds
+sys.path.append(r'%s/../common'%(py_dir))
+from config import get_house
+from longport_api import quantitative_init, trade_submit
+from database import get_house_detail, get_holding, get_market_by_range
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
 import log
 
-def quantitative_init(quant_type, user):
-    db = dbds.db('dream_sentiment')
-    if (not db.is_table_exist()):
-        #log.get(py_name).info('Quantitative table not exist, new a table...')
-        db.create_secret_table()
-    res = db.query_secret_by_type(quant_type, user)
-    if len(res) != 1:
-        return
-    os.environ['LONGPORT_APP_KEY'] = res[0].App_Key
-    os.environ['LONGPORT_APP_SECRET'] = res[0].App_Secret
-    os.environ['LONGPORT_ACCESS_TOKEN'] = res[0].Access_Token
 
-def get_market_by_range(target, start, end):
-    db = dbdd.db('dream_dog')
-    ret = db.query_dog_markey_by_daterange(target, start, end)
-    df = pd.DataFrame([db.get_dict_from_obj(i) for i in ret])
-    
-    # Make sure date soted
-    df['Date'] = pd.to_datetime(df['Date'])
-    df = df.sort_values('Date')
-    df['Close'] = pd.to_numeric(df['Close'], errors='coerce')           # 确保 Close 列为数值类型
-
-    return df
-
-def pridct_next(quent_type, user_name):
+def get_expect(quent_type, user_name):
     house_name = '%s-%s'%(quent_type, user_name)
     house_holding = get_holding(house_name)
 
@@ -60,11 +34,11 @@ def pridct_next(quent_type, user_name):
         dog_code = hold_index.get('Code')
         dog_code_filter = dog_code[:dog_code.rfind('.US')]     # Support US market fornow
         if re.search(r'\d{6}', dog_code_filter):   # Search if have number like '250117'
-            log.get(py_name).info('Detect share option[%s]'%(dog_code_filter))
+            log.get().info('Detect share option[%s]'%(dog_code_filter))
         else:
             stategy_handle = get_stategy_handle(dog_code_filter)
             if stategy_handle == None:
-                log.get(py_name).error('stategy_handle Null')
+                log.get().error('stategy_handle Null')
                 return {}
             current_date = datetime.datetime.now().strftime('%Y%m%d')
             start_date = (datetime.datetime.now() - datetime.timedelta(days=(stategy_handle.long * 2))).strftime('%Y%m%d')
@@ -72,19 +46,18 @@ def pridct_next(quent_type, user_name):
             next_predict = stategy_handle.mean_reversion_expect(df)
             if len(next_predict) != 0:
                 notify_dict.update({dog_code:next_predict})
-                #log.get(py_name).info('[%s]: %s'%(dog_code, str(next_predict)))
+                #log.get().info('[%s]: %s'%(dog_code, str(next_predict)))
     return notify_dict
 
-def get_holding_by_dog_id(holding_dict, dog_id):
-    for index in holding_dict:
-        if index.get('Code', '') == dog_id:
-            return index
-    return {}
-
-def trade(ctx, house_dict, dog_opt, dog_id):
+def trade(house_dict, dog_opt, dog_id):
+    def get_holding_by_dog_id(holding_dict, dog_id):
+        for index in holding_dict:
+            if index.get('Code', '') == dog_id:
+                return index
+        return {}
     available_cash = float(house_dict['AvailableCash'])
     holding = get_holding_by_dog_id(json.loads(house_dict['Holding'].replace("'",'"')), dog_id)
-    log.get(py_name).info('[%s] holding: %s'%(dog_id, str(holding)))
+    log.get().info('[%s] holding: %s'%(dog_id, str(holding)))
 
     for order_index in dog_opt:
         val = float(dog_opt[order_index])
@@ -95,49 +68,35 @@ def trade(ctx, house_dict, dog_opt, dog_id):
                 opt_share = 1
             else:
                 opt_share = curr_share * 2
-            log.get(py_name).info('[%s] Buy %d %.2f'%(dog_id, opt_share, val))
-            resp = ctx.submit_order(symbol = dog_id,
-                side = longport.openapi.OrderSide.Buy,
-                order_type = longport.openapi.OrderType.LO,
-                submitted_price = round(val, 2),
-                submitted_quantity = int(opt_share),
-                time_in_force = longport.openapi.TimeInForceType.Day,
-                remark = "Buy",
-            )
         elif order_index == 'sell':
             if (curr_share == 0):
                 continue
             opt_share = curr_share // 2
-            log.get(py_name).info('[%s] Sell %d %.2f'%(dog_id, opt_share, val))
-            resp = ctx.submit_order(symbol = dog_id,
-                side = longport.openapi.OrderSide.Sell,
-                order_type = longport.openapi.OrderType.LO,
-                submitted_price = round(val, 2),
-                submitted_quantity = int(opt_share),
-                time_in_force = longport.openapi.TimeInForceType.Day,
-                remark = "Sell",
-            )
+        else:
+            continue
+        log.get().info('[%s] %s %d shares in price %.2f'%(dog_id, order_index, opt_share, val))
+        trade_submit(dog_id, order_index, val, opt_share)
+
 
 def main(args):
     log.init('%s/../log'%(py_dir), py_name, log_mode='w', log_level='info', console_enable=True)
-    log.get(py_name).info('Logger Creat Success...[%s]'%(py_name))
+    log.get().info('Logger Creat Success...[%s]'%(py_name))
 
     if args.user == '':
-        log.get(py_name).error('User Null')
+        log.get().error('User Null')
         return 
 
     result = subprocess.run(["python3", "%s/../input/house.py"], capture_output=True, text=True)
     quantitative_init(args.quantitative, args.user)
-    predict_dict = pridct_next(args.quantitative, args.user)
-    log.get(py_name).info(predict_dict)
+    predict_dict = get_expect(args.quantitative, args.user)
+    log.get().info(predict_dict)
 
     house_dict = get_house_detail('%s-%s'%(args.quantitative, args.user))
 
-    ctx = longport.openapi.TradeContext(longport.openapi.Config.from_env())
     # Submit order
     for index in predict_dict:
         dog_opt = predict_dict[index]
-        trade(ctx, house_dict, dog_opt, index)
+        trade(house_dict, dog_opt, index)
 
 if __name__ == '__main__':
     # Create ArgumentParser Object

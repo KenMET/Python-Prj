@@ -9,14 +9,14 @@ py_dir = os.path.dirname(os.path.realpath(__file__))
 py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
 sys.path.append(r'%s/'%(py_dir))
 import akshare as ak
-sys.path.append(r'%s/../../mysql'%(py_dir))
-import db_dream_dog_info as dbddi
+sys.path.append(r'%s/../common'%(py_dir))
+from database import create_and_clear_info
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
 import log
 
 def main(args):
     log.init('%s/../log'%(py_dir), py_name, log_mode='w', log_level='info', console_enable=True)
-    log.get(py_name).info('Logger Creat Success')
+    log.get().info('Logger Creat Success')
 
     if (args.market == 'cn_a'):
         df = ak.stock_zh_a_spot_em()
@@ -35,16 +35,11 @@ def main(args):
     df = df.astype(str)
     dog_list = df.to_dict(orient='records')
 
-    db = dbddi.db('dream_dog')
-    if (not db.is_table_exist(args.market)):
-        log.get(py_name).info('%s dog info table not exist, create...'%(args.market))
-        db.create_dog_info_table(args.market)
-    db.delete_dog_all(args.market)
-
+    db = create_and_clear_info(args.market)
     for dog_index in dog_list:
         flag = db.insert_dog(args.market, dog_index)
         if (not flag):
-            log.get(py_name).info('%s dog insert failed: %s'%(args.market, str(dog_index)))
+            log.get().info('%s dog insert failed: %s'%(args.market, str(dog_index)))
 
 if __name__ == '__main__':
     # Create ArgumentParser Object
