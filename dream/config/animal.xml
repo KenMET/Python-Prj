@@ -8,8 +8,9 @@
     <dog_cn_a_list>
         <id>002935</id><id>002261</id><id>002594</id><id>002869</id><id>000901</id>     <!--Start with '0'-->
         <id>002977</id><id>002338</id><id>000729</id><id>000568</id><id>000858</id>
+        <id>000001</id><id>000300</id><id>000016</id>
         <id>159518</id><id>159655</id><id>159509</id><id>159632</id><id>159995</id>     <!--Start with '1'-->
-        <id>300750</id><id>300458</id><id>300552</id>                                   <!--Start with '3'-->
+        <id>300750</id><id>300458</id><id>300552</id><id>399001</id><id>399006</id>     <!--Start with '3'-->
         <id>513850</id><id>513520</id><id>513500</id><id>513870</id>                    <!--Start with '5'-->
         <id>603893</id><id>600584</id><id>600183</id><id>688981</id><id>600600</id>     <!--Start with '6'-->
         <id>600754</id><id>600809</id><id>600859</id><id>600519</id><id>600085</id>
