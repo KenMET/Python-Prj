@@ -3,6 +3,7 @@
 # System lib
 import os
 import sys
+import datetime
 
 # Customsized lib
 py_dir = os.path.dirname(os.path.realpath(__file__))
@@ -13,6 +14,8 @@ from longport.openapi import Period, AdjustType
 from longport.openapi import OrderSide, OrderType, TimeInForceType
 sys.path.append(r'%s/../../mysql'%(py_dir))
 import db_dream_secret as dbds
+sys.path.append(r'%s/../../common_api/log'%(py_dir))
+import log
 
 def quantitative_init(quant_type, user):
     db = dbds.db('dream_sentiment')
@@ -40,6 +43,32 @@ def get_history(id, **kwargs):
         AdjustType.ForwardAdjust, **kwargs)
     return resp
 
+def get_last_price(code):
+    quote_ctx = QuoteContext(Config.from_env())
+    resp = quote_ctx.quote([code])
+    return float(resp[0].last_done)
+
+# Please make sure your time in UTC+8:
+# apt install -y tzdata
+# ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+# echo "Asia/Shanghai" > /etc/timezone
+# date
+def get_order_dict_from_obj(resp):
+    order_dict = {
+        'OrderID' : resp.order_id,
+        'Date' : datetime.datetime.now(),
+        'Side' : resp.side,
+        'Type' : resp.order_type,
+        'Code' : resp.symbol,
+        'Currency' : resp.currency,
+        'Quantity' : '%d/%d'%(resp.executed_quantity, resp.quantity),
+        'Price' : float(resp.price),
+        'ExecutedPrice' : 0.0 if resp.executed_price == None else float(resp.executed_price),
+        'Fee' : float(resp.charge_detail.total_amount),
+        'Status' : resp.status,
+    }
+    return order_dict
+
 # LO (Limit Order): (目前都以这个为默认先，学习其他量化知识再升级交易接口)
 # 限价单，在设定的价格或更好的价格执行交易。买单会在设定价格或更低价格执行，卖单会在设定价格或更高价格执行。
 # MIT (Market If Touched):
@@ -61,4 +90,14 @@ def trade_submit(dog_id, side, price, share):
         time_in_force = TimeInForceType.Day,
         remark = "%s"%(side),
     )
+    return get_order_detail(resp.order_id)
+
+def get_order_detail(order_id):
+    ctx = get_trade_context()
+    resp = ctx.order_detail(order_id)
+    return get_order_dict_from_obj(resp)
+
+def cancel_order(order_id):
+    ctx = get_trade_context()
+    resp = ctx.cancel_order(order_id)
     return resp

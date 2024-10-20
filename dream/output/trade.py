@@ -15,12 +15,15 @@ import pandas as pd
 py_dir = os.path.dirname(os.path.realpath(__file__))
 py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
 sys.path.append(r'%s/'%(py_dir))
+from monitor import start_monitor
 sys.path.append(r'%s/../inference'%(py_dir))
 from strategy import get_stategy_handle
 sys.path.append(r'%s/../common'%(py_dir))
 from config import get_house
+sys.path.append(r'%s/../input'%(py_dir))
+from house import house_update
 from longport_api import quantitative_init, trade_submit
-from database import get_house_detail, get_holding, get_market_by_range
+from database import get_house_detail, get_holding, get_market_by_range, create_if_order_inexist
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
 import log
 
@@ -49,7 +52,7 @@ def get_expect(quent_type, user_name):
                 #log.get().info('[%s]: %s'%(dog_code, str(next_predict)))
     return notify_dict
 
-def trade(house_dict, dog_opt, dog_id):
+def trade(order_dest, house_dict, dog_opt, dog_id):
     def get_holding_by_dog_id(holding_dict, dog_id):
         for index in holding_dict:
             if index.get('Code', '') == dog_id:
@@ -75,28 +78,45 @@ def trade(house_dict, dog_opt, dog_id):
         else:
             continue
         log.get().info('[%s] %s %d shares in price %.2f'%(dog_id, order_index, opt_share, val))
-        trade_submit(dog_id, order_index, val, opt_share)
-
+        order_dict = trade_submit(dog_id, order_index, val, opt_share)
+        db = create_if_order_inexist(order_dest)
+        log.get().info('Insert for: %s'%(str(order_dict)))
+        if not db.insert_order(order_dest, order_dict):
+            log.get().error('Order Inser Error...[%s] %s'%(order_dest, str(order_dict)))
+        else:
+            start_monitor(py_name, order_dest, order_dict)
 
 def main(args):
     log.init('%s/../log'%(py_dir), py_name, log_mode='w', log_level='info', console_enable=True)
     log.get().info('Logger Creat Success...[%s]'%(py_name))
 
+    quantitative_init(args.quantitative, args.user)
     if args.user == '':
         log.get().error('User Null')
         return 
 
-    result = subprocess.run(["python3", "%s/../input/house.py"], capture_output=True, text=True)
-    quantitative_init(args.quantitative, args.user)
+    order_dict = trade_submit('NVDA.US', 'buy', 140.58, 5)
+    order_dest = '%s-%s'%(args.quantitative, args.user)
+    db = create_if_order_inexist(order_dest)
+    log.get().info('Insert for: %s'%(str(order_dict)))
+    if not db.insert_order(order_dest, order_dict):
+        log.get().info('Order Inser Error...[%s] %s'%(order_dest, str(order_dict)))
+    else:
+        start_monitor(py_name, order_dest, order_dict)
+    exit()
+
+    #result = subprocess.run(["python3", "%s/../input/house.py"], capture_output=True, text=True)
+    house_update(args.user)
     predict_dict = get_expect(args.quantitative, args.user)
     log.get().info(predict_dict)
 
     house_dict = get_house_detail('%s-%s'%(args.quantitative, args.user))
 
+    order_dest = '%s-%s'%(args.quantitative, args.user)
     # Submit order
     for index in predict_dict:
         dog_opt = predict_dict[index]
-        trade(house_dict, dog_opt, index)
+        trade(order_dest, house_dict, dog_opt, index)
 
 if __name__ == '__main__':
     # Create ArgumentParser Object

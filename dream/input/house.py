@@ -24,11 +24,11 @@ def house_update(name):
     trade_ctx = get_trade_context()
     resp = trade_ctx.account_balance(currency='USD')
     if len(resp) != 1:
-        #log.get().info('Account Balance exception: %s'%(str(resp)))
+        log.get().info('Account Balance exception: %s'%(str(resp)))
         return
     house = resp[0]
     if len(house.cash_infos) != 1:
-        #log.get().info('Account Balance Cash Infos exception: %s'%(str(resp)))
+        log.get().info('Account Balance Cash Infos exception: %s'%(str(resp)))
         return
     house_cash_infos = house.cash_infos[0]
     house_dict = {
@@ -45,7 +45,7 @@ def house_update(name):
     }
     resp = trade_ctx.stock_positions()
     if len(resp.channels) != 1:
-        #log.get().info('Stock Positions exception: %s'%(str(resp)))
+        log.get().info('Stock Positions exception: %s'%(str(resp)))
         return
     positions = resp.channels[0].positions
     holding_list = []
@@ -53,6 +53,7 @@ def house_update(name):
         holding_list.append({'Code':index.symbol,'Quantity':int(index.init_quantity),'CostPrice':float(index.cost_price)})
     house_dict.update({'Holding':str(holding_list)})
     db.update_house_by_name(name, house_dict)
+    log.get().info('House updated for: %s'%(name))
 
 def main(args):
     log.init('%s/../log'%(py_dir), py_name, log_mode='w', log_level='info', console_enable=True)

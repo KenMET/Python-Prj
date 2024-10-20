@@ -8,7 +8,7 @@ py_dir = os.path.dirname(os.path.realpath(__file__))
 py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
 
 logger_objs = {}
-def get():
+def get(calling_name=None):
     global logger_objs
     stack = inspect.stack()
     entry_frame = stack[-1]
@@ -16,11 +16,15 @@ def get():
     file_name = file_name[file_name.rfind('/')+1:file_name.rfind('.py')]
     log_temp = logger_objs.get(file_name, None)
     if log_temp == None:
-        print ('Log not init, using default logger, please init first...')
-        if logger_objs.get('default', None) == None:
-            print ('Default logger not init yet, start init')
-            init(py_dir, 'default')
-        return logger_objs.get('default', None)
+        if calling_name != None:
+            log_temp = logger_objs.get(calling_name, None)
+            if log_temp == None:
+                print ('Log not init, using default logger, please init first...')
+                if logger_objs.get('default', None) == None:
+                    print ('Default logger not init yet, start init')
+                    init(py_dir, 'default')
+                return logger_objs.get('default', None)
+            #print ('Log Found form calling_name[%s]'%(calling_name))
     return log_temp
 
 def init(log_dir, log_name, log_mode='w', log_level='info', console_enable=True):
