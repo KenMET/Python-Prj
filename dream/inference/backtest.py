@@ -10,7 +10,7 @@ import datetime
 py_dir = os.path.dirname(os.path.realpath(__file__))
 py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
 sys.path.append(r'%s/'%(py_dir))
-from strategy import basic, get_stategy_handle, generate_basic_stategy_list
+from strategy import basic, get_stategy_handle, generate_basic_strategy_list
 sys.path.append(r'%s/../common'%(py_dir))
 from config import get_dog
 from database import get_market_by_range
@@ -86,8 +86,8 @@ def backtest(target, df):
     #log.get().info('Final capital:%.3f'%(final_capital))
     return final_capital
 
-def backtest_traversal(target, df):
-    stategy_list = generate_basic_stategy_list()
+def backtest_traversal_strategy(target, df):
+    stategy_list = generate_basic_strategy_list()
     stategy_handle = None
     max_capital = 0
     for index in stategy_list:
@@ -106,17 +106,40 @@ def backtest_traversal(target, df):
             log.get().info('[%s]Final capital:%.3f'%(target, final_capital))
             log.get().info(index)
 
-def backtest_winning_per(start_date, end_date):
-    stategy_list = generate_basic_stategy_list()
-    stategy_handle = None
+def backtest_traversal_dog(start_date, end_date):
+    short = 5
+    long = 30
+    th = 1.0
+    trade_interval = 2
 
+    winning_cnt = 0
+    cn_dog_list = get_dog('cn_a')
+    us_dog_list = get_dog('us')
+    temp_list = []
+    #temp_list = list(set(temp_list).union(cn_dog_list))
+    temp_list = list(set(temp_list).union(us_dog_list))
+    for dog_index in temp_list:
+        stategy_handle = basic(short, long, th, trade_interval)
+        df = get_market_by_range(dog_index, start_date, end_date)
+        df = stategy_handle.mean_reversion(df)
+        trades = df[df['Signal'] != 0]
+        final_capital = get_portfolio(df)
+        capital_per = ((final_capital-init_capital)/init_capital ) * 100
+        if capital_per > 5:    # over 5%
+            winning_cnt += 1
+            log.get().info('[%s] [%.2f -> %.2f](%.2f%%)'%(dog_index, init_capital, final_capital, capital_per))
+        else:
+            log.get().info('[%s] [%.2f -> %.2f](%.2f%%)'%(dog_index, init_capital, final_capital, capital_per))
+        df = df.drop(df.index)
+
+    per = (winning_cnt / len(temp_list)) * 100
+    log.get().info('[%s] Win[%.2f%%](%d/%d)'%(dog_index, per, winning_cnt, len(temp_list)))
+
+def backtest_winning_per(start_date, end_date):
+    stategy_list = generate_basic_strategy_list()
     max_per = 0
     for index in stategy_list:
         winning_cnt = 0
-        stategy_handle = basic(index['short'], index['long'], index['th'], index['trade_interval'])
-        if stategy_handle == None:
-            log.get().error('stategy_handle Null')
-            return
         cn_dog_list = get_dog('cn_a')
         us_dog_list = get_dog('us')
         temp_list = []
@@ -124,6 +147,7 @@ def backtest_winning_per(start_date, end_date):
         temp_list = list(set(temp_list).union(us_dog_list))
         for dog_index in temp_list:
             df = get_market_by_range(dog_index, start_date, end_date)
+            stategy_handle = basic(index['short'], index['long'], index['th'], index['trade_interval'])
             df = stategy_handle.mean_reversion(df)
             trades = df[df['Signal'] != 0]
             final_capital = get_portfolio(df)
@@ -168,11 +192,12 @@ def main(args):
         target_list.append(args.target)
 
     backtest_winning_per(start_date, end_date)
+    #backtest_traversal_dog(start_date, end_date)
     exit()
     for index in target_list:
         df = get_market_by_range(index, start_date, end_date)
         #backtest(index, df)
-        backtest_traversal(index, df)
+        backtest_traversal_strategy(index, df)
         #pridct_next(index, df)
     
 

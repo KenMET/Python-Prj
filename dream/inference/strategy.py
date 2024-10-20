@@ -32,7 +32,7 @@ def get_stategy_handle(target):
         pass
     return stategy_handle
 
-def generate_basic_stategy_list():
+def generate_basic_strategy_list():
     short_range = range(2, 8+1)
     long_range = range(15, 30+1)
     th_range = range(1, 15+1)  # persentage
