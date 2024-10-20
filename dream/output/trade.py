@@ -44,7 +44,7 @@ def get_expect(quent_type, user_name):
                 log.get().error('stategy_handle Null')
                 return {}
             current_date = datetime.datetime.now().strftime('%Y%m%d')
-            start_date = (datetime.datetime.now() - datetime.timedelta(days=(stategy_handle.long * 2))).strftime('%Y%m%d')
+            start_date = (datetime.datetime.now() - datetime.timedelta(days=(stategy_handle.long * 5))).strftime('%Y%m%d')
             df = get_market_by_range(dog_code_filter, start_date, current_date)
             next_predict = stategy_handle.mean_reversion_expect(df)
             if len(next_predict) != 0:
