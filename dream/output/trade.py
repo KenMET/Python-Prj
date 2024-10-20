@@ -95,16 +95,6 @@ def main(args):
         log.get().error('User Null')
         return 
 
-    order_dict = trade_submit('NVDA.US', 'buy', 140.58, 5)
-    order_dest = '%s-%s'%(args.quantitative, args.user)
-    db = create_if_order_inexist(order_dest)
-    log.get().info('Insert for: %s'%(str(order_dict)))
-    if not db.insert_order(order_dest, order_dict):
-        log.get().info('Order Inser Error...[%s] %s'%(order_dest, str(order_dict)))
-    else:
-        start_monitor(py_name, order_dest, order_dict)
-    exit()
-
     #result = subprocess.run(["python3", "%s/../input/house.py"], capture_output=True, text=True)
     house_update(args.user)
     predict_dict = get_expect(args.quantitative, args.user)
