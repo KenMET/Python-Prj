@@ -10,19 +10,22 @@ import datetime
 py_dir = os.path.dirname(os.path.realpath(__file__))
 py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
 sys.path.append(r'%s/'%(py_dir))
-from strategy import get_stategy_handle
+from strategy import basic, get_stategy_handle, generate_basic_stategy_list
 sys.path.append(r'%s/../common'%(py_dir))
+from config import get_dog
 from database import get_market_by_range
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
 import log
 
+init_capital = 10000.0
+init_transaction_fee = 5  # 每次交易的手续费
 
 def get_portfolio(df):
     # 初始资金和参数
-    capital = 10000.0   # 初始化资金
+    capital = init_capital   # 初始化资金
     
     shares = 0  # 初始化持仓
-    transaction_fee = 5  # 每次交易的手续费
+    transaction_fee = init_transaction_fee  # 每次交易的手续费
     total_capital = capital
 
     # 设置参数
@@ -49,8 +52,8 @@ def get_portfolio(df):
                 diff = additional_shares * current_price + transaction_fee  # 扣除买入金额和手续费
                 capital -= diff
                 shares += additional_shares  # 更新持仓
-                log.get().info('Buy:%s, value:%.3f qty:%d(%0.3f) hold:%d cap:%.3f'%(df['Date'].iloc[i].date(), 
-                    current_price, additional_shares, diff, shares, total_capital))
+                #log.get().info('Buy:%s, value:%.3f qty:%d(%0.3f) hold:%d cap:%.3f'%(df['Date'].iloc[i].date(), 
+                #    current_price, additional_shares, diff, shares, total_capital))
 
         # 卖出逻辑
         elif df['Position'].iloc[i] < -0.9 and df['Signal'].iloc[i] == -1:  # 卖出信号
@@ -63,8 +66,8 @@ def get_portfolio(df):
                 diff = sell_shares * current_price - transaction_fee    # 增加卖出金额，扣除手续费
                 capital += diff
                 shares -= sell_shares  # 更新持仓
-                log.get().info('Sell:%s, value:%.3f qty:%d(%0.3f) hold:%d cap:%.3f'%(df['Date'].iloc[i].date(), 
-                    current_price, sell_shares, diff, shares, total_capital))
+                #log.get().info('Sell:%s, value:%.3f qty:%d(%0.3f) hold:%d cap:%.3f'%(df['Date'].iloc[i].date(), 
+                #    current_price, sell_shares, diff, shares, total_capital))
 
     return total_capital
 
@@ -72,15 +75,66 @@ def backtest(target, df):
     stategy_handle = get_stategy_handle(target)
     if stategy_handle == None:
         log.get().error('stategy_handle Null')
-        return
+        return init_capital
 
     df = stategy_handle.mean_reversion(df)
     # Output the data of the trading signal
     trades = df[df['Signal'] != 0]
-    log.get().info(trades)
+    #log.get().info(trades)
 
     final_capital = get_portfolio(df)
-    log.get().info('Final capital:%.3f'%(final_capital))
+    #log.get().info('Final capital:%.3f'%(final_capital))
+    return final_capital
+
+def backtest_traversal(target, df):
+    stategy_list = generate_basic_stategy_list()
+    stategy_handle = None
+    max_capital = 0
+    for index in stategy_list:
+        stategy_handle = basic(index['short'], index['long'], index['th'], index['trade_interval'])
+        if stategy_handle == None:
+            log.get().error('stategy_handle Null')
+            return
+        df = stategy_handle.mean_reversion(df)
+        # Output the data of the trading signal
+        trades = df[df['Signal'] != 0]
+        final_capital = get_portfolio(df)
+
+        if final_capital > max_capital:
+            max_capital = final_capital
+            #log.get().info(trades)
+            log.get().info('[%s]Final capital:%.3f'%(target, final_capital))
+            log.get().info(index)
+
+def backtest_winning_per(start_date, end_date):
+    stategy_list = generate_basic_stategy_list()
+    stategy_handle = None
+
+    max_per = 0
+    for index in stategy_list:
+        winning_cnt = 0
+        stategy_handle = basic(index['short'], index['long'], index['th'], index['trade_interval'])
+        if stategy_handle == None:
+            log.get().error('stategy_handle Null')
+            return
+        cn_dog_list = get_dog('cn_a')
+        us_dog_list = get_dog('us')
+        temp_list = []
+        #temp_list = list(set(temp_list).union(cn_dog_list))
+        temp_list = list(set(temp_list).union(us_dog_list))
+        for dog_index in temp_list:
+            df = get_market_by_range(dog_index, start_date, end_date)
+            df = stategy_handle.mean_reversion(df)
+            trades = df[df['Signal'] != 0]
+            final_capital = get_portfolio(df)
+            if (final_capital-init_capital)/init_capital > 0.05:    # over 5%
+                winning_cnt += 1
+        per = (winning_cnt / len(temp_list)) * 100
+        if per > max_per:
+            max_per = per
+            log.get().info('Win[%.2f%%](%d/%d) Detect MAX for %s'%(per, winning_cnt, len(temp_list), str(index)))
+        else:
+            log.get().info('Win[%.2f%%](%d/%d) Not good for %s'%(per, winning_cnt, len(temp_list), str(index)))
 
 def pridct_next(target, df):
     stategy_handle = get_stategy_handle(target)
@@ -95,9 +149,6 @@ def main(args):
     log.init('%s/../log'%(py_dir), py_name, log_mode='w', log_level='info', console_enable=True)
     log.get().info('Logger Creat Success...[%s]'%(py_name))
     
-    if (args.target == ''):
-        log.get().error('Target Null, please setup target by "--target XXX"')
-        return
     if (args.start == ''):
         log.get().error('Start Date Null, please setup start date "--start 20240101"')
         return
@@ -110,9 +161,19 @@ def main(args):
         log.get().error('Start day too fucking less, set "start" to a date before 1 fucking month')
         return
 
-    df = get_market_by_range(args.target, start_date, end_date)
-    backtest(args.target, df)
-    #pridct_next(args.target, df)
+    target_list = []
+    if (args.target == ''):
+        log.get().info('Target Null, traversal mode enabled')
+    else:
+        target_list.append(args.target)
+
+    backtest_winning_per(start_date, end_date)
+    exit()
+    for index in target_list:
+        df = get_market_by_range(index, start_date, end_date)
+        #backtest(index, df)
+        backtest_traversal(index, df)
+        #pridct_next(index, df)
     
 
 if __name__ == '__main__':

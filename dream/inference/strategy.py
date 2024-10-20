@@ -32,6 +32,25 @@ def get_stategy_handle(target):
         pass
     return stategy_handle
 
+def generate_basic_stategy_list():
+    short_range = range(2, 8+1)
+    long_range = range(15, 30+1)
+    th_range = range(1, 15+1)  # persentage
+    interval_range = range(1, 30+1)
+    temp_list = []
+    for a in short_range:
+        for b in long_range:
+            for c in th_range:
+                for d in interval_range:
+                    temp_dict = {
+                        'short' : int(a),
+                        'long' : int(b),
+                        'th' : float(c),
+                        'trade_interval' : int(d),
+                    }
+                    temp_list.append(temp_dict)
+    return temp_list
+
 '''
 ************************************  Rule  ************************************
 1. Each strategy class, init to input parameters

@@ -70,7 +70,7 @@ def trade(order_dest, house_dict, dog_opt, dog_id):
             if curr_share == 0:
                 opt_share = 1
             else:
-                opt_share = curr_share * 2
+                opt_share = curr_share * 2  # buy double
         elif order_index == 'sell':
             if (curr_share == 0):
                 continue
