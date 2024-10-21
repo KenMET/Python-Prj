@@ -9,20 +9,46 @@
             <type>mean_reversion</type>
             <item>config_2</item>
         </TSLA>
+        <MSFT>
+            <type>mean_reversion</type>
+            <item>config_3</item>
+        </MSFT>
+        <GOLD>
+            <type>mean_reversion</type>
+            <item>config_4</item>
+        </GOLD>
     </strategy>
 
     <mean_reversion>
+        <config_0>
+            <short_window>8</short_window>
+            <long_window>21</long_window>
+            <threshold>1</threshold>    <!--Trigger th, percentage-->
+            <cool_down_period>3</cool_down_period>  <!--Minimum trading day interval -->
+        </config_0>
         <config_1>
-            <short_window>5</short_window>
+            <short_window>9</short_window>
             <long_window>20</long_window>
-            <threshold>5</threshold>    <!--Trigger th, percentage-->
-            <cool_down_period>2</cool_down_period>  <!--Minimum trading day interval -->
+            <threshold>1.2</threshold>    <!--Trigger th, percentage-->
+            <cool_down_period>3</cool_down_period>  <!--Minimum trading day interval -->
         </config_1>
         <config_2>
-            <short_window>8</short_window>
-            <long_window>28</long_window>
-            <threshold>8</threshold>    <!--Trigger th, percentage-->
-            <cool_down_period>5</cool_down_period>  <!--Minimum trading day interval -->
+            <short_window>2</short_window>
+            <long_window>15</long_window>
+            <threshold>1.2</threshold>    <!--Trigger th, percentage-->
+            <cool_down_period>6</cool_down_period>  <!--Minimum trading day interval -->
         </config_2>
+        <config_3>
+            <short_window>6</short_window>
+            <long_window>34</long_window>
+            <threshold>2</threshold>    <!--Trigger th, percentage-->
+            <cool_down_period>3</cool_down_period>  <!--Minimum trading day interval -->
+        </config_3>
+        <config_4>
+            <short_window>5</short_window>
+            <long_window>18</long_window>
+            <threshold>1.2</threshold>    <!--Trigger th, percentage-->
+            <cool_down_period>2</cool_down_period>  <!--Minimum trading day interval -->
+        </config_4>
     </mean_reversion>
 </contents>

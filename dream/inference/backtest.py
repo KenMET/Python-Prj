@@ -71,7 +71,7 @@ def get_portfolio(df):
 
     return total_capital
 
-def backtest(target, df):
+def backtest_single(target, df):
     stategy_handle = get_stategy_handle(target)
     if stategy_handle == None:
         log.get().error('stategy_handle Null')
@@ -82,8 +82,16 @@ def backtest(target, df):
     trades = df[df['Signal'] != 0]
     #log.get().info(trades)
 
+    strategy_dict = {
+        'th' : stategy_handle.th,
+        'long' : stategy_handle.long,
+        'short' : stategy_handle.short,
+        'trade_interval' : stategy_handle.trade_interval,
+    }
     final_capital = get_portfolio(df)
-    #log.get().info('Final capital:%.3f'%(final_capital))
+    capital_per = ((final_capital-init_capital)/init_capital ) * 100
+    log.get().info('[%.2f -> %.2f](%.2f%%) %s'%(init_capital, final_capital, capital_per, strategy_dict))
+
     return final_capital
 
 def backtest_traversal_strategy(target, df):
@@ -102,15 +110,16 @@ def backtest_traversal_strategy(target, df):
 
         if final_capital > max_capital:
             max_capital = final_capital
-            #log.get().info(trades)
-            log.get().info('[%s]Final capital:%.3f'%(target, final_capital))
-            log.get().info(index)
+            capital_per = ((final_capital-init_capital)/init_capital ) * 100
+            log.get().info('[%.2f -> %.2f](%.2f%%) %s'%(init_capital, final_capital, capital_per, index))
 
 def backtest_traversal_dog(start_date, end_date):
-    short = 5
+    short = 6
     long = 30
     th = 1.0
-    trade_interval = 2
+    trade_interval = 3
+    # US 70% WIN AVG: th: 1.0  long: 21    short: 8    trade_interval:3
+    # US 80% WIN AVG: th: 1.0  long: 30    short: 6    trade_interval:3
 
     winning_cnt = 0
     cn_dog_list = get_dog('cn_a')
@@ -160,15 +169,6 @@ def backtest_winning_per(start_date, end_date):
         else:
             log.get().info('Win[%.2f%%](%d/%d) Not good for %s'%(per, winning_cnt, len(temp_list), str(index)))
 
-def pridct_next(target, df):
-    stategy_handle = get_stategy_handle(target)
-    if stategy_handle == None:
-        log.get().error('stategy_handle Null')
-        return
-
-    next_predict = stategy_handle.mean_reversion_expect(df)
-    log.get().info(next_predict)
-
 def main(args):
     log.init('%s/../log'%(py_dir), py_name, log_mode='w', log_level='info', console_enable=True)
     log.get().info('Logger Creat Success...[%s]'%(py_name))
@@ -188,18 +188,14 @@ def main(args):
     target_list = []
     if (args.target == ''):
         log.get().info('Target Null, traversal mode enabled')
+        #backtest_winning_per(start_date, end_date)                  # Backtest all strategy with all dog
+        backtest_traversal_dog(start_date, end_date)                # Backtest one strategy with all dog
     else:
         target_list.append(args.target)
-
-    backtest_winning_per(start_date, end_date)
-    #backtest_traversal_dog(start_date, end_date)
-    exit()
-    for index in target_list:
-        df = get_market_by_range(index, start_date, end_date)
-        #backtest(index, df)
-        backtest_traversal_strategy(index, df)
-        #pridct_next(index, df)
-    
+        for index in target_list:
+            df = get_market_by_range(index, start_date, end_date)
+            #backtest_single(index, df)                              # Backtest one strategy with one dog
+            backtest_traversal_strategy(index, df)                  # Backtest all strategy with one dog
 
 if __name__ == '__main__':
     # Create ArgumentParser Object

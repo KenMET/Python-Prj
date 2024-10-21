@@ -58,20 +58,16 @@ def get_strategy(id):
     tmp = cfg.get('strategy', {})
     strategy_type = ''
     strategy_item = ''
-    default_config = {
-        'class': 'basic',
-        'short_window': '5', 
-        'long_window': '20', 
-        'threshold': '5', 
-        'cool_down_period': '2', 
-    }
+    default_config = {'class':'basic'}
+    default_config.update(cfg.get('mean_reversion', {}).get('config_0', {}))
+
     for index in tmp:
         if index == id:
             strategy_type = tmp[index].get('type', '')
             strategy_item = tmp[index].get('item', '')
     if strategy_type == '' or strategy_item == '':
         return default_config
-    
+
     tmp = cfg.get(strategy_type, {}).get(strategy_item, {})
     if strategy_type == 'mean_reversion':
         tmp.update({'class':'basic'})
