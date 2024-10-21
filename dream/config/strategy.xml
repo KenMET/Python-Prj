@@ -17,6 +17,10 @@
             <type>mean_reversion</type>
             <item>config_4</item>
         </GOLD>
+        <YANG>
+            <type>mean_reversion</type>
+            <item>config_4</item>
+        </YANG>
     </strategy>
 
     <mean_reversion>
@@ -50,5 +54,11 @@
             <threshold>1.2</threshold>    <!--Trigger th, percentage-->
             <cool_down_period>2</cool_down_period>  <!--Minimum trading day interval -->
         </config_4>
+        <config_5>
+            <short_window>2</short_window>
+            <long_window>15</long_window>
+            <threshold>6</threshold>    <!--Trigger th, percentage-->
+            <cool_down_period>4</cool_down_period>  <!--Minimum trading day interval -->
+        </config_5>
     </mean_reversion>
 </contents>
