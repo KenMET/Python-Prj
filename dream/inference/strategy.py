@@ -33,19 +33,19 @@ def get_stategy_handle(target):
     return stategy_handle
 
 def generate_basic_strategy_list():
-    short_range = range(2, 8+1)
-    long_range = range(15, 30+1)
-    th_range = range(1, 15+1)  # persentage
-    interval_range = range(1, 30+1)
+    short_range = range(2, 10+1)
+    long_range = range(15, 40+1)
+    th_range = range(1, 8+1)  # persentage
+    interval_range = range(1, 10+1)
     temp_list = []
-    for a in short_range:
+    for a in th_range:
         for b in long_range:
-            for c in th_range:
+            for c in short_range:
                 for d in interval_range:
                     temp_dict = {
+                        'th' : float(a),
                         'short' : int(a),
-                        'long' : int(b),
-                        'th' : float(c),
+                        'long' : int(c),
                         'trade_interval' : int(d),
                     }
                     temp_list.append(temp_dict)
