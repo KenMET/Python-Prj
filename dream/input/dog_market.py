@@ -155,7 +155,9 @@ def main(args):
         log.get().info('Start insert for [%s]'%(dog_index))
         for dog_update_index in dog_update_list:
             #log.get().info(dog_update_index)
-            flag = db.insert_dog_market(dog_index, dog_update_index)
+            date_tmp = dog_update_index['Date']
+            flag = db.update_dog_market_by_date(dog_index, date_tmp, dog_update_index)
+            #flag = db.insert_dog_market(dog_index, dog_update_index)
             if (not flag):
                 log.get().info('dog insert failed: %s'%(str(dog_update_index)))
 
