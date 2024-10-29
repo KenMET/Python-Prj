@@ -14,7 +14,7 @@ sys.path.append(r'%s/'%(py_dir))
 import akshare as ak
 sys.path.append(r'%s/../common'%(py_dir))
 from config import get_dog
-from longport_api import quantitative_init, get_history
+from longport_api import quantitative_init, get_history, get_quote_context
 from database import get_us_fullcode, create_if_market_inexist
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
 import log
@@ -98,13 +98,14 @@ def get_dog_us_daily_hist(dog_id, **kwargs):
             df = pd.DataFrame(df_list)
             return df
         except Exception as e:
+            log.get().error('Dog[%s] fetch from longport failed: %s'%(dog_id, str(e)))
             return pd.DataFrame()
 
 def main(args):
     log.init('%s/../log'%(py_dir), py_name, log_mode='w', log_level='info', console_enable=True)
     log.get().info('Logger Creat Success')
 
-    quantitative_init('Kanos', args.quantitative)
+    quantitative_init(args.quantitative, 'Kanos')
 
     dog_list = []
     if (args.market == 'us'):
