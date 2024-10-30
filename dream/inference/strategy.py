@@ -44,8 +44,8 @@ def generate_basic_strategy_list():
                 for d in interval_range:
                     temp_dict = {
                         'th' : float(a)/10,
-                        'short' : int(a),
-                        'long' : int(c),
+                        'short' : int(c),
+                        'long' : int(b),
                         'trade_interval' : int(d),
                     }
                     temp_list.append(temp_dict)
