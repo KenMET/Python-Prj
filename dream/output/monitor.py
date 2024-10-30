@@ -13,7 +13,7 @@ py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
 sys.path.append(r'%s/'%(py_dir))
 sys.path.append(r'%s/../input'%(py_dir))
 from house import house_update
-from longport_api import get_order_detail, cancel_order, get_last_price
+from longport_api import get_order_detail, cancel_order, get_last_price, is_order_invalid
 from database import get_house_detail, get_holding, get_market_by_range, create_if_order_inexist
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
 import log
@@ -89,10 +89,12 @@ def start_monitor(calling_name, order_dest, order_dict):
     curr_price = get_last_price(order_dict['Code'])
     submit_price = float(order_dict['Price'])
     interval = adject_interval(curr_price, submit_price)
-    if is_openning(submit_date) and not is_near_close(submit_date, interval):
+    if is_openning(submit_date) and not is_near_close(submit_date, interval) and not is_order_invalid(order_dict):
         log.get(calling_name).info('Monitor for [%s] start round[%d] as interval[%d]'%(order_id, cnt, interval))
         timer = threading.Timer(interval, start_monitor, args=(calling_name, order_dest, order_dict))
         timer.start()
     else:
         log.get(calling_name).info('Monitor Cancel for [%s] monitored[%d]'%(order_id, cnt))
-        cancel_order(order_id)
+        if not is_order_invalid(order_dict):
+            log.get(calling_name).info('Order[%s] still valid, Cancel'%(order_id))
+            cancel_order(order_id)

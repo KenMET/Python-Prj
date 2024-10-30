@@ -11,7 +11,7 @@ py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
 sys.path.append(r'%s/'%(py_dir))
 from longport.openapi import Config, TradeContext, QuoteContext
 from longport.openapi import Period, AdjustType
-from longport.openapi import OrderSide, OrderType, TimeInForceType
+from longport.openapi import OrderSide, OrderType, TimeInForceType, OrderStatus
 sys.path.append(r'%s/../../mysql'%(py_dir))
 import db_dream_secret as dbds
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
@@ -101,3 +101,15 @@ def cancel_order(order_id):
     ctx = get_trade_context()
     resp = ctx.cancel_order(order_id)
     return resp
+
+def is_order_invalid(order_dict):
+    temp_status = order_dict['Status']
+    if temp_status == OrderStatus.Expired:
+        return True
+    elif temp_status == OrderStatus.Canceled:
+        return True
+    elif temp_status == OrderStatus.Rejected:
+        return True
+    elif temp_status == OrderStatus.Unknown:
+        return True
+    return False
