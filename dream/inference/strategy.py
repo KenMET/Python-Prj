@@ -141,7 +141,7 @@ class basic:
         ret_dict = {}
         if expect_buy > 0 and abs((last - expect_buy) / last) < 0.2:         # expect > 0 or diff under 20%
             ret_dict.update({'buy':expect_buy})
-        if expect_sell < 0 and abs((last - expect_sell) / last) < 0.2:       # expect > 0 or diff under 20%
+        if expect_sell > 0 and abs((last - expect_sell) / last) < 0.2:       # expect > 0 or diff under 20%
             ret_dict.update({'sell':expect_sell})
 
         return ret_dict
