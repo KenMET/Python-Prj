@@ -62,7 +62,7 @@ class db(dbb.basedb):
         else:
             return True
 
-    def query_dog_fullcode_by_code(self, market, dog_code):
+    def query_dog_by_code(self, market, dog_code):
         if self.session is None:
             self.connectdb()
         dog_info = self.create_dog_info_class(market)
