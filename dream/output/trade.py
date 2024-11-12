@@ -77,6 +77,9 @@ def trade(order_dest, house_dict, dog_opt, dog_id):
             opt_share = curr_share // 2
         else:
             continue
+        if opt_share == 0:
+            log.get().info('[%s] Nothing to opt due to opt_share == 0......'%(dog_id))
+            continue
         log.get().info('[%s] %s %d shares in price %.2f'%(dog_id, order_index, opt_share, val))
         order_dict = trade_submit(dog_id, order_index, val, opt_share)
         db = create_if_order_inexist(order_dest)
