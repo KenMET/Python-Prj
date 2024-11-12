@@ -67,7 +67,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="A input module for dog info fetch")
     
     # Append arguments
-    #parser.add_argument('--market', type=str, default='cn_a', help='Now supported: "cn_a"(default),"us"')
+    #parser.add_argument('--market', type=str, default='cn', help='Now supported: "cn"(default),"us"')
     #parser.add_argument('--quantitative', type=str, default='simulation', help='Now supported: "simulation"(default),"formal"')
     
     # 解析命令行参数

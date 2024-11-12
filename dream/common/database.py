@@ -53,9 +53,9 @@ def create_if_order_inexist(order_dest):
         db.create_order_table(order_dest)
     return db 
 
-def get_us_fullcode(market, dog_id):
+def get_fullcode(market, dog_id):
     db_info = dbddi.db('dream_dog')
-    res = db_info.query_dog_fullcode_by_code(market, dog_id)
+    res = db_info.query_dog_by_code(market, dog_id)
     if len(res) == 0:
         log.get().error('Dog not found [%s]'%(dog_id))
         return dog_id 
@@ -66,7 +66,18 @@ def get_us_fullcode(market, dog_id):
         dog_full_code = res[0].Code
     return dog_full_code
 
-
+def get_dogname(market, dog_id):
+    db_info = dbddi.db('dream_dog')
+    res = db_info.query_dog_by_code(market, dog_id)
+    if len(res) == 0:
+        log.get().error('Dog not found [%s]'%(dog_id))
+        return dog_id 
+    elif len(res) != 1:
+        tmp_list = [i.Name for i in res]
+        dog_name = [item for item in tmp_list if item.endswith('.' + dog_id)][0]
+    else:
+        dog_name = res[0].Name
+    return dog_name
 
 def get_house_detail(name):
     db = dbda.db('dream_sentiment')

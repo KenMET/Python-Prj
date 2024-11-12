@@ -15,7 +15,7 @@ sys.path.append(r'%s/'%(py_dir))
 from strategy import basic, get_stategy_handle
 sys.path.append(r'%s/../common'%(py_dir))
 from config import get_house, get_strategy, get_notify_list, get_trade_list
-from database import get_holding, get_market_by_range
+from database import get_holding, get_market_by_range, get_dogname
 sys.path.append(r'%s/../../notification'%(py_dir))
 import notification as notify
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
@@ -57,8 +57,9 @@ def main(args):
     for index in notify_list:
         next_predict = get_except_notify(index)
         if len(next_predict) != 0:
-            notify_dict.update({index:next_predict})
-            log.get().info('[%s]: %s'%(index, str(next_predict)))
+            dog_name = get_dogname(args.market, index)
+            notify_dict.update({dog_name:next_predict})
+            log.get().info('[%s(%s)]: %s'%(dog_name, index, str(next_predict)))
 
     if len(notify_dict) != 0:
         bark_obj = notify.bark()
@@ -72,7 +73,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="A input module for dog info fetch")
 
     # Append arguments
-    parser.add_argument('--market', type=str, default='cn_a', help='Now supported: "cn_a"(default),"us"')
+    parser.add_argument('--market', type=str, default='cn', help='Now supported: "cn"(default),"us"')
 
     # 解析命令行参数
     args = parser.parse_args()

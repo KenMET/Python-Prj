@@ -32,7 +32,7 @@ def get_cat(market='cn'):
         tmp_list = [tmp_list, ]
     return tmp_list
 
-def get_dog(market='cn_a'):
+def get_dog(market='cn'):
     cfg = config('animal')
     tmp_list = cfg.get('dog_%s_list'%(market), {}).get('id', [])
     if type(tmp_list) == type(''):

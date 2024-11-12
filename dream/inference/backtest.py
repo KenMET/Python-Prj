@@ -122,7 +122,7 @@ def backtest_traversal_dog(start_date, end_date):
     # US 80% WIN AVG: th: 1.0  long: 30    short: 6    trade_interval:3
 
     winning_cnt = 0
-    cn_dog_list = get_dog('cn_a')
+    cn_dog_list = get_dog('cn')
     us_dog_list = get_dog('us')
     temp_list = []
     #temp_list = list(set(temp_list).union(cn_dog_list))
@@ -149,7 +149,7 @@ def backtest_winning_per(start_date, end_date):
     max_per = 0
     for index in stategy_list:
         winning_cnt = 0
-        cn_dog_list = get_dog('cn_a')
+        cn_dog_list = get_dog('cn')
         us_dog_list = get_dog('us')
         temp_list = []
         #temp_list = list(set(temp_list).union(cn_dog_list))

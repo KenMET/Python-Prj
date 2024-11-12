@@ -15,7 +15,7 @@ import akshare as ak
 sys.path.append(r'%s/../common'%(py_dir))
 from config import get_dog
 from longport_api import quantitative_init, get_history, get_quote_context
-from database import get_us_fullcode, create_if_market_inexist
+from database import get_fullcode, create_if_market_inexist
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
 import log
 
@@ -30,7 +30,7 @@ def get_market(dog_code: str) -> str:
         return None
 
 # date   open  close   high    low     amount
-def get_dog_cn_a_daily_hist(dog_id, **kwargs):
+def get_dog_cn_daily_hist(dog_id, **kwargs):
     try:
         df = ak.stock_zh_a_hist(symbol=dog_id, period="daily", adjust="qfq", **kwargs)
         df.drop(columns=['股票代码', '成交量', '振幅', '涨跌幅', '涨跌额', '换手率'], inplace=True)
@@ -56,7 +56,7 @@ def get_dog_cn_a_daily_hist(dog_id, **kwargs):
                 log.get().info('Dog[%s] fetch failed...'%(dog_id))
                 return pd.DataFrame()
 
-def get_dog_cn_a_capital_flow(dog_id):
+def get_dog_cn_capital_flow(dog_id):
     try:
         df = ak.stock_individual_fund_flow(stock=dog_id, market=get_market(dog_id))
         df.drop(columns=['收盘价', '涨跌幅'], inplace=True)
@@ -111,7 +111,7 @@ def main(args):
     if (args.market == 'us'):
         dog_list = get_dog(args.market)
         log.get().info(dog_list)
-    elif (args.market == 'cn_a'):
+    elif (args.market == 'cn'):
         dog_list = []
         dog_list = list(set(dog_list).union(get_dog(args.market)))
 
@@ -119,15 +119,15 @@ def main(args):
         db, inexist = create_if_market_inexist(dog_index)
         if inexist:
             if (args.market == 'us'):
-                dog_full_code = get_us_fullcode(args.market, dog_index)
+                dog_full_code = get_fullcode(args.market, dog_index)
                 df = get_dog_us_daily_hist(dog_full_code)
                 if (df.empty):  
                     continue 
-            elif (args.market == 'cn_a'):
-                df1 = get_dog_cn_a_daily_hist(dog_index)
+            elif (args.market == 'cn'):
+                df1 = get_dog_cn_daily_hist(dog_index)
                 if (df1.empty):
                     continue
-                df2 = get_dog_cn_a_capital_flow(dog_index)
+                df2 = get_dog_cn_capital_flow(dog_index)
                 if (df2.empty):
                     df = df1
                 else:
@@ -137,15 +137,15 @@ def main(args):
             current_date = datetime.datetime.now().strftime('%Y%m%d')
             start_date = (datetime.datetime.now() - datetime.timedelta(days=10)).strftime('%Y%m%d')    # 10 days ago
             if (args.market == 'us'):
-                dog_full_code = get_us_fullcode(args.market, dog_index)
+                dog_full_code = get_fullcode(args.market, dog_index)
                 df = get_dog_us_daily_hist(dog_full_code, start_date=start_date, end_date=current_date)
                 if (df.empty):  
                     continue 
-            elif (args.market == 'cn_a'):
-                df1 = get_dog_cn_a_daily_hist(dog_index, start_date=start_date, end_date=current_date)
+            elif (args.market == 'cn'):
+                df1 = get_dog_cn_daily_hist(dog_index, start_date=start_date, end_date=current_date)
                 if (df1.empty):
                     continue
-                df2 = get_dog_cn_a_capital_flow(dog_index)
+                df2 = get_dog_cn_capital_flow(dog_index)
                 if (df2.empty):
                     df = df1
                 else:
@@ -166,7 +166,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="A input module for dog info fetch")
     
     # Append arguments
-    parser.add_argument('--market', type=str, default='cn_a', help='Now supported: "cn_a"(default),"us"')
+    parser.add_argument('--market', type=str, default='cn', help='Now supported: "cn"(default),"us"')
     parser.add_argument('--quantitative', type=str, default='simulation', help='Now supported: "simulation"(default),"formal"')
     
     # 解析命令行参数
