@@ -43,9 +43,10 @@
             <id>513870</id><id>159866</id><id>159518</id><id>159509</id>
         </cn>
         <us>
-            <id>TTWO</id><id>DJT</id>
-            <id>NVDA</id><id>TSLA</id>
-            <id>TQQQ</id><id>YANG</id>
+            <id>TTWO</id><id>NFLX</id><id>RDDT</id>
+            <id>AAPL</id><id>NVDA</id><id>TSLA</id>
+            <id>GOLD</id>
+            <id>TQQQ</id>
         </us>
     </notify_list>
 </contents>

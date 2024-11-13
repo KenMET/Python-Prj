@@ -3,4 +3,9 @@
     <Kanos>     <!--Defined as house name-->
         <quent_type>both</quent_type>   <!--"simulation","formal","both"-->
     </Kanos>
+    <sentiment_key>
+        <key>NSVARWKAJGLQA942</key>
+        <key>RDNLSSFGUAKC1F0E</key>
+        <key>18RYIO1CJQZSMRAH</key>
+    </sentiment_key>
 </contents>

@@ -79,6 +79,10 @@ def get_house(user=None):
         return cfg
     return cfg.get(user, {})
 
+def get_adata_key():
+    cfg = config('user')
+    return cfg.get('sentiment_key', {}).get('key', {})
+
 def main():
     log.init('%s/../log'%(py_dir), py_name, log_mode='w', log_level='info', console_enable=True)
     log.get().info('Logger Creat Success...')

@@ -17,6 +17,7 @@ import db_dream_order as dbdo
 import db_dream_secret as dbds
 import db_dream_account as dbda
 import db_dream_dog_info as dbddi
+import db_dream_sentiment as dbdst
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
 import log
 
@@ -51,6 +52,13 @@ def create_if_order_inexist(order_dest):
     if (not db.is_table_exist(order_dest)):      # New a table to insert
         log.get().info('Order not exist, new a table[%s]...'%('order_%s'%(order_dest)))
         db.create_order_table(order_dest)
+    return db 
+
+def create_if_sentiment_inexist():
+    db = dbdst.db('dream_sentiment')
+    if (not db.is_table_exist()):      # New a table to insert
+        log.get().info('Sentiment not exist, new a table[sentiment]...')
+        db.create_sentiment_table()
     return db 
 
 def get_fullcode(market, dog_id):
