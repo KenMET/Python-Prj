@@ -89,6 +89,7 @@ def main(args):
                 'Score': overall_sentiment_score,
             }
             db.insert_sentiment(tmp_dict)
+            log.get().info('Fetched new sentiment: %s'%(str(tmp_dict)))
         sorted_score_list = sorted(score_list)
         log.get().info('score list[%s]:%s'%(dog_code, str(sorted_score_list)))
         #remove_min_max_count = int(len(feed) * 0.1)     # remove 10%(min&max) of sentiment length

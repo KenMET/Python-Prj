@@ -4,6 +4,7 @@
 import ast
 import os, sys
 import argparse
+import datetime
 import pandas as pd
 
 # Customsized lib
@@ -115,3 +116,22 @@ def get_market_by_range(target, start, end):
     df['Close'] = pd.to_numeric(df['Close'], errors='coerce')           # 确保 Close 列为数值类型
 
     return df
+
+def get_avg_score(target, last_n_days):
+    db = dbdst.db('dream_sentiment')
+    current_date = datetime.datetime.now()
+    start_date = (current_date - datetime.timedelta(days=last_n_days))
+    ret = db.query_sentiment_by_id_date(target, start_date, current_date)
+    score_list = []
+    for index in ret:
+        tmp_dict = db.get_dict_from_obj(index)
+        score_list.append(float(tmp_dict.get('Score')))
+    sorted_score_list = sorted(score_list)
+    remove_min_max_count = int(len(score_list) * 0.1)     # remove 10%(min&max) of sentiment length
+    trimmed_score = sorted_score_list[remove_min_max_count:-remove_min_max_count]
+    #log.get().info(trimmed_score)
+    score_avg = sum(trimmed_score) / len(trimmed_score)
+    log.get().info('Score Avg[%s]: %.2f'%(target, score_avg))
+    return score_avg
+
+

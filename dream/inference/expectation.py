@@ -15,7 +15,7 @@ sys.path.append(r'%s/'%(py_dir))
 from strategy import basic, get_stategy_handle
 sys.path.append(r'%s/../common'%(py_dir))
 from config import get_house, get_strategy, get_notify_list, get_trade_list
-from database import get_holding, get_market_by_range, get_dogname
+from database import get_holding, get_market_by_range, get_dogname, get_avg_score
 sys.path.append(r'%s/../../notification'%(py_dir))
 import notification as notify
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
@@ -49,7 +49,7 @@ def get_except_notify(dog_code):
 def main(args):
     log.init('%s/../log'%(py_dir), py_name, log_mode='w', log_level='info', console_enable=True)
     log.get().info('Logger Creat Success...[%s]'%(py_name))
-    
+
     notify_dict = {}
     notify_list = get_notify_list(args.market)
     if args.market == 'us':     # Only for temp during simulation trade test
@@ -65,7 +65,10 @@ def main(args):
         bark_obj = notify.bark()
         content = ''
         for index in notify_dict:
-            content += '%s: [0,%.3f]&[%.3f,+∞]\n'%(index, notify_dict[index].get('buy',-1), notify_dict[index].get('sell',-1))
+            avg_score = get_avg_score(index, 3)
+            sub_content = '%s: [%.3f (%.2f) %.3f]\n'%(index, notify_dict[index].get('buy',-1), avg_score, notify_dict[index].get('sell',-1))
+            content += sub_content
+            log.get().info('Ready to send content: %s'%(sub_content))
         bark_obj.send_title_content('Kanos Stock House', content)
 
 if __name__ == '__main__':
@@ -78,4 +81,3 @@ if __name__ == '__main__':
     # 解析命令行参数
     args = parser.parse_args()
     main(args)
-

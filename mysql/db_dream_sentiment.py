@@ -3,7 +3,7 @@
 # System lib
 import os, sys
 import time, datetime
-from sqlalchemy import MetaData, Table, desc
+from sqlalchemy import MetaData, Table, desc, and_
 from sqlalchemy import Column, Integer, String, DATETIME, DATE, Text, VARCHAR, JSON
 
 # Customsized lib
@@ -63,7 +63,11 @@ class db(dbb.basedb):
         if self.session is None:
             self.connectdb()
         sentiment_info = self.create_sentiment_class()
-        result = self.session.query(sentiment_info).filter(sentiment_info.Code == id).all()
+        result = self.session.query(sentiment_info).filter(and_(
+            sentiment_info.Code.like(id),
+            sentiment_info.PublishTime >= start,
+            sentiment_info.PublishTime <= end
+        )).all()
         try:
             self.session.commit()
         except:
