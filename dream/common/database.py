@@ -126,6 +126,8 @@ def get_avg_score(target, last_n_days):
     for index in ret:
         tmp_dict = db.get_dict_from_obj(index)
         score_list.append(float(tmp_dict.get('Score')))
+    if len(score_list) == 0:
+        return 0.0
     sorted_score_list = sorted(score_list)
     remove_min_max_count = int(len(score_list) * 0.1)     # remove 10%(min&max) of sentiment length
     trimmed_score = sorted_score_list[remove_min_max_count:-remove_min_max_count]
