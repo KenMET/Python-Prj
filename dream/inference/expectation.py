@@ -4,6 +4,7 @@
 import os
 import re
 import sys
+import random
 import argparse
 import datetime
 import pandas as pd
@@ -45,6 +46,36 @@ def get_except_notify(dog_code):
     next_predict = stategy_handle.mean_reversion_expect(df)
     return next_predict
 
+def get_option_notify(dog_code):
+    stategy_handle = get_stategy_handle(dog_code)
+    if stategy_handle == None:
+        log.get().error('stategy_handle Null')
+        return
+    current_date = datetime.datetime.now().strftime('%Y%m%d')
+    start_date = (datetime.datetime.now() - datetime.timedelta(days=(stategy_handle.long * 6))).strftime('%Y%m%d')
+    df = get_market_by_range(dog_code, start_date, current_date)
+    df = stategy_handle.mean_reversion(df)
+    trades = df[df['Signal'] != 0]
+    
+    opt_list = []
+    for i in range(len(df)):
+        if df['Position'].iloc[i] > 0.9 and df['Signal'].iloc[i] == 1:
+            opt_list.append(1)
+        elif df['Position'].iloc[i] < -0.9 and df['Signal'].iloc[i] == -1:
+            opt_list.append(-1)
+
+    #log.get().info('opt_list[%s]'%(str(opt_list)))
+    # Same opration in last reversion, then recomand to buy a option.
+    continue_count = random.choices([3, 5], weights=[1, 1], k=1)[0] # ramdom get 3 or 5 countinue count...
+    if len(opt_list) >= continue_count:
+        opt_list = opt_list[-continue_count:]
+        #log.get().info('opt_list filter[%s]'%(str(opt_list)))
+        if len(set(opt_list)) == 1:     # All are the same opration
+            if opt_list[0] == 1:
+                return 'Call'
+            return 'Put'
+    return 'NA'
+
 
 def main(args):
     log.init('%s/../log'%(py_dir), py_name, log_mode='w', log_level='info', console_enable=True)
@@ -58,6 +89,10 @@ def main(args):
         next_predict = get_except_notify(index)
         if len(next_predict) != 0:
             dog_name = get_dogname(args.market, index)
+            avg_score = get_avg_score(index, 3)
+            next_predict.update({'avg_score':avg_score})
+            option_opt = get_option_notify(index)
+            next_predict.update({'option':option_opt})
             notify_dict.update({dog_name:next_predict})
             log.get().info('[%s(%s)]: %s'%(dog_name, index, str(next_predict)))
 
@@ -65,8 +100,11 @@ def main(args):
         bark_obj = notify.bark()
         content = ''
         for index in notify_dict:
-            avg_score = get_avg_score(index, 3)
-            sub_content = '%s: [%.3f (%.2f) %.3f]\n'%(index, notify_dict[index].get('buy',-1), avg_score, notify_dict[index].get('sell',-1))
+            sub_content = '%s(%s)-[%.3f (%.2f) %.3f]\n'%(index, 
+                notify_dict[index].get('option', 'NA'),
+                notify_dict[index].get('buy',-1),
+                notify_dict[index].get('avg_score',0), 
+                notify_dict[index].get('sell',-1))
             content += sub_content
             log.get().info('Ready to send content: %s'%(sub_content))
         bark_obj.send_title_content('Kanos Stock House', content)

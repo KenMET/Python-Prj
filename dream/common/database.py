@@ -16,6 +16,7 @@ sys.path.append(r'%s/../../mysql'%(py_dir))
 import db_dream_dog as dbdd
 import db_dream_order as dbdo
 import db_dream_secret as dbds
+import db_dream_option as dbdop
 import db_dream_account as dbda
 import db_dream_dog_info as dbddi
 import db_dream_sentiment as dbdst
@@ -60,6 +61,13 @@ def create_if_sentiment_inexist():
     if (not db.is_table_exist()):      # New a table to insert
         log.get().info('Sentiment not exist, new a table[sentiment]...')
         db.create_sentiment_table()
+    return db 
+
+def create_if_option_inexist():
+    db = dbdop.db('dream_dog')
+    if (not db.is_table_exist()):      # New a table to insert
+        log.get().info('Option not exist, new a table[dog_option]...')
+        db.create_dog_option_table()
     return db 
 
 def get_fullcode(market, dog_id):
