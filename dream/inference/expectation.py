@@ -46,7 +46,7 @@ def get_except_notify(dog_code):
     next_predict = stategy_handle.mean_reversion_expect(df)
     return next_predict
 
-def get_option_notify(dog_code):
+def get_option_notify(dog_code, next_predict):
     stategy_handle = get_stategy_handle(dog_code)
     if stategy_handle == None:
         log.get().error('stategy_handle Null')
@@ -71,9 +71,14 @@ def get_option_notify(dog_code):
         opt_list = opt_list[-continue_count:]
         #log.get().info('opt_list filter[%s]'%(str(opt_list)))
         if len(set(opt_list)) == 1:     # All are the same opration
-            if opt_list[0] == 1:
-                return 'Call'
-            return 'Put'
+            if opt_list[0] == 1 and next_predict.get('sell', -1) != -1:     # Already buy multi times and expect to sell, means maybe top point.
+                return 'Put'                                                # Then buy a Put
+            if opt_list[0] == -1 and next_predict.get('buy', -1) != -1:     # Already sell multi times and expect to buy, means maybe low point.
+                return 'Call'                                               # Then buy a Call
+            if opt_list[0] == 1 and next_predict.get('buy', -1) != -1:      # Already buy multi times and expect to buy, means maybe Raising ahead.
+                return 'Rise'                                               # Consider buy or sell manually
+            if opt_list[0] == -1 and next_predict.get('sell', -1) != -1:    # Already buy multi times and expect to buy, means maybe droping ahead.
+                return 'Drop'                                               # Consider buy or sell manually 
     return 'NA'
 
 
@@ -89,10 +94,10 @@ def main(args):
         next_predict = get_except_notify(index)
         if len(next_predict) != 0:
             dog_name = get_dogname(args.market, index)
+            option_opt = get_option_notify(index, next_predict)
+            next_predict.update({'option':option_opt})
             avg_score = get_avg_score(index, 3)
             next_predict.update({'avg_score':avg_score})
-            option_opt = get_option_notify(index)
-            next_predict.update({'option':option_opt})
             notify_dict.update({dog_name:next_predict})
             log.get().info('[%s(%s)]: %s'%(dog_name, index, str(next_predict)))
 

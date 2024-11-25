@@ -139,6 +139,8 @@ def get_avg_score(target, last_n_days):
     sorted_score_list = sorted(score_list)
     remove_min_max_count = int(len(score_list) * 0.1)     # remove 10%(min&max) of sentiment length
     trimmed_score = sorted_score_list[remove_min_max_count:-remove_min_max_count]
+    if len(trimmed_score) == 0:
+        return 0.0
     #log.get().info(trimmed_score)
     score_avg = sum(trimmed_score) / len(trimmed_score)
     log.get().info('Score Avg[%s]: %.2f'%(target, score_avg))
