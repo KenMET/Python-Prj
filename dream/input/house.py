@@ -12,6 +12,8 @@ py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
 sys.path.append(r'%s/'%(py_dir))
 sys.path.append(r'%s/../../mysql'%(py_dir))
 import db_dream_account as dbda
+sys.path.append(r'%s/../../notification'%(py_dir))
+import notification as notify
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
 import log
 sys.path.append(r'%s/../common'%(py_dir))
@@ -63,14 +65,18 @@ def main(args):
     for index in secret_list:
         user = index['user']
         quent_type = index['type']
-        quantitative_init(quent_type, user)
-        house_name = '%s-%s'%(quent_type, user)
-        log.get().info('start update [%s] house type: %s'%(user, quent_type))
-        house_update(house_name)
-        house = get_house_detail(house_name)
-        house_holding = get_holding(house_name)
-        log.get().info(house)
-        log.get(py_name).info(house_holding)
+        try:
+            quantitative_init(quent_type, user)
+            house_name = '%s-%s'%(quent_type, user)
+            log.get().info('start update [%s] house type: %s'%(user, quent_type))
+            house_update(house_name)
+            house = get_house_detail(house_name)
+            house_holding = get_holding(house_name)
+            log.get().info(house)
+            log.get(py_name).info(house_holding)
+        except:
+            bark_obj = notify.bark()
+            flag = bark_obj.send_title_content('House Update', '[%s-%s] update fail, please check if token expired.'%(user, quent_type))
 
 if __name__ == '__main__':
     # Create ArgumentParser Object
