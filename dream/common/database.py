@@ -104,14 +104,6 @@ def get_house_detail(name):
         return
     return db.get_dict_from_obj(temp[0])
 
-def get_house_detail(name):
-    db = dbda.db('dream_sentiment')
-    temp = db.query_house_by_name(name)
-    if len(temp) != 1:
-        #log.get().info('House get exception: %s'%(name))
-        return
-    return db.get_dict_from_obj(temp[0])
-
 def get_secret_detail():
     db = dbds.db('dream_sentiment')
     temp = db.query_all_secret()
