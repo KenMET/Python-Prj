@@ -104,6 +104,27 @@ def get_house_detail(name):
         return
     return db.get_dict_from_obj(temp[0])
 
+def get_house_detail(name):
+    db = dbda.db('dream_sentiment')
+    temp = db.query_house_by_name(name)
+    if len(temp) != 1:
+        #log.get().info('House get exception: %s'%(name))
+        return
+    return db.get_dict_from_obj(temp[0])
+
+def get_secret_detail():
+    db = dbds.db('dream_sentiment')
+    temp = db.query_all_secret()
+    secret_list = []
+    for index in temp:
+        full = index.Type.split('-')
+        temp_secret = {
+            'user': full[0],
+            'type': full[1],
+        }
+        secret_list.append(temp_secret)
+    return secret_list
+
 def get_holding(name):
     db = dbda.db('dream_sentiment')
     temp = db.query_house_by_name(name)

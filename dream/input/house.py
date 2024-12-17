@@ -17,7 +17,7 @@ import log
 sys.path.append(r'%s/../common'%(py_dir))
 from config import get_house
 from longport_api import quantitative_init, get_trade_context
-from database import create_if_house_inexist, get_house_detail, get_holding
+from database import create_if_house_inexist, get_house_detail, get_holding, get_secret_detail
 
 def house_update(name):
     db = create_if_house_inexist()
@@ -59,29 +59,18 @@ def main(args):
     log.init('%s/../log'%(py_dir), py_name, log_mode='w', log_level='info', console_enable=True)
     log.get().info('Logger Creat Success')
 
-    quantitative_type = ['simulation', 'formal']
-    house_dict = get_house()
-    for user_name in house_dict:
-        quent_type = house_dict[user_name].get('quent_type', 'simulation')
-        if quent_type == 'both':
-            for q_type in quantitative_type:
-                quantitative_init(q_type, user_name)
-                house_name = '%s-%s'%(q_type, user_name)
-                log.get().info('start update house: %s'%(house_name))
-                house_update(house_name)
-                house = get_house_detail(house_name)
-                house_holding = get_holding(house_name)
-                log.get().info(house)
-                log.get().info(house_holding)
-        else:
-            quantitative_init(quent_type, user_name)
-            house_name = '%s-%s'%(quent_type, user_name)
-            log.get().info('start update house: %s'%(house_name))
-            house_update(house_name)
-            house = get_house_detail(house_name)
-            house_holding = get_holding(house_name)
-            log.get().info(house)
-            log.get(py_name).info(house_holding)
+    secret_list = get_secret_detail()
+    for index in secret_list:
+        user = index['user']
+        quent_type = index['type']
+        quantitative_init(quent_type, user)
+        house_name = '%s-%s'%(quent_type, user)
+        log.get().info('start update [%s] house type: %s'%(user, quent_type))
+        house_update(house_name)
+        house = get_house_detail(house_name)
+        house_holding = get_holding(house_name)
+        log.get().info(house)
+        log.get(py_name).info(house_holding)
 
 if __name__ == '__main__':
     # Create ArgumentParser Object

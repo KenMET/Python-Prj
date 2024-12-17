@@ -44,11 +44,24 @@ class db(dbb.basedb):
             return False
         return True
 
+    def query_all_secret(self):
+        if self.session is None:
+            self.connectdb()
+        query_class = self.create_secret_class()
+        result = self.session.query(query_class).all()
+        try:
+            self.session.commit()
+        except:
+            return []
+        else:
+            return result
+
     def query_secret_by_type(self, quant_type, user):
         if self.session is None:
             self.connectdb()
         query_class = self.create_secret_class()
-        result = self.session.query(query_class).filter(and_(query_class.Type == quant_type, query_class.Reserved == user)).all()
+        full = '%s-%s'%(user, quant_type)
+        result = self.session.query(query_class).filter(query_class.Type == full).all()
         try:
             self.session.commit()
         except:
