@@ -105,7 +105,7 @@ def main(args):
         bark_obj = notify.bark()
         content = ''
         for index in notify_dict:
-            sub_content = '%s(%s)-[%.3f (%.2f) %.3f]\n'%(index, 
+            sub_content = '%s(%s)[%.3f (%.2f) %.3f]\n'%(index, 
                 notify_dict[index].get('option', 'NA'),
                 notify_dict[index].get('buy',-1),
                 notify_dict[index].get('avg_score',0), 
