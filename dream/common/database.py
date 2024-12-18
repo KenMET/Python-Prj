@@ -27,7 +27,7 @@ import log
 def create_and_clear_info(market):
     db = dbddi.db('dream_dog')
     if (not db.is_table_exist(market)):
-        log.get().info('%s dog info table not exist, create...'%(market))
+        #log.get().info('%s dog info table not exist, create...'%(market))
         db.create_dog_info_table(market)
     db.delete_dog_all(market)
     return db
@@ -37,7 +37,7 @@ def create_and_clear_info(market):
 def create_if_market_inexist(name):
     db = dbdd.db('dream_dog')
     if (not db.is_table_exist(name)):      # New a table to insert
-        log.get().info('Dog[%s] not exist, new a table...'%(name))
+        #log.get().info('Dog[%s] not exist, new a table...'%(name))
         db.create_dog_market_table(name)
         return db, True
     return db, False
@@ -45,28 +45,28 @@ def create_if_market_inexist(name):
 def create_if_house_inexist():
     db = dbda.db('dream_sentiment')
     if (not db.is_table_exist()):      # New a table to insert
-        log.get().info('House not exist, new a table[dog_house]...')
+        #log.get().info('House not exist, new a table[dog_house]...')
         db.create_dog_house_table()
     return db 
 
 def create_if_order_inexist(order_dest):
     db = dbdo.db('dream_sentiment')
     if (not db.is_table_exist(order_dest)):      # New a table to insert
-        log.get().info('Order not exist, new a table[%s]...'%('order_%s'%(order_dest)))
+        #log.get().info('Order not exist, new a table[%s]...'%('order_%s'%(order_dest)))
         db.create_order_table(order_dest)
     return db 
 
 def create_if_sentiment_inexist():
     db = dbdst.db('dream_sentiment')
     if (not db.is_table_exist()):      # New a table to insert
-        log.get().info('Sentiment not exist, new a table[sentiment]...')
+        #log.get().info('Sentiment not exist, new a table[sentiment]...')
         db.create_sentiment_table()
     return db 
 
 def create_if_option_inexist():
     db = dbdop.db('dream_dog')
     if (not db.is_table_exist()):      # New a table to insert
-        log.get().info('Option not exist, new a table[dog_option]...')
+        #log.get().info('Option not exist, new a table[dog_option]...')
         db.create_dog_option_table()
     return db 
 
@@ -74,7 +74,7 @@ def get_fullcode(market, dog_id):
     db_info = dbddi.db('dream_dog')
     res = db_info.query_dog_by_code(market, dog_id)
     if len(res) == 0:
-        log.get().error('Dog not found [%s]'%(dog_id))
+        #log.get().error('Dog not found [%s]'%(dog_id))
         return dog_id 
     elif len(res) != 1:
         tmp_list = [i.Code for i in res]
@@ -87,7 +87,7 @@ def get_dogname(market, dog_id):
     db_info = dbddi.db('dream_dog')
     res = db_info.query_dog_by_code(market, dog_id)
     if len(res) == 0:
-        log.get().error('Dog not found [%s]'%(dog_id))
+        #log.get().error('Dog not found [%s]'%(dog_id))
         return dog_id 
     elif len(res) != 1:
         tmp_list = [i.Name for i in res]
@@ -126,6 +126,16 @@ def get_holding(name):
     account_dict = db.get_dict_from_obj(temp[0])
     return ast.literal_eval(account_dict['Holding'])
 
+def get_open_order(user, q_type):
+    db = dbdo.db('dream_sentiment')
+    order_dest = '%s-%s'%(q_type, user)
+    if (not db.is_table_exist(order_dest)):      # New a table to insert
+        #log.get().info('Order not exist, new a table[%s]...'%('order_%s'%(order_dest)))
+        db.create_order_table(order_dest)
+        return []
+    temp_list = db.query_order_opened(order_dest)
+    return [db.get_dict_from_obj(i) for i in temp_list] 
+
 def get_market_by_range(target, start, end):
     db = dbdd.db('dream_dog')
     ret = db.query_dog_markey_by_daterange(target, start, end)
@@ -156,7 +166,7 @@ def get_avg_score(target, last_n_days):
         return 0.0
     #log.get().info(trimmed_score)
     score_avg = sum(trimmed_score) / len(trimmed_score)
-    log.get().info('Score Avg[%s]: %.2f'%(target, score_avg))
+    #log.get().info('Score Avg[%s]: %.2f'%(target, score_avg))
     return score_avg
 
 
