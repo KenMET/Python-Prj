@@ -153,10 +153,10 @@ def main(args):
 if __name__ == '__main__':
     # Create ArgumentParser Object
     parser = argparse.ArgumentParser(description="A dream will comes ture!")
-    
+
     # Append arguments
     #parser.add_argument('--market', type=str, default='cn', help='Now supported: "cn"(default),"us"')
-    
+
     # 解析命令行参数
     args = parser.parse_args()
     main(args)
