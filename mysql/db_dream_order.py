@@ -3,7 +3,7 @@
 # System lib
 import os, sys
 import time, datetime
-from sqlalchemy import MetaData, Table, desc
+from sqlalchemy import MetaData, Table, desc, and_
 from sqlalchemy import Column, Integer, String, DATETIME, DATE, Text, VARCHAR, JSON
 
 # Customsized lib
@@ -71,6 +71,20 @@ class db(dbb.basedb):
             self.connectdb()
         dog_order = self.create_order_class(order_dest)
         result = self.session.query(dog_order).filter(dog_order.OrderID == order_id).all()
+        try:
+            self.session.commit()
+        except:
+            return []
+        else:
+            return result
+
+    def query_order_opened(self, order_dest):
+        if self.session is None:
+            self.connectdb()
+        dog_order = self.create_order_class(order_dest)
+        conditions = and_(dog_order.Status != 'Canceled', dog_order.Status != 'Expired')
+        result = self.session.query(dog_order).filter(conditions).all()
+        #result = self.session.query(dog_order).filter(dog_order.Status != 'Canceled').all()
         try:
             self.session.commit()
         except:
