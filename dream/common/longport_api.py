@@ -55,17 +55,17 @@ def get_last_price(code):
 # date
 def get_order_dict_from_obj(resp):
     order_dict = {
-        'OrderID' : resp.order_id,
-        'Date' : datetime.datetime.now(),
-        'Side' : resp.side,
-        'Type' : resp.order_type,
-        'Code' : resp.symbol,
-        'Currency' : resp.currency,
+        'OrderID' : str(resp.order_id),
+        'Date' : resp.updated_at.strftime("%Y-%m-%d %H:%M:%S.%f"),
+        'Side' : str(resp.side).replace('OrderSide.',''),
+        'Type' : str(resp.order_type).replace('OrderType.',''),
+        'Code' : str(resp.symbol),
+        'Currency' : str(resp.currency),
         'Quantity' : '%d/%d'%(resp.executed_quantity, resp.quantity),
         'Price' : float(resp.price),
         'ExecutedPrice' : 0.0 if resp.executed_price == None else float(resp.executed_price),
         'Fee' : float(resp.charge_detail.total_amount),
-        'Status' : resp.status,
+        'Status' : str(resp.status).replace('OrderStatus.',''),
     }
     return order_dict
 
@@ -92,10 +92,33 @@ def trade_submit(dog_id, side, price, share):
     )
     return get_order_detail(resp.order_id)
 
+def trade_query(order_id):
+    return get_order_detail(order_id)
+
+def trade_cancel(order_id):
+    ctx = get_trade_context()
+    ctx.cancel_order(order_id)
+    return get_order_detail(order_id)
+
+def trade_modify(order_id, price, share):
+    ctx = get_trade_context()
+    ctx.replace_order(
+        order_id = order_id,
+        quantity = int(share),
+        price = round(price, 2),
+    )
+    return get_order_detail(order_id)
+
 def get_order_detail(order_id):
     ctx = get_trade_context()
     resp = ctx.order_detail(order_id)
     return get_order_dict_from_obj(resp)
+
+def get_order_status(order_id):
+    ctx = get_trade_context()
+    resp = ctx.order_detail(order_id)
+    resp_dict = get_order_dict_from_obj(resp)
+    return resp_dict['status']
 
 def cancel_order(order_id):
     ctx = get_trade_context()
