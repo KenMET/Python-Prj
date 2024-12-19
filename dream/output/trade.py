@@ -20,7 +20,7 @@ from order import submit_order
 sys.path.append(r'%s/../inference'%(py_dir))
 from strategy import get_stategy_handle
 sys.path.append(r'%s/../common'%(py_dir))
-from config import get_house
+from config import get_house, get_trade_list
 sys.path.append(r'%s/../input'%(py_dir))
 from house import house_update
 from longport_api import quantitative_init, trade_submit
@@ -32,11 +32,14 @@ import log
 def get_expect(quent_type, user_name):
     house_name = '%s-%s'%(quent_type, user_name)
     house_holding = get_holding(house_name)
+    tobe_trade_list = get_trade_list('us')
 
     notify_dict = {}
-    for hold_index in house_holding:
-        dog_code = hold_index.get('Code')
-        dog_code_filter = dog_code[:dog_code.rfind('.US')]     # Support US market fornow
+    #for hold_index in house_holding:
+    for dog_index in tobe_trade_list:
+        #dog_code = hold_index.get('Code')
+        #dog_code_filter = dog_code[:dog_code.rfind('.US')]     # Support US market fornow
+        dog_code_filter = dog_index
         if re.search(r'\d{6}', dog_code_filter):   # Search if have number like '250117'
             log.get().info('Detect share option[%s]'%(dog_code_filter))
         else:
@@ -49,8 +52,10 @@ def get_expect(quent_type, user_name):
             df = get_market_by_range(dog_code_filter, start_date, current_date)
             next_predict = stategy_handle.mean_reversion_expect(df)
             if len(next_predict) != 0:
-                notify_dict.update({dog_code:next_predict})
+                #notify_dict.update({dog_code:next_predict})
+                notify_dict.update({dog_index+'.US':next_predict})   # Support US market fornow
                 #log.get().info('[%s]: %s'%(dog_code, str(next_predict)))
+    
     return notify_dict
 
 def trade(user, q_type, house_dict, dog_opt, dog_id):
@@ -62,6 +67,8 @@ def trade(user, q_type, house_dict, dog_opt, dog_id):
     available_cash = float(house_dict['AvailableCash'])
     holding = get_holding_by_dog_id(json.loads(house_dict['Holding'].replace("'",'"')), dog_id)
     log.get().info('[%s] holding: %s'%(dog_id, str(holding)))
+    if len(holding) == 0:
+        holding.update({'Quantity':0})
 
     for order_index in dog_opt:
         val = float(dog_opt[order_index])
