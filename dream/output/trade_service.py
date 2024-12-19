@@ -88,7 +88,13 @@ def order_monitor(lock, inteval):
                     current_time = datetime.datetime.now()
                     log.get(py_name).info('order_time[%s] current_time[%s]'%(order_datetime, str(current_time)))
                     time_diff = current_time - time_obj
-                    if time_diff > datetime.timedelta(minutes=5):
+                    submit_price = order_index['Price']
+                    # get realtime price, temp here
+                    realtime_price = submit_price
+                    expier_hour = 8     # default waiting hour
+                    if abs(realtime_price - submit_price)/submit_price < 0.01:  # diff less than 1%, then keep wait till expire
+                        expier_hour = 16
+                    if time_diff > datetime.timedelta(hour=expier_hour):
                         log.get(py_name).info('Order expired, cancel: %s'%(order_id))
                         trade_cancel(order_id)
                         continue
