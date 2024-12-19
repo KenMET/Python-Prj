@@ -10,8 +10,9 @@ RUN apt update && \
 	apt install -y python3 || true && apt install -y python3 && \
 	apt install -y python3-pip || true && apt install -y python3-pip && \
 	python3 -m pip install sqlalchemy pymysql requests bs4 cryptography numpy matplotlib scipy && \
-	python3 -m pip install sqlalchemy pymysql requests bs4 cryptography numpy matplotlib scipy
-
+	python3 -m pip install sqlalchemy pymysql requests bs4 cryptography numpy matplotlib scipy && \
+	python3 -m pip install pandas adata akshare longport && \
+	python3 -m pip install pandas adata akshare longport
 
 CMD ["bash"]
 
@@ -21,6 +22,7 @@ CMD ["bash"]
 #docker stop spider; docker rm spider
 #docker build -t spider:latest .
 
+#For Jetson
 #nvidia-docker run -itd \
 #    --name spider \
 #    -e PUID=1000 \
@@ -39,3 +41,17 @@ CMD ["bash"]
 #    --restart unless-stopped \
 #    spider \
 #    bash -c "service cron start;tail -f /dev/null"
+
+#For OpenWRT:	
+#docker run -itd \
+#    --name dream \
+#    -e LANG=C.UTF-8 \
+#    -e LC_ALL=C.UTF-8 \
+#    -e PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+#    -e DB_HOST=192.168.8.1  \
+#    -e DB_PORT=8102 \
+#    -e DB_USER=root \
+#    -e DB_CODE=XXXXXXXXXXXXXXX \
+#    -v /data/code/Python-Prj:/base \
+#    --restart unless-stopped \
+#    dream /bin/bash /base/dream/startup.sh
