@@ -38,24 +38,31 @@ def create_trade_server():
     return server
 
 def waiting_client(lock, server, max_client=5):
-    server.listen(max_client)
-    while True:
-        client_socket, client_address = server.accept()
-        client_handler = threading.Thread(target=handle_client, args=(client_socket, client_address, lock))
-        client_handler.start()
+    try:
+        server.listen(max_client)
+        while True:
+            client_socket, client_address = server.accept()
+            client_handler = threading.Thread(target=handle_client, args=(client_socket, client_address, lock))
+            client_handler.start()
+    except Exception as e:
+        log.get(py_name).error('Exception captured in waiting_client: %s'%(str(e)))
 
 def handle_client(client_socket, client_address, lock):
-    while True:
-        data = client_socket.recv(1024 * 10)
-        if not data:
-            #log.get(py_name).info("Client %s disconnected"%(str(client_address)))
-            break
-        recv_dict = get_dict_from_socket(data)
-        handle_dict(client_socket, lock, recv_dict)
-        #client_socket.sendall(data)  # 将收到的数据回传给客户端
-    client_socket.close()
+    try:
+        while True:
+            data = client_socket.recv(1024 * 10)
+            if not data:
+                #log.get(py_name).info("Client %s disconnected"%(str(client_address)))
+                break
+            recv_dict = get_dict_from_socket(data)
+            handle_dict(client_socket, lock, recv_dict)
+            #client_socket.sendall(data)  # 将收到的数据回传给客户端
+        client_socket.close()
+    except Exception as e:
+        log.get(py_name).error('Exception captured in handle_client: %s'%(str(e)))
 
 def order_monitor(lock, inteval):
+
     secret_list = get_secret_detail()
     while(True):
         for index in secret_list:
@@ -88,19 +95,22 @@ def order_monitor(lock, inteval):
                     current_time = datetime.datetime.now()
                     log.get(py_name).info('order_time[%s] current_time[%s]'%(order_datetime, str(current_time)))
                     time_diff = current_time - time_obj
-                    submit_price = order_index['Price']
+                    submit_price = float(order_index['Price'])
+
                     # get realtime price, temp here
                     realtime_price = submit_price
+
                     expier_hour = 8     # default waiting hour
                     if abs(realtime_price - submit_price)/submit_price < 0.01:  # diff less than 1%, then keep wait till expire
                         expier_hour = 16
-                    if time_diff > datetime.timedelta(hour=expier_hour):
+                    if time_diff > datetime.timedelta(hours=expier_hour):
                         log.get(py_name).info('Order expired, cancel: %s'%(order_id))
                         trade_cancel(order_id)
                         continue
                     log.get(py_name).info('[%s][%s] status[%s] no change in %s'%(house_name, order_id, order_status, str(time_diff)))
             lock.release()
         time.sleep(inteval)
+
 
 def handle_dict(client_socket, lock, tmp_dict):
     log.get(py_name).info('Handle: %s'%(str(tmp_dict)))
@@ -165,4 +175,7 @@ if __name__ == '__main__':
 
     # 解析命令行参数
     args = parser.parse_args()
-    main(args)
+    try:
+        main(args)
+    except Exception as e:
+        log.get(py_name).error('Exception captured in main: %s'%(str(e)))
