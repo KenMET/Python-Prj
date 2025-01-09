@@ -39,7 +39,7 @@ def get_cn_dog_id(dog_code: str) -> str:
 def get_dog_cn_daily_hist(dog_id, **kwargs):
     dog_id_filter = get_cn_dog_id(dog_id)
     try:
-        df = ak.stock_zh_a_hist(symbol=dog_id_filter, period="daily", adjust="qfq", **kwargs)
+        df = ak.stock_zh_a_hist(symbol=dog_id, period="daily", adjust="qfq", **kwargs)  # Do not fetch dog such as "sh000016" here, skip to opt-2
         df.drop(columns=['股票代码', '成交量', '振幅', '涨跌幅', '涨跌额', '换手率'], inplace=True)
         df.rename(columns={'日期': 'Date', '开盘': 'Open'}, inplace=True) # Replace title
         df.rename(columns={'收盘': 'Close', '最高': 'High'}, inplace=True) # Replace title

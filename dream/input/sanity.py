@@ -5,11 +5,14 @@ import os
 import sys
 import argparse
 import datetime
+import pandas as pd
 
 # Customsized lib
 py_dir = os.path.dirname(os.path.realpath(__file__))
 py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
 sys.path.append(r'%s/'%(py_dir))
+sys.path.append(r'%s/../common'%(py_dir))
+from database import get_market_by_range
 sys.path.append(r'%s/../../mysql'%(py_dir))
 import db_dream_dog as dbdd
 sys.path.append(r'%s/../../notification'%(py_dir))
@@ -39,12 +42,30 @@ def sanity_market(db, table_name):
         #db.dropTable(table_name)
         return False
 
+def check_adjustment_market(table_name):
+    dog_id = table_name[table_name.rfind('_')+1:]
+    end_date = datetime.datetime.today().date()
+    start_date = (datetime.datetime.today() - datetime.timedelta(days=20)).date()
+    df = get_market_by_range(dog_id, start_date, end_date)
+    if (len(df) == 0):
+        return False, None
+    df['Close_diff_pct'] = df['Close'].pct_change() * 100
+    result = df[df['Close_diff_pct'].abs() > 15]
+    output = []
+    for i in result.index:
+        prev_date = pd.to_datetime(df.iloc[i - 1]['Date']).date()
+        prev_close = df.iloc[i - 1]['Close']
+        curr_close = df.iloc[i]['Close']
+        return False, {'date':prev_date, 'pre':prev_close, 'cur':curr_close}
+    return True, None
+
 def main(args):
     log.init('%s/../log'%(py_dir), py_name, log_mode='w', log_level='info', console_enable=True)
     log.get().info('Logger Creat Success...')
     bark_obj = notify.bark()
 
     fail_list = []
+    adjusted_dict = {}
     db = dbdd.db('dream_dog')
     table_list = db.queryTable()
     for index in table_list:
@@ -54,9 +75,27 @@ def main(args):
             flag = sanity_market(db, index)
             if (not flag):
                 fail_list.append(index)
+            flag, adjust_detail = check_adjustment_market(index)
+            if (not flag):
+                adjusted_dict.update({index:adjust_detail})
     if len(fail_list) != 0:
         log.get().info('Failed list: %s'%(fail_list))
         flag = bark_obj.send_title_content('Market Sanity', 'Failed list: %s'%(fail_list))
+    elif len(adjusted_dict) != 0:
+        content = ''
+        for adjust_index in adjusted_dict:
+            dog_id = adjust_index
+            adjust_detail = adjusted_dict[adjust_index]
+            if adjust_detail == None:
+                log.get().info('Market Adjustment Sanity None:[%s]'%(dog_id))
+                content += 'Market Adjustment Sanity None:[%s]\n'%(dog_id)
+            else:
+                prev_date = adjust_detail['date']
+                prev_close = adjust_detail['pre']
+                curr_close = adjust_detail['cur']
+                log.get().info('[%s] Adjusted in %s [%.2f->%.2f]'%(dog_id, prev_date, prev_close, curr_close))
+                content += '[%s] Adjusted in %s [%.2f->%.2f]\n'%(dog_id, prev_date, prev_close, curr_close)
+        flag = bark_obj.send_title_content('Market Sanity', '%s'%(content))
     else:
         log.get().info('All market DB works normal')
         flag = bark_obj.send_title_content('Market Sanity', 'All market DB works normal')
