@@ -8,7 +8,7 @@
     <dog_cn_list>
         <id>002935</id><id>002261</id><id>002594</id><id>002869</id><id>000901</id>     <!--Start with '0'-->
         <id>002977</id><id>002338</id><id>000729</id><id>000568</id><id>000858</id>     <!-- 000300 failed, unknow... -->
-        <id>000001</id><id>000016</id>
+        <id>000001</id><id>sh000016</id>                                                <!-- 000016 need specific to 'sh' market -->
         <id>159518</id><id>159655</id><id>159509</id><id>159632</id><id>159995</id>     <!--Start with '1'-->
         <id>159866</id>
         <id>300750</id><id>300458</id><id>300552</id><id>399001</id><id>399006</id>     <!--Start with '3'-->

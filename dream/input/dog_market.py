@@ -26,29 +26,36 @@ def get_market(dog_code: str) -> str:
         return 'sz'
     elif dog_code.startswith('4'):
         return 'bj'
+    elif len(dog_code)==8 and dog_code[:2].isalpha() and dog_code[2:].isdigit():
+        return dog_code[:2]
     else:
         return None
 
+# Filter for CN dog ID
+def get_cn_dog_id(dog_code: str) -> str:
+    return ''.join([c for c in dog_code if c.isdigit()])
+
 # date   open  close   high    low     amount
 def get_dog_cn_daily_hist(dog_id, **kwargs):
+    dog_id_filter = get_cn_dog_id(dog_id)
     try:
-        df = ak.stock_zh_a_hist(symbol=dog_id, period="daily", adjust="qfq", **kwargs)
+        df = ak.stock_zh_a_hist(symbol=dog_id_filter, period="daily", adjust="qfq", **kwargs)
         df.drop(columns=['股票代码', '成交量', '振幅', '涨跌幅', '涨跌额', '换手率'], inplace=True)
         df.rename(columns={'日期': 'Date', '开盘': 'Open'}, inplace=True) # Replace title
         df.rename(columns={'收盘': 'Close', '最高': 'High'}, inplace=True) # Replace title
         df.rename(columns={'最低': 'Low', '成交额': 'Amount'}, inplace=True) # Replace title
         return df
     except Exception as e:
-        log.get().info('Exception level-1, try opt-2...')
+        log.get().info('[%s]Exception level-1, try opt-2...', dog_id)
         try:
-            df = ak.stock_zh_a_hist_tx(symbol=get_market(dog_id)+dog_id, adjust="qfq", **kwargs)
+            df = ak.stock_zh_a_hist_tx(symbol=get_market(dog_id)+dog_id_filter, adjust="qfq", **kwargs)
             df.columns = df.columns.str.title()
             df['Amount'] = ((df['Open'] + df['Close'] + df['High'] + df['Low']) / 4) * df['Amount'] * 100
             return df
         except Exception as e:
-            log.get().info('Exception level-2, try opt-3...')
+            log.get().info('[%s]Exception level-2, try opt-3...', dog_id)
             try:
-                df = ak.stock_zh_a_daily(symbol=get_market(dog_id)+dog_id, adjust="qfq", **kwargs)
+                df = ak.stock_zh_a_daily(symbol=get_market(dog_id)+dog_id_filter, adjust="qfq", **kwargs)
                 df.drop(columns=['volume', 'outstanding_share', 'turnover'], inplace=True)
                 df.columns = df.columns.str.title()
                 return df
@@ -57,8 +64,9 @@ def get_dog_cn_daily_hist(dog_id, **kwargs):
                 return pd.DataFrame()
 
 def get_dog_cn_capital_flow(dog_id):
+    dog_id_filter = get_cn_dog_id(dog_id)
     try:
-        df = ak.stock_individual_fund_flow(stock=dog_id, market=get_market(dog_id))
+        df = ak.stock_individual_fund_flow(stock=dog_id_filter, market=get_market(dog_id))
         df.drop(columns=['收盘价', '涨跌幅'], inplace=True)
         df = df.drop(columns=df.filter(like='净占比').columns)
         df.rename(columns={'主力净流入-净额': 'Inflow_Main', '超大单净流入-净额': 'Inflow_Max'}, inplace=True) # Replace title
@@ -115,6 +123,7 @@ def main(args):
         dog_list = []
         dog_list = list(set(dog_list).union(get_dog(args.market)))
 
+    # dog_list = ['sh000016']       # Only for test specific dog
     for dog_index in dog_list:
         db, inexist = create_if_market_inexist(dog_index)
         if inexist:
