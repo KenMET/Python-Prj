@@ -62,55 +62,56 @@ def handle_client(client_socket, client_address, lock):
         log.get(py_name).error('Exception captured in handle_client: %s'%(str(e)))
 
 def order_monitor(lock, inteval):
-
-    secret_list = get_secret_detail()
-    while(True):
-        for index in secret_list:
-            user = index['user']
-            quent_type = index['type']
-            house_name = '%s-%s'%(quent_type, user)
-            db = create_if_order_inexist(house_name)
-            opened_order_list = get_open_order(user, quent_type)
-            lock.acquire()
-            quantitative_init(quent_type, user)
-            for order_index in opened_order_list:
-                order_id = order_index['OrderID']
-                order_status = order_index['Status']
-                order_dict = trade_query(order_id)
-                order_query_status = order_dict.get('Status', '')
-                if order_query_status == '':
-                    log.get(py_name).error('Query order status failed: %s'%(str(order_dict)))
-                    continue
-                if order_status != order_query_status:
-                    if not db.update_order_by_id(house_name, order_id, order_dict):
-                        log.get(py_name).error('Order[%s] update failed')
+    try:
+        secret_list = get_secret_detail()
+        while(True):
+            for index in secret_list:
+                user = index['user']
+                quent_type = index['type']
+                house_name = '%s-%s'%(quent_type, user)
+                db = create_if_order_inexist(house_name)
+                opened_order_list = get_open_order(user, quent_type)
+                lock.acquire()
+                quantitative_init(quent_type, user)
+                for order_index in opened_order_list:
+                    order_id = order_index['OrderID']
+                    order_status = order_index['Status']
+                    order_dict = trade_query(order_id)
+                    order_query_status = order_dict.get('Status', '')
+                    if order_query_status == '':
+                        log.get(py_name).error('Query order status failed: %s'%(str(order_dict)))
                         continue
-                    log.get(py_name).info('[%s][%s] status[%s]->[%s]'%(house_name, order_id, order_status, order_query_status))
-                else:
-                    order_datetime = order_dict.get('Date', '')
-                    if order_datetime == '':
-                        log.get(py_name).error('Query order datetime failed: %s'%(str(order_dict)))
-                        continue
-                    time_obj = datetime.datetime.strptime(order_datetime, '%Y-%m-%d %H:%M:%S.%f')
-                    current_time = datetime.datetime.now()
-                    log.get(py_name).info('order_time[%s] current_time[%s]'%(order_datetime, str(current_time)))
-                    time_diff = current_time - time_obj
-                    submit_price = float(order_index['Price'])
+                    if order_status != order_query_status:
+                        if not db.update_order_by_id(house_name, order_id, order_dict):
+                            log.get(py_name).error('Order[%s] update failed')
+                            continue
+                        log.get(py_name).info('[%s][%s] status[%s]->[%s]'%(house_name, order_id, order_status, order_query_status))
+                    else:
+                        order_datetime = order_dict.get('Date', '')
+                        if order_datetime == '':
+                            log.get(py_name).error('Query order datetime failed: %s'%(str(order_dict)))
+                            continue
+                        time_obj = datetime.datetime.strptime(order_datetime, '%Y-%m-%d %H:%M:%S.%f')
+                        current_time = datetime.datetime.now()
+                        log.get(py_name).info('order_time[%s] current_time[%s]'%(order_datetime, str(current_time)))
+                        time_diff = current_time - time_obj
+                        submit_price = float(order_index['Price'])
 
-                    # get realtime price, temp here
-                    realtime_price = submit_price
+                        # get realtime price, temp here
+                        realtime_price = submit_price
 
-                    expier_hour = 8     # default waiting hour
-                    if abs(realtime_price - submit_price)/submit_price < 0.01:  # diff less than 1%, then keep wait till expire
-                        expier_hour = 16
-                    if time_diff > datetime.timedelta(hours=expier_hour):
-                        log.get(py_name).info('Order expired, cancel: %s'%(order_id))
-                        trade_cancel(order_id)
-                        continue
-                    log.get(py_name).info('[%s][%s] status[%s] no change in %s'%(house_name, order_id, order_status, str(time_diff)))
-            lock.release()
-        time.sleep(inteval)
-
+                        expier_hour = 8     # default waiting hour
+                        if abs(realtime_price - submit_price)/submit_price < 0.01:  # diff less than 1%, then keep wait till expire
+                            expier_hour = 16
+                        if time_diff > datetime.timedelta(hours=expier_hour):
+                            log.get(py_name).info('Order expired, cancel: %s'%(order_id))
+                            trade_cancel(order_id)
+                            continue
+                        log.get(py_name).info('[%s][%s] status[%s] no change in %s'%(house_name, order_id, order_status, str(time_diff)))
+                lock.release()
+            time.sleep(inteval)
+    except Exception as e:
+        log.get(py_name).error('Exception captured in order_monitor: %s'%(str(e)))
 
 def handle_dict(client_socket, lock, tmp_dict):
     log.get(py_name).info('Handle: %s'%(str(tmp_dict)))
