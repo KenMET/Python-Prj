@@ -70,14 +70,19 @@ def order_monitor(lock, inteval):
                 quent_type = index['type']
                 house_name = '%s-%s'%(quent_type, user)
                 db = create_if_order_inexist(house_name)
+                log.get(py_name).info('Order monitor, Getting open order for: %s %s'%(user, quent_type))
                 opened_order_list = get_open_order(user, quent_type)
                 lock.acquire()
+                log.get(py_name).info('Order monitor, Lock acquired, start init: %s %s'%(user, quent_type))
                 quantitative_init(quent_type, user)
                 for order_index in opened_order_list:
+                    log.get(py_name).info('Order monitor, Looping in order index: %s'%(str(order_index)))
                     order_id = order_index['OrderID']
                     order_status = order_index['Status']
+                    log.get(py_name).info('Order monitor, query ID: %s'%(order_id))
                     order_dict = trade_query(order_id)
                     order_query_status = order_dict.get('Status', '')
+                    log.get(py_name).info('Order monitor, order_dict: %s'%(str(order_dict)))
                     if order_query_status == '':
                         log.get(py_name).error('Query order status failed: %s'%(str(order_dict)))
                         continue
