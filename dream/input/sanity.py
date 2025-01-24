@@ -50,7 +50,12 @@ def check_adjustment_market(table_name):
     if (len(df) == 0):
         return False, None
     df['Close_diff_pct'] = df['Close'].pct_change() * 100
-    result = df[df['Close_diff_pct'].abs() > 15]
+    # diff over 50%
+    # for example: 1 share, price $100
+    # 1 share -> 2 shares (split), stock price should be half as origin. $100 -> $50, then drop 50%
+    # 2 shares -> 1 share (combine), stock price should be double. $100 -> $200, then increase 100%
+    # So we take 50% as min diff.
+    result = df[df['Close_diff_pct'].abs() > 50]
     output = []
     for i in result.index:
         prev_date = pd.to_datetime(df.iloc[i - 1]['Date']).date()
