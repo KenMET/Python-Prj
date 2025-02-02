@@ -12,6 +12,7 @@ sys.path.append(r'%s/'%(py_dir))
 import akshare as ak
 sys.path.append(r'%s/../common'%(py_dir))
 from database import create_and_clear_info
+from standard import wait_us_market_open
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
 import log
 
@@ -35,6 +36,7 @@ def main(args):
         df_etf['代码'] = df_etf['代码'].str.replace(r'\D', '', regex=True)
         df = pd.merge(df_a, df_etf, on=['代码', '名称', '最新价'], how='outer').fillna(0)
     elif (args.market == 'us'):
+        wait_for_market_open(log.get())
         df = ak.stock_us_spot_em()
         df = df.dropna(subset=['总市值'])   # Remove Na data
         df.drop(columns=['序号', '涨跌额', '涨跌幅', '开盘价', '最高价', '最低价', '昨收价', '成交量', '成交额', '振幅'], inplace=True)

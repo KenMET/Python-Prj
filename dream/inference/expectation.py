@@ -17,6 +17,7 @@ from strategy import basic, get_stategy_handle
 sys.path.append(r'%s/../common'%(py_dir))
 from config import get_house, get_strategy, get_notify_list, get_trade_list
 from database import get_holding, get_market_by_range, get_dogname, get_avg_score
+from standard import wait_us_market_open
 sys.path.append(r'%s/../../notification'%(py_dir))
 import notification as notify
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
@@ -89,6 +90,7 @@ def main(args):
     notify_dict = {}
     notify_list = get_notify_list(args.market)
     if args.market == 'us':     # Only for temp during simulation trade test
+        wait_us_market_open(log.get())
         notify_list = merge_holding('formal', 'Kanos', notify_list)
     for index in notify_list:
         next_predict = get_except_notify(index)

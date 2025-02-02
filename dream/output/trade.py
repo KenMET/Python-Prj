@@ -21,6 +21,7 @@ sys.path.append(r'%s/../inference'%(py_dir))
 from strategy import get_stategy_handle
 sys.path.append(r'%s/../common'%(py_dir))
 from config import get_house, get_trade_list
+from standard import wait_us_market_open
 sys.path.append(r'%s/../input'%(py_dir))
 from house import house_update
 from longport_api import quantitative_init, trade_submit
@@ -102,6 +103,8 @@ def trade(user, q_type, house_dict, dog_opt, dog_id):
 def main(args):
     log.init('%s/../log'%(py_dir), py_name, log_mode='w', log_level='info', console_enable=True)
     log.get().info('Logger Creat Success...[%s]'%(py_name))
+
+    wait_us_market_open(log.get())
 
     quantitative_init(args.quantitative, args.user)
     if args.user == '':

@@ -20,6 +20,7 @@ sys.path.append(r'%s/../common'%(py_dir))
 from config import get_house
 from longport_api import quantitative_init, get_trade_context
 from database import create_if_house_inexist, get_house_detail, get_holding, get_secret_detail
+from standard import wait_us_market_open
 
 def house_update(name):
     db = create_if_house_inexist()
@@ -60,6 +61,8 @@ def house_update(name):
 def main(args):
     log.init('%s/../log'%(py_dir), py_name, log_mode='w', log_level='info', console_enable=True)
     log.get().info('Logger Creat Success')
+
+    wait_us_market_open(log.get())
 
     secret_list = get_secret_detail()
     for index in secret_list:

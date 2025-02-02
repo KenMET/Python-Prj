@@ -16,6 +16,7 @@ sys.path.append(r'%s/../common'%(py_dir))
 from config import get_dog
 from longport_api import quantitative_init, get_history, get_quote_context
 from database import get_fullcode, create_if_market_inexist
+from standard import wait_us_market_open
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
 import log
 
@@ -117,6 +118,7 @@ def main(args):
 
     dog_list = []
     if (args.market == 'us'):
+        wait_for_market_open(log.get())
         dog_list = get_dog(args.market)
         log.get().info(dog_list)
     elif (args.market == 'cn'):
