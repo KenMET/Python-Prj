@@ -52,7 +52,7 @@ def main(args):
     log.init('%s/../log'%(py_dir), py_name, log_mode='w', log_level='info', console_enable=True)
     log.get().info('Logger Creat Success')
 
-    #wait_us_market_open(log.get())
+    wait_us_market_open(log.get())
 
     if (args.user == ''):
         log.get().error('User Null, exit......')
