@@ -118,7 +118,7 @@ def main(args):
 
     dog_list = []
     if (args.market == 'us'):
-        wait_for_market_open(log.get())
+        wait_us_market_open(log.get())
         dog_list = get_dog(args.market)
         log.get().info(dog_list)
     elif (args.market == 'cn'):
