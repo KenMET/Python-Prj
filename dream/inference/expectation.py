@@ -15,7 +15,7 @@ py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
 sys.path.append(r'%s/'%(py_dir))
 from strategy import basic, get_stategy_handle
 sys.path.append(r'%s/../common'%(py_dir))
-from config import get_house, get_strategy, get_notify_list, get_trade_list
+from config import get_strategy, get_notify_list, get_trade_list
 from database import get_holding, get_market_by_range, get_dogname, get_avg_score
 from standard import wait_us_market_open
 sys.path.append(r'%s/../../notification'%(py_dir))

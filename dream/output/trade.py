@@ -20,7 +20,7 @@ from order import submit_order
 sys.path.append(r'%s/../inference'%(py_dir))
 from strategy import get_stategy_handle
 sys.path.append(r'%s/../common'%(py_dir))
-from config import get_house, get_trade_list
+from config import get_trade_list
 from standard import wait_us_market_open
 sys.path.append(r'%s/../input'%(py_dir))
 from house import house_update
