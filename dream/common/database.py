@@ -136,6 +136,11 @@ def get_open_order(user, q_type):
     temp_list = db.query_order_opened(order_dest)
     return [db.get_dict_from_obj(i) for i in temp_list] 
 
+def get_market_last(target):
+    db = dbdd.db('dream_dog')
+    ret = db.query_dog_market_last(target)
+    return db.get_dict_from_obj(ret)
+
 def get_market_by_range(target, start, end):
     db = dbdd.db('dream_dog')
     ret = db.query_dog_markey_by_daterange(target, start, end)

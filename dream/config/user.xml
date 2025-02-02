@@ -1,8 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <contents>
-    <Kanos>     <!--Defined as house name-->
-        <quent_type>both</quent_type>   <!--"simulation","formal","both"-->
-    </Kanos>
+    <kanos>     <!--Defined as house name-->
+        <option>
+            <price_range>0.15</price_range>  <!-- Option Strike Price Around [market_price*(1-x), market_price*(1+x)] -->
+            <day_range>90</day_range>  <!-- Option Expire Date Beyond [x days] -->
+            <count_limit>5</count_limit>    <!-- Option above that the first x dates -->
+        </option>
+    </kanos>
     <sentiment_key>
         <key>NSVARWKAJGLQA942</key>
         <key>RDNLSSFGUAKC1F0E</key>

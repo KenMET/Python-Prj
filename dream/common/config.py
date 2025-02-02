@@ -73,11 +73,9 @@ def get_strategy(id):
         tmp.update({'class':'basic'})
     return tmp
 
-def get_house(user=None):
+def get_user_config(user, class_name, config_name):
     cfg = config('user')
-    if user == None:
-        return cfg
-    return cfg.get(user, {})
+    return cfg.get(user, {}).get(class_name, {}).get(config_name, None)
 
 def get_adata_key():
     cfg = config('user')

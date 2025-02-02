@@ -43,10 +43,47 @@ def get_history(id, **kwargs):
         AdjustType.ForwardAdjust, **kwargs)
     return resp
 
+# Supportted: US, HK, CN, SG
+def get_trading_session(market):
+    quote_ctx = QuoteContext(Config.from_env())
+    resp = quote_ctx.trading_session()
+    trading_session_dict = {}
+    for index in resp:
+        market_temp = str(index.market).split('.')[-1]
+        market_session_dict = {}
+        for session_index in index.trade_sessions:
+            trade_session = str(session_index.trade_session).split('.')[-1]
+            begin_time = session_index.begin_time
+            end_time = session_index.end_time
+            market_session_dict.update({trade_session:{'begin':begin_time, 'end':end_time}})
+        trading_session_dict.update({market_temp:market_session_dict})
+    return trading_session_dict.get(market,{})
+
 def get_last_price(code):
     quote_ctx = QuoteContext(Config.from_env())
     resp = quote_ctx.quote([code])
     return float(resp[0].last_done)
+
+def get_option_dict_from_obj(option_status_index):
+    option_dict = {
+        'Symbol': str(option_status_index.symbol),
+        'Price': float(option_status_index.last_done), 
+        'Close': float(option_status_index.prev_close), 
+        'Open': float(option_status_index.open),
+        'High': float(option_status_index.high),
+        'Low': float(option_status_index.low),
+        'LastUpdate': option_status_index.timestamp,
+        'LastVolume': int(option_status_index.volume),
+        'LastTurnover': float(option_status_index.turnover),
+        'TradeStatus': str(option_status_index.trade_status).split('.')[-1],
+        'ImpliedVolatility': float(option_status_index.implied_volatility),
+        'OpenInterest': int(option_status_index.open_interest),
+        'StrikePrice': float(option_status_index.strike_price),
+        'ContractMultiplier': int(option_status_index.contract_multiplier),
+        'ContractType': str(option_status_index.contract_type).split('.')[-1],
+        'HistoricalVolatility': float(option_status_index.historical_volatility),
+    }
+    return option_dict
 
 # Please make sure your time in UTC+8:
 # apt install -y tzdata

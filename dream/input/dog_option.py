@@ -13,48 +13,66 @@ py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
 sys.path.append(r'%s/'%(py_dir))
 import akshare as ak
 sys.path.append(r'%s/../common'%(py_dir))
-from config import get_trade_list
-from longport_api import quantitative_init, get_quote_context
-from database import create_if_option_inexist
+from config import get_trade_list, get_user_config
+from longport_api import quantitative_init, get_quote_context, get_option_dict_from_obj
+from database import create_if_option_inexist, get_market_last
+from standard import wait_us_market_open
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
 import log
 
-def get_option_list(dog_id, day_range, option_count):
+def get_option_list(dog_id, user):
+    price_range = float(get_user_config(user, 'option', 'price_range'))
+    count_limit = int(get_user_config(user, 'option', 'count_limit'))
+    day_range = int(get_user_config(user, 'option', 'day_range'))
+
+    last_price = float(get_market_last(dog_id).get('Close'))    # Now getting from database, to be consider getting from realtime data...
+    lower_bound = last_price * (1.0 - price_range)
+    upper_bound = last_price * (1.0 + price_range)
+
     ctx = get_quote_context()
     today = datetime.date.today()
     date_list = ctx.option_chain_expiry_date_list('%s.US'%(dog_id))
-    interval = today + datetime.timedelta(days=day_range)                       # day_range days beyond...
-    filtered_dates = [d for d in date_list if d >= interval][:option_count]     # get the first option_count date\
+    interval = today + datetime.timedelta(days=day_range)   # day_range days beyond...
+    filtered_dates = [d for d in date_list if d >= interval][:count_limit]     # get the first option_count date\
+
     option_list = []
     for date_index in filtered_dates:
         tmp_option_list = ctx.option_chain_info_by_date('%s.US'%(dog_id), date_index)
         for option_index in tmp_option_list:
+            if (lower_bound > option_index.price or option_index.price > upper_bound):
+                continue
             option_status = ctx.option_quote([option_index.call_symbol, option_index.put_symbol])
-            temp_dict = {
-                'CodeDatePrice': '%s-%s-%s'%(dog_id, date_index.strftime('%Y%m%d'), str(option_index.price)),
-                'CallSymbol': option_index.call_symbol, 
-                'PutSymbol': option_index.put_symbol, 
-                'Standard': option_index.standard, 
-            }
-            log.get().info(temp_dict)
-            log.get().info(option_status)
-            exit()
-            option_list.append(temp_dict)
+            for option_status_index in option_status:
+                #log.get().info(option_status_index)
+                temp_dict = get_option_dict_from_obj(option_status_index)
+                option_list.append(temp_dict)
     return option_list
 
 def main(args):
     log.init('%s/../log'%(py_dir), py_name, log_mode='w', log_level='info', console_enable=True)
     log.get().info('Logger Creat Success')
 
-    quantitative_init(args.quantitative, 'Kanos')
+    #wait_us_market_open(log.get())
+
+    if (args.user == ''):
+        log.get().error('User Null, exit......')
+        return
+
+    quantitative_init(args.quantitative, args.user)
 
     dog_list = get_trade_list('us')
     log.get().info(dog_list)
 
     db = create_if_option_inexist()
     for dog_index in dog_list:
-        log.get().info('################################################################')
-        option_list = get_option_list(dog_index, 30*3, 5)
+        option_list = get_option_list(dog_index, args.user)
+        for index in option_list:
+            symbol = index['Symbol']
+            log.get().info('Start update for[%s]:%s'%(symbol, str(index)))
+            flag = db.update_option_by_symbol(symbol, index)
+            if (not flag):
+                log.get().error('Option update failed: %s'%(symbol))
+                exit()
 
 
 if __name__ == '__main__':
@@ -62,7 +80,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="A input module for dog info fetch")
     
     # Append arguments
-    parser.add_argument('--market', type=str, default='cn', help='Now supported: "cn"(default),"us"')
+    parser.add_argument('--user', type=str, default='', help='')
     parser.add_argument('--quantitative', type=str, default='simulation', help='Now supported: "simulation"(default),"formal"')
     
     # 解析命令行参数
