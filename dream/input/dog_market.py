@@ -88,7 +88,7 @@ def get_dog_us_daily_hist(dog_id, **kwargs):
         return df
     except Exception as e:
         try:
-            dog_id = dog_id.split('.')[1]       # 106.XXX -> XXX
+            #dog_id = dog_id.split('.')[1]       # 106.XXX -> XXX
             log.get().info('Dog[%s] fetch failed, trying to get from longport...'%(dog_id))
             quote_ctx = get_quote_context()
             if 'start_date' in kwargs and 'end_date' in kwargs:
