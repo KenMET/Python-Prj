@@ -19,10 +19,11 @@ from config import get_dog
 from database import create_if_order_inexist
 from database import get_house_detail, get_secret_detail, get_open_order
 from standard import get_trade_session
-sys.path.append(r'%s/../../common_api/log'%(py_dir))
-import log
 from longport_api import quantitative_init, get_quote_context
 from longport_api import trade_submit, trade_cancel, trade_query, trade_modify
+sys.path.append(r'%s/../../common_api/log'%(py_dir))
+import log
+
 
 def get_socket_path():
     return "/tmp/trade_socket"
@@ -30,6 +31,25 @@ def get_socket_path():
 def get_dict_from_socket(data):
     received_dict = json.loads(data.decode().replace("'", '"'))
     return received_dict
+
+global_dict = {}
+def get_global_dict():
+    global global_dict
+    return global_dict
+def clear_global_dict():
+    global global_dict
+    for dog_index in global_dict:
+        dog_dict = global_dict[dog_index]
+        keys_to_delete = []
+        for key, value in dog_dict.items():
+            time_diff = datetime.datetime.now() - datetime.datetime.strptime(key, '%Y%m%d-%H%M%S')
+            if time_diff > datetime.timedelta(hours=(24+8)): # hours
+                keys_to_delete.append(key)
+        for key in keys_to_delete:
+            del dog_dict[key]
+def update_global_dict(temp_dict):
+    global global_dict
+    global_dict.update(temp_dict)
 
 def create_trade_server():
     server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
@@ -44,7 +64,7 @@ def waiting_client(lock, server, max_client=5):
         server.listen(max_client)
         while True:
             client_socket, client_address = server.accept()
-            client_handler = threading.Thread(target=handle_client, args=(client_socket, client_address, lock))
+            client_handler = threading.Thread(target=handle_client, args=(client_socket, client_address, lock, ))
             client_handler.start()
     except Exception as e:
         log.get(py_name).error('Exception captured in waiting_client: %s'%(str(e)))
@@ -63,10 +83,11 @@ def handle_client(client_socket, client_address, lock):
     except Exception as e:
         log.get(py_name).error('Exception captured in handle_client: %s'%(str(e)))
 
-def market_monitor(lock, inteval, global_dict):
+def market_monitor(lock, inteval):
     try:
         new_day = True
         while(True):
+            log.get(py_name).info('Market monitor, new looping')
             trade_session = get_trade_session()
             lock.acquire()
             quantitative_init('simulation', 'kanos')
@@ -78,10 +99,7 @@ def market_monitor(lock, inteval, global_dict):
                 dog_code = str(index.symbol).split('.')[0]
                 if trade_session['Pre']['Start'] <= current_time < trade_session['Pre']['End']:
                     log.get(py_name).debug('Market monitor, During Pre time')
-                    if new_day:
-                        log.get(py_name).debug('Market monitor, Clear flag')
-                        global_dict = {}
-                        new_day = False
+                    new_day = True  # Restore new day flag
                     session_obj = index.pre_market_quote
                 elif trade_session['Normal']['Start'] <= current_time < trade_session['Normal']['End']:
                     log.get(py_name).debug('Market monitor, During Normal time')
@@ -91,7 +109,10 @@ def market_monitor(lock, inteval, global_dict):
                     session_obj = index.post_market_quote
                 elif trade_session['Night']['Start'] <= current_time < trade_session['Night']['End']:
                     log.get(py_name).debug('Market monitor, During Night time')
-                    new_day = True  # Restore new day flag
+                    if new_day:
+                        log.get(py_name).debug('Market monitor, Clear flag')
+                        clear_global_dict()
+                        new_day = False
                     continue    # Not support yet...
                 else:
                     log.get(py_name).error('[%s]Datetime error: %s trade_session:%s'%(dog_code, str(current_time), str(trade_session)))
@@ -105,13 +126,13 @@ def market_monitor(lock, inteval, global_dict):
                     'Volume': int(session_obj.volume),
                     'Turnover': float(session_obj.turnover),
                 }
-                dog_dict = global_dict.get(dog_code, {})
-                dog_dict.update({session_obj.timestamp:temp_dict})
-                global_dict.update({dog_code:dog_dict})
+                global_temp_dict = get_global_dict()
+                dog_dict = global_temp_dict.get(dog_code, {})
+                dog_dict.update({session_obj.timestamp.strftime('%Y%m%d-%H%M%S'):temp_dict})
+                update_global_dict({dog_code:dog_dict})
             #log.get(py_name).info(global_dict)
             lock.release()
             time.sleep(inteval)
-            log.get(py_name).info('Market monitor, new looping')
     except Exception as e:
         log.get(py_name).error('Exception captured in market_monitor: %s'%(str(e)))
 
@@ -119,6 +140,7 @@ def order_monitor(lock, inteval):
     try:
         secret_list = get_secret_detail()
         while(True):
+            log.get(py_name).info('Order monitor, new looping')
             for index in secret_list:
                 user = index['user']
                 quent_type = index['type']
@@ -169,7 +191,6 @@ def order_monitor(lock, inteval):
                         log.get(py_name).info('[%s][%s] status[%s] no change in %s'%(house_name, order_id, order_status, str(time_diff)))
                 lock.release()
             time.sleep(inteval)
-            log.get(py_name).info('Order monitor, new looping')
     except Exception as e:
         log.get(py_name).error('Exception captured in order_monitor: %s'%(str(e)))
 
@@ -178,8 +199,8 @@ def handle_dict(client_socket, lock, tmp_dict):
     cmd = tmp_dict['cmd']
     ack_dict = {'cmd': '%s_ack'%(cmd)}
 
-    user = tmp_dict['user']
-    q_type = tmp_dict['type']
+    user = tmp_dict.get('user')
+    q_type = tmp_dict.get('type')
     lock.acquire()
     quantitative_init(q_type, user)
     if cmd == 'submit_order':
@@ -208,6 +229,21 @@ def handle_dict(client_socket, lock, tmp_dict):
         share = tmp_dict['share']
         order_dict = trade_modify(order_id, price, share)
         ack_dict.update(order_dict)
+    elif cmd == 'query_dog_market':
+        dog_id = tmp_dict['dog_id']
+        last_cnt = tmp_dict['last_cnt']
+        global_temp_dict = get_global_dict()
+        dog_temp_dict = global_temp_dict.get(dog_id, {})
+        if len(dog_temp_dict) != 0:
+            sorted_keys = sorted(dog_temp_dict.keys(), key=lambda x: datetime.datetime.strptime(x, '%Y%m%d-%H%M%S'), reverse=True)
+            if last_cnt < len(sorted_keys):
+                latest_keys = sorted_keys[:last_cnt]
+                latest_data = {k: dog_temp_dict[k] for k in latest_keys}
+            else:
+                latest_data = {k: dog_temp_dict[k] for k in sorted_keys}
+            ack_dict.update({'content':latest_data})
+        else:
+            ack_dict.update({'content':{}})
     else:
         ack_dict.update({'ack':'unknow cmd'})
     lock.release()
@@ -217,12 +253,11 @@ def main(args):
     log.init('%s/../log'%(py_dir), py_name, log_mode='w', log_level='info', console_enable=True)
     log.get(py_name).info('Service Create Success')
 
-    global_dict = {}
     lock = threading.Lock()
 
     order_t = threading.Thread(target=order_monitor, args=(lock, 60, ))
     order_t.start()
-    market_t = threading.Thread(target=market_monitor, args=(lock, 60*3, global_dict, ))
+    market_t = threading.Thread(target=market_monitor, args=(lock, 60*3, ))
     market_t.start()
 
     server = create_trade_server()
