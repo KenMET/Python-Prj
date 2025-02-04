@@ -32,6 +32,7 @@
     <trade_list>
         <us>
             <id>TTWO</id><id>NFLX</id><id>RDDT</id>
+            <id>MSFT</id>
             <id>AAPL</id><id>NVDA</id><id>TSLA</id>
             <id>GOLD</id>
             <id>TQQQ</id>
@@ -44,6 +45,7 @@
         </cn>
         <us>
             <id>TTWO</id><id>NFLX</id><id>RDDT</id>
+            <id>MSFT</id>
             <id>AAPL</id><id>NVDA</id><id>TSLA</id>
             <id>GOLD</id>
             <id>TQQQ</id>

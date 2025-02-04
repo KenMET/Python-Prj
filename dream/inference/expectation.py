@@ -36,13 +36,13 @@ def merge_holding(quent_type, user_name, notify_list):
                 notify_list.append(dog_code)
     return notify_list
 
-def get_except_notify(dog_code):
+def get_expect(dog_code):
     stategy_handle = get_stategy_handle(dog_code)
     if stategy_handle == None:
         log.get().error('stategy_handle Null')
         return
     current_date = datetime.datetime.now().strftime('%Y%m%d')
-    start_date = (datetime.datetime.now() - datetime.timedelta(days=(stategy_handle.long * 2))).strftime('%Y%m%d')
+    start_date = (datetime.datetime.now() - datetime.timedelta(days=(stategy_handle.long * 5))).strftime('%Y%m%d')
     df = get_market_by_range(dog_code, start_date, current_date)
     next_predict = stategy_handle.mean_reversion_expect(df)
     return next_predict
@@ -94,7 +94,7 @@ def main(args):
             wait_us_market_open(log.get())
         notify_list = merge_holding('formal', 'Kanos', notify_list)
     for index in notify_list:
-        next_predict = get_except_notify(index)
+        next_predict = get_expect(index)
         if len(next_predict) != 0:
             dog_name = get_dogname(args.market, index)
             option_opt = get_option_notify(index, next_predict)

@@ -13,7 +13,8 @@ import threading
 py_dir = os.path.dirname(os.path.realpath(__file__))
 py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
 sys.path.append(r'%s/'%(py_dir))
-from trade_service import get_socket_path, get_dict_from_socket
+from dream_service import get_socket_path, get_dict_from_socket
+from dream_service import get_socket_path, get_dict_from_socket
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
 import log
 

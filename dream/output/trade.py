@@ -15,22 +15,23 @@ import pandas as pd
 py_dir = os.path.dirname(os.path.realpath(__file__))
 py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
 sys.path.append(r'%s/'%(py_dir))
-from monitor import start_monitor
-from order import submit_order
 sys.path.append(r'%s/../inference'%(py_dir))
 from strategy import get_stategy_handle
 sys.path.append(r'%s/../common'%(py_dir))
 from config import get_trade_list
 from standard import wait_us_market_open
+from order import submit_order
 sys.path.append(r'%s/../input'%(py_dir))
 from house import house_update
 from longport_api import quantitative_init, trade_submit
 from database import get_house_detail, get_holding, get_market_by_range, create_if_order_inexist
+sys.path.append(r'%s/../inference'%(py_dir))
+from expectation import get_expect
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
 import log
 
 
-def get_expect(quent_type, user_name):
+def get_expect_all(quent_type, user_name):
     house_name = '%s-%s'%(quent_type, user_name)
     house_holding = get_holding(house_name)
     tobe_trade_list = get_trade_list('us')
@@ -44,19 +45,13 @@ def get_expect(quent_type, user_name):
         if re.search(r'\d{6}', dog_code_filter):   # Search if have number like '250117'
             log.get().info('Detect share option[%s]'%(dog_code_filter))
         else:
-            stategy_handle = get_stategy_handle(dog_code_filter)
-            if stategy_handle == None:
-                log.get().error('stategy_handle Null')
-                return {}
-            current_date = datetime.datetime.now().strftime('%Y%m%d')
-            start_date = (datetime.datetime.now() - datetime.timedelta(days=(stategy_handle.long * 5))).strftime('%Y%m%d')
-            df = get_market_by_range(dog_code_filter, start_date, current_date)
-            next_predict = stategy_handle.mean_reversion_expect(df)
+            #log.get().info('Get expect for[%s]'%(dog_code_filter))
+            next_predict = get_expect(dog_code_filter)
             if len(next_predict) != 0:
                 #notify_dict.update({dog_code:next_predict})
-                notify_dict.update({dog_index+'.US':next_predict})   # Support US market fornow
-                #log.get().info('[%s]: %s'%(dog_code, str(next_predict)))
-    
+                notify_dict.update({dog_code_filter+'.US':next_predict})   # Support US market fornow
+                log.get().info('[%s]: %s'%(dog_code_filter, str(next_predict)))
+
     return notify_dict
 
 def trade(user, q_type, house_dict, dog_opt, dog_id):
@@ -92,29 +87,22 @@ def trade(user, q_type, house_dict, dog_opt, dog_id):
         log.get().info('[%s] %s %d shares in price %.2f'%(dog_id, order_index, opt_share, val))
         
         submit_order(user, q_type, dog_id, order_index, val, opt_share)
-        #order_dict = trade_submit(dog_id, order_index, val, opt_share)
-        #db = create_if_order_inexist(order_dest)
-        #log.get().info('Insert for: %s'%(str(order_dict)))
-        #if not db.insert_order(order_dest, order_dict):
-        #    log.get().error('Order Inser Error...[%s] %s'%(order_dest, str(order_dict)))
-        #else:
-        #    start_monitor(py_name, order_dest, order_dict)
 
 def main(args):
     log.init('%s/../log'%(py_dir), py_name, log_mode='w', log_level='info', console_enable=True)
     log.get().info('Logger Creat Success...[%s]'%(py_name))
-
-    if not args.test:
-        wait_us_market_open(log.get())
 
     quantitative_init(args.quantitative, args.user)
     if args.user == '':
         log.get().error('User Null')
         return 
 
+    if not args.test:
+        wait_us_market_open(log.get())
+
     #result = subprocess.run(["python3", "%s/../input/house.py"], capture_output=True, text=True)
     house_update(args.user)
-    predict_dict = get_expect(args.quantitative, args.user)
+    predict_dict = get_expect_all(args.quantitative, args.user)
     log.get().info('Predict result: %s'%(str(predict_dict)))
 
     house_dict = get_house_detail('%s-%s'%(args.quantitative, args.user))

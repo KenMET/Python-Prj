@@ -15,11 +15,13 @@ py_dir = os.path.dirname(os.path.realpath(__file__))
 py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
 sys.path.append(r'%s/'%(py_dir))
 sys.path.append(r'%s/../common'%(py_dir))
+from config import get_dog
 from database import create_if_order_inexist
 from database import get_house_detail, get_secret_detail, get_open_order
+from standard import get_trade_session
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
 import log
-from longport_api import quantitative_init
+from longport_api import quantitative_init, get_quote_context
 from longport_api import trade_submit, trade_cancel, trade_query, trade_modify
 
 def get_socket_path():
@@ -61,6 +63,58 @@ def handle_client(client_socket, client_address, lock):
     except Exception as e:
         log.get(py_name).error('Exception captured in handle_client: %s'%(str(e)))
 
+def market_monitor(lock, inteval, global_dict):
+    try:
+        new_day = True
+        while(True):
+            trade_session = get_trade_session()
+            lock.acquire()
+            quantitative_init('simulation', 'kanos')
+            ctx = get_quote_context()
+            current_time = datetime.datetime.now().time()
+            log.get(py_name).debug('Market monitor, Quote dog from list config')
+            resp = ctx.quote(["%s.US"%(n) for n in get_dog('us')])
+            for index in resp:
+                dog_code = str(index.symbol).split('.')[0]
+                if trade_session['Pre']['Start'] <= current_time < trade_session['Pre']['End']:
+                    log.get(py_name).debug('Market monitor, During Pre time')
+                    if new_day:
+                        log.get(py_name).debug('Market monitor, Clear flag')
+                        global_dict = {}
+                        new_day = False
+                    session_obj = index.pre_market_quote
+                elif trade_session['Normal']['Start'] <= current_time < trade_session['Normal']['End']:
+                    log.get(py_name).debug('Market monitor, During Normal time')
+                    session_obj = index
+                elif trade_session['Post']['Start'] <= current_time < trade_session['Post']['End']:
+                    log.get(py_name).debug('Market monitor, During Post time')
+                    session_obj = index.post_market_quote
+                elif trade_session['Night']['Start'] <= current_time < trade_session['Night']['End']:
+                    log.get(py_name).debug('Market monitor, During Night time')
+                    new_day = True  # Restore new day flag
+                    continue    # Not support yet...
+                else:
+                    log.get(py_name).error('[%s]Datetime error: %s trade_session:%s'%(dog_code, str(current_time), str(trade_session)))
+                    break
+                temp_dict = {
+                    'Price': float(session_obj.last_done),
+                    'Close': float(session_obj.prev_close),
+                    #'Open': float(session_obj.open),
+                    'High': float(session_obj.high),
+                    'Low': float(session_obj.low),
+                    'Volume': int(session_obj.volume),
+                    'Turnover': float(session_obj.turnover),
+                }
+                dog_dict = global_dict.get(dog_code, {})
+                dog_dict.update({session_obj.timestamp:temp_dict})
+                global_dict.update({dog_code:dog_dict})
+            #log.get(py_name).info(global_dict)
+            lock.release()
+            time.sleep(inteval)
+            log.get(py_name).info('Market monitor, new looping')
+    except Exception as e:
+        log.get(py_name).error('Exception captured in market_monitor: %s'%(str(e)))
+
 def order_monitor(lock, inteval):
     try:
         secret_list = get_secret_detail()
@@ -70,19 +124,19 @@ def order_monitor(lock, inteval):
                 quent_type = index['type']
                 house_name = '%s-%s'%(quent_type, user)
                 db = create_if_order_inexist(house_name)
-                log.get(py_name).info('Order monitor, Getting open order for: %s %s'%(user, quent_type))
+                log.get(py_name).debug('Order monitor, Getting open order for: %s %s'%(user, quent_type))
                 opened_order_list = get_open_order(user, quent_type)
                 lock.acquire()
-                log.get(py_name).info('Order monitor, Lock acquired, start init: %s %s'%(user, quent_type))
+                log.get(py_name).debug('Order monitor, Lock acquired, start init: %s %s'%(user, quent_type))
                 quantitative_init(quent_type, user)
                 for order_index in opened_order_list:
-                    log.get(py_name).info('Order monitor, Looping in order index: %s'%(str(order_index)))
+                    log.get(py_name).debug('Order monitor, Looping in order index: %s'%(str(order_index)))
                     order_id = order_index['OrderID']
                     order_status = order_index['Status']
-                    log.get(py_name).info('Order monitor, query ID: %s'%(order_id))
+                    log.get(py_name).debug('Order monitor, query ID: %s'%(order_id))
                     order_dict = trade_query(order_id)
                     order_query_status = order_dict.get('Status', '')
-                    log.get(py_name).info('Order monitor, order_dict: %s'%(str(order_dict)))
+                    log.get(py_name).debug('Order monitor, order_dict: %s'%(str(order_dict)))
                     if order_query_status == '':
                         log.get(py_name).error('Query order status failed: %s'%(str(order_dict)))
                         continue
@@ -115,6 +169,7 @@ def order_monitor(lock, inteval):
                         log.get(py_name).info('[%s][%s] status[%s] no change in %s'%(house_name, order_id, order_status, str(time_diff)))
                 lock.release()
             time.sleep(inteval)
+            log.get(py_name).info('Order monitor, new looping')
     except Exception as e:
         log.get(py_name).error('Exception captured in order_monitor: %s'%(str(e)))
 
@@ -162,13 +217,18 @@ def main(args):
     log.init('%s/../log'%(py_dir), py_name, log_mode='w', log_level='info', console_enable=True)
     log.get(py_name).info('Service Create Success')
 
+    global_dict = {}
     lock = threading.Lock()
-    monitor_t = threading.Thread(target=order_monitor, args=(lock, 60, ))
-    monitor_t.start()
+
+    order_t = threading.Thread(target=order_monitor, args=(lock, 60, ))
+    order_t.start()
+    market_t = threading.Thread(target=market_monitor, args=(lock, 60*3, global_dict, ))
+    market_t.start()
 
     server = create_trade_server()
     waiting_client(lock, server)
-    monitor_t.join()
+    order_t.join()
+    market_t.join()
 
     log.get(py_name).error('You should not see this log...')
 

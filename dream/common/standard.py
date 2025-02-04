@@ -26,3 +26,17 @@ def wait_us_market_open(logger):
         time.sleep(3600)  # Sleep 1 hour for winter time.
     else:
         logger.info('No need to sleep due to summer time...')
+
+def get_trade_session():
+    trade_session = {
+        'Pre': {'Start':datetime.time(16, 0, 0), 'End':datetime.time(21, 30, 0)},
+        'Normal': {'Start':datetime.time(21, 30, 0), 'End':datetime.time(4, 0, 0)},
+        'Post': {'Start':datetime.time(4, 0, 0), 'End':datetime.time(8, 0, 0)},
+        'Night': {'Start':datetime.time(8, 0, 0), 'End':datetime.time(16, 0, 0)},
+    }
+    if is_winter_time():
+        trade_session.update({'Pre': {'Start':datetime.time(17, 0, 0), 'End':datetime.time(22, 30, 0)}})
+        trade_session.update({'Normal': {'Start':datetime.time(22, 30, 0), 'End':datetime.time(5, 0, 0)}})
+        trade_session.update({'Post': {'Start':datetime.time(5, 0, 0), 'End':datetime.time(9, 0, 0)}})
+        trade_session.update({'Night': {'Start':datetime.time(9, 0, 0), 'End':datetime.time(17, 0, 0)}})
+    return trade_session
