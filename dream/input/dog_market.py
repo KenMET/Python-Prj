@@ -61,7 +61,7 @@ def get_dog_cn_daily_hist(dog_id, **kwargs):
                 df.columns = df.columns.str.title()
                 return df
             except Exception as e:
-                log.get().info('Dog[%s] fetch failed...'%(dog_id))
+                log.get().error('Dog[%s] fetch failed: %s'%(dog_id, str(e)))
                 return pd.DataFrame()
 
 def get_dog_cn_capital_flow(dog_id):
@@ -75,7 +75,7 @@ def get_dog_cn_capital_flow(dog_id):
         df.rename(columns={'小单净流入-净额': 'Inflow_Sm', '日期': 'Date'}, inplace=True) # Replace title
         return df
     except Exception as e:
-        log.get().info('Dog[%s] capital fetch failed...'%(dog_id))
+        log.get().error('Dog[%s] capital fetch failed...'%(dog_id))
         return pd.DataFrame()
 
 def get_dog_us_daily_hist(dog_id, **kwargs): 
@@ -85,10 +85,12 @@ def get_dog_us_daily_hist(dog_id, **kwargs):
         df.rename(columns={'日期': 'Date', '开盘': 'Open'}, inplace=True) # Replace title
         df.rename(columns={'收盘': 'Close', '最高': 'High'}, inplace=True) # Replace title
         df.rename(columns={'最低': 'Low', '成交额': 'Amount'}, inplace=True) # Replace title
+        df['Date'] = pd.to_datetime(df['Date'])
         return df
     except Exception as e:
         try:
-            #dog_id = dog_id.split('.')[1]       # 106.XXX -> XXX
+            if dog_id.find('.') >= 0:
+                dog_id = dog_id.split('.')[1]       # 106.XXX -> XXX
             log.get().info('Dog[%s] fetch failed, trying to get from longport...'%(dog_id))
             quote_ctx = get_quote_context()
             if 'start_date' in kwargs and 'end_date' in kwargs:
@@ -106,10 +108,29 @@ def get_dog_us_daily_hist(dog_id, **kwargs):
                 }
                 df_list.append(tmp_dict)
             df = pd.DataFrame(df_list)
+            df['Date'] = pd.to_datetime(df['Date'])
             return df
         except Exception as e:
             log.get().error('Dog[%s] fetch from longport failed: %s'%(dog_id, str(e)))
             return pd.DataFrame()
+
+def get_dog_us_capital_flow(dog_id):
+    if dog_id.find('.') >= 0:
+        dog_id = dog_id.split('.')[1]       # 106.XXX -> XXX
+    try:
+        quote_ctx = get_quote_context()
+        resp = quote_ctx.capital_distribution("%s.US"%(dog_id))
+        df = pd.DataFrame({
+            'Date': [(resp.timestamp - datetime.timedelta(hours=8)).date()],
+            'Inflow_Lg': [int(resp.capital_in.large) - int(resp.capital_out.large)],
+            'Inflow_Mid': [int(resp.capital_in.medium) - int(resp.capital_out.medium)],
+            'Inflow_Sm': [int(resp.capital_in.small) - int(resp.capital_out.small)],
+        })
+        df['Date'] = pd.to_datetime(df['Date'])
+        return df
+    except Exception as e:
+        log.get().error('Dog[%s] capital fetch failed: %s'%(dog_id, str(e)))
+        return pd.DataFrame()
 
 def main(args):
     log.init('%s/../log'%(py_dir), py_name, log_mode='w', log_level='info', console_enable=True)
@@ -133,9 +154,15 @@ def main(args):
         if inexist:
             if (args.market == 'us'):
                 dog_full_code = get_fullcode(args.market, dog_index)
-                df = get_dog_us_daily_hist(dog_full_code)
-                if (df.empty):  
-                    continue 
+                df1 = get_dog_us_daily_hist(dog_full_code)
+                if (df1.empty):
+                    continue
+                df2 = get_dog_us_capital_flow(dog_full_code)
+                if (df2.empty):  
+                    continue
+                else:
+                    df = pd.merge(df1, df2, on='Date', how='left')
+                    df.fillna(0, inplace=True)
             elif (args.market == 'cn'):
                 df1 = get_dog_cn_daily_hist(dog_index)
                 if (df1.empty):
@@ -151,9 +178,15 @@ def main(args):
             start_date = (datetime.datetime.now() - datetime.timedelta(days=10)).strftime('%Y%m%d')    # 10 days ago
             if (args.market == 'us'):
                 dog_full_code = get_fullcode(args.market, dog_index)
-                df = get_dog_us_daily_hist(dog_full_code, start_date=start_date, end_date=current_date)
-                if (df.empty):  
-                    continue 
+                df1 = get_dog_us_daily_hist(dog_full_code, start_date=start_date, end_date=current_date)
+                if (df1.empty):
+                    continue
+                df2 = get_dog_us_capital_flow(dog_full_code)
+                if (df2.empty):  
+                    continue
+                else:
+                    df = pd.merge(df1, df2, on='Date', how='left')
+                    df.fillna(0, inplace=True)
             elif (args.market == 'cn'):
                 df1 = get_dog_cn_daily_hist(dog_index, start_date=start_date, end_date=current_date)
                 if (df1.empty):
