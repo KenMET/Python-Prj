@@ -118,7 +118,8 @@ def main(args):
 
     dog_list = []
     if (args.market == 'us'):
-        wait_us_market_open(log.get())
+        if not args.test:
+            wait_us_market_open(log.get())
         dog_list = get_dog(args.market)
         log.get().info(dog_list)
     elif (args.market == 'cn'):
@@ -179,6 +180,7 @@ if __name__ == '__main__':
     # Append arguments
     parser.add_argument('--market', type=str, default='cn', help='Now supported: "cn"(default),"us"')
     parser.add_argument('--quantitative', type=str, default='simulation', help='Now supported: "simulation"(default),"formal"')
+    parser.add_argument('--test', type=bool, default=False, help='Test mode enable(True) or not(False as default)')
     
     # 解析命令行参数
     args = parser.parse_args()

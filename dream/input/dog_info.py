@@ -36,7 +36,8 @@ def main(args):
         df_etf['代码'] = df_etf['代码'].str.replace(r'\D', '', regex=True)
         df = pd.merge(df_a, df_etf, on=['代码', '名称', '最新价'], how='outer').fillna(0)
     elif (args.market == 'us'):
-        wait_us_market_open(log.get())
+        if not args.test:
+            wait_us_market_open(log.get())
         df = ak.stock_us_spot_em()
         df = df.dropna(subset=['总市值'])   # Remove Na data
         df.drop(columns=['序号', '涨跌额', '涨跌幅', '开盘价', '最高价', '最低价', '昨收价', '成交量', '成交额', '振幅'], inplace=True)
@@ -59,6 +60,7 @@ if __name__ == '__main__':
     
     # Append arguments
     parser.add_argument('--market', type=str, default='cn', help='Now supported: "cn"(default),"us"')
+    parser.add_argument('--test', type=bool, default=False, help='Test mode enable(True) or not(False as default)')
     
     # 解析命令行参数
     args = parser.parse_args()

@@ -15,12 +15,14 @@ sys.path.append(r'%s/'%(py_dir))
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
 import log
 
-def wait_us_market_open(logger):
+def is_winter_time():
     ny_tz = pytz.timezone('America/New_York')
     ny_time = datetime.datetime.now(ny_tz)
+    return (ny_time.dst() == datetime.timedelta(0))
 
-    is_winter_time = ny_time.dst() == datetime.timedelta(0)
-
-    if is_winter_time:
+def wait_us_market_open(logger):
+    if is_winter_time():
         logger.info('Sleep 1 hour due to winter time...')
         time.sleep(3600)  # Sleep 1 hour for winter time.
+    else:
+        logger.info('No need to sleep due to summer time...')

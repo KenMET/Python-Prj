@@ -52,7 +52,8 @@ def main(args):
     log.init('%s/../log'%(py_dir), py_name, log_mode='w', log_level='info', console_enable=True)
     log.get().info('Logger Creat Success')
 
-    wait_us_market_open(log.get())
+    if not args.test:
+        wait_us_market_open(log.get())
 
     if (args.user == ''):
         log.get().error('User Null, exit......')
@@ -82,6 +83,7 @@ if __name__ == '__main__':
     # Append arguments
     parser.add_argument('--user', type=str, default='', help='')
     parser.add_argument('--quantitative', type=str, default='simulation', help='Now supported: "simulation"(default),"formal"')
+    parser.add_argument('--test', type=bool, default=False, help='Test mode enable(True) or not(False as default)')
     
     # 解析命令行参数
     args = parser.parse_args()
