@@ -31,8 +31,8 @@ sys.path.append(r'%s/../../common_api/log'%(py_dir))
 import log
 
 
-def get_expect_all(quent_type, user_name):
-    house_name = '%s-%s'%(quent_type, user_name)
+def get_expect_all(user_name, quent_type):
+    house_name = '%s-%s'%(user_name, quent_type)
     house_holding = get_holding(house_name)
     tobe_trade_list = get_trade_list('us')
 
@@ -66,61 +66,60 @@ def trade(user, q_type, house_dict, dog_opt, dog_id):
     if len(holding) == 0:
         holding.update({'Quantity':0})
 
-    for order_index in dog_opt:
-        val = float(dog_opt[order_index])
+    for side in dog_opt:
+        price = float(dog_opt[side])
         curr_share = holding.get('Quantity')
-        opt_share = 0
-        if order_index == 'buy':
+        share = 0
+        if side == 'buy':
             if curr_share == 0:
-                opt_share = 1
+                share = 1
             else:
-                opt_share = curr_share * 2  # buy double
-        elif order_index == 'sell':
+                share = curr_share * 2  # buy double
+        elif side == 'sell':
             if (curr_share == 0):
                 continue
-            opt_share = curr_share // 2
+            share = curr_share // 2
         else:
             continue
-        if opt_share == 0:
-            log.get().info('[%s] Nothing to opt due to opt_share == 0......'%(dog_id))
+        if share == 0:
+            log.get().info('[%s] Nothing to opt due to share == 0......'%(dog_id))
             continue
-        log.get().info('[%s] %s %d shares in price %.2f'%(dog_id, order_index, opt_share, val))
-        
-        submit_order(user, q_type, dog_id, order_index, val, opt_share)
+
+        order_dict = trade_submit(dog_id, side, price, share)
+        order_dest = '%s-%s'%(user, q_type)
+        db = create_if_order_inexist(order_dest)
+        #log.get().info('Insert for: %s'%(str(order_dict)))
+        log.get().info('[%s] %s %d shares in price %.2f'%(dog_id, side, share, price))
+        if not db.insert_order(order_dest, order_dict):
+            log.get().error('Order Inser Error...[%s] %s'%(order_dest, str(order_dict)))
 
 def main(args):
     log.init('%s/../log'%(py_dir), py_name, log_mode='w', log_level='info', console_enable=True)
     log.get().info('Logger Creat Success...[%s]'%(py_name))
 
-    quantitative_init(args.quantitative, args.user)
-    if args.user == '':
-        log.get().error('User Null')
-        return 
+    quantitative_init()
 
     if not args.test:
         wait_us_market_open(log.get())
 
+    user = os.environ['USER_NAME']
+    q_type = os.environ['USER_TYPE']
     #result = subprocess.run(["python3", "%s/../input/house.py"], capture_output=True, text=True)
-    house_update(args.user)
-    predict_dict = get_expect_all(args.quantitative, args.user)
+    predict_dict = get_expect_all(user, q_type)
     log.get().info('Predict result: %s'%(str(predict_dict)))
 
-    house_dict = get_house_detail('%s-%s'%(args.quantitative, args.user))
+    house_dict = get_house_detail('%s-%s'%(user, q_type))
 
-    #predict_dict = {'NVDA.US':{'buy':123.45}} # test code
-    #order_dest = '%s-%s'%(args.quantitative, args.user)
     # Submit order
     for index in predict_dict:
         dog_opt = predict_dict[index]
-        trade(args.user, args.quantitative, house_dict, dog_opt, index)
+        trade(user, q_type, house_dict, dog_opt, index)
 
 if __name__ == '__main__':
     # Create ArgumentParser Object
     parser = argparse.ArgumentParser(description="A input module for dog info fetch")
 
     # Append arguments
-    parser.add_argument('--user', type=str, default='', help='')
-    parser.add_argument('--quantitative', type=str, default='simulation', help='Now supported: "simulation"(default),"formal"')
     parser.add_argument('--test', type=bool, default=False, help='Test mode enable(True) or not(False as default)')
 
     # 解析命令行参数
