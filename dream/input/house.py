@@ -57,6 +57,7 @@ def house_update(name):
     db.update_house_by_name(name, house_dict)
     log.get().info('House updated for: %s'%(name))
 
+# Not support for multiple user for now...
 def main(args):
     log.init('%s/../log'%(py_dir), py_name, log_mode='w', log_level='info', console_enable=True)
     log.get().info('Logger Creat Success')
@@ -64,8 +65,8 @@ def main(args):
     if not args.test:
         wait_us_market_open(log.get())
 
-    user = os.environ['USER_TYPE']
-    quent_type = os.environ['USER_NAME']
+    user = os.environ['USER_NAME']
+    quent_type = os.environ['USER_TYPE']
     try:
         quantitative_init()
         house_name = '%s-%s'%(user, quent_type)
