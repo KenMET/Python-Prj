@@ -55,18 +55,14 @@ def main(args):
     if not args.test:
         wait_us_market_open(log.get())
 
-    if (args.user == ''):
-        log.get().error('User Null, exit......')
-        return
-
-    quantitative_init(args.quantitative, args.user)
+    quantitative_init()
 
     dog_list = get_trade_list('us')
     log.get().info(dog_list)
 
     db = create_if_option_inexist()
     for dog_index in dog_list:
-        option_list = get_option_list(dog_index, args.user)
+        option_list = get_option_list(dog_index, os.environ['USER_NAME'])
         for index in option_list:
             symbol = index['Symbol']
             log.get().info('Start update for[%s]:%s'%(symbol, str(index)))
@@ -81,8 +77,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="A input module for dog info fetch")
     
     # Append arguments
-    parser.add_argument('--user', type=str, default='', help='')
-    parser.add_argument('--quantitative', type=str, default='simulation', help='Now supported: "simulation"(default),"formal"')
     parser.add_argument('--test', type=bool, default=False, help='Test mode enable(True) or not(False as default)')
     
     # 解析命令行参数

@@ -69,3 +69,19 @@ class db(dbb.basedb):
         else:
             return result
 
+    def insert_secret(self, user_dict):
+        if self.session is None:
+            self.connectdb()
+        Secret = self.create_secret_class()
+        new = Secret()
+        new = self.get_obj_from_dict(user_dict, new)
+        if new == None:
+            return False
+        try:
+            self.session.add(new)
+            self.session.commit()
+        except:
+            return False
+        else:
+            return True
+

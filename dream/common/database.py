@@ -43,21 +43,21 @@ def create_if_market_inexist(name):
     return db, False
 
 def create_if_house_inexist():
-    db = dbda.db('dream_sentiment')
+    db = dbda.db('dream_user')
     if (not db.is_table_exist()):      # New a table to insert
-        #log.get().info('House not exist, new a table[dog_house]...')
-        db.create_dog_house_table()
+        #log.get().info('House not exist, new a table[house]...')
+        db.create_house_table()
     return db 
 
 def create_if_order_inexist(order_dest):
-    db = dbdo.db('dream_sentiment')
+    db = dbdo.db('dream_user')
     if (not db.is_table_exist(order_dest)):      # New a table to insert
         #log.get().info('Order not exist, new a table[%s]...'%('order_%s'%(order_dest)))
         db.create_order_table(order_dest)
     return db 
 
 def create_if_sentiment_inexist():
-    db = dbdst.db('dream_sentiment')
+    db = dbdst.db('dream_dog')
     if (not db.is_table_exist()):      # New a table to insert
         #log.get().info('Sentiment not exist, new a table[sentiment]...')
         db.create_sentiment_table()
@@ -97,7 +97,10 @@ def get_dogname(market, dog_id):
     return dog_name
 
 def get_house_detail(name):
-    db = dbda.db('dream_sentiment')
+    db = dbda.db('dream_user')
+    if (not db.is_table_exist()):      # New a table to insert
+        #log.get().info('House not exist, new a table[house]...')
+        db.create_house_table()
     temp = db.query_house_by_name(name)
     if len(temp) != 1:
         #log.get().info('House get exception: %s'%(name))
@@ -105,7 +108,7 @@ def get_house_detail(name):
     return db.get_dict_from_obj(temp[0])
 
 def get_secret_detail():
-    db = dbds.db('dream_sentiment')
+    db = dbds.db('dream_user')
     temp = db.query_all_secret()
     secret_list = []
     for index in temp:
@@ -118,7 +121,7 @@ def get_secret_detail():
     return secret_list
 
 def get_holding(name):
-    db = dbda.db('dream_sentiment')
+    db = dbda.db('dream_user')
     temp = db.query_house_by_name(name)
     if len(temp) != 1:
         #log.get().info('House get exception: %s'%(name))
@@ -127,7 +130,7 @@ def get_holding(name):
     return ast.literal_eval(account_dict['Holding'])
 
 def get_open_order(user, q_type):
-    db = dbdo.db('dream_sentiment')
+    db = dbdo.db('dream_user')
     order_dest = '%s-%s'%(q_type, user)
     if (not db.is_table_exist(order_dest)):      # New a table to insert
         #log.get().info('Order not exist, new a table[%s]...'%('order_%s'%(order_dest)))
@@ -154,7 +157,7 @@ def get_market_by_range(target, start, end):
     return df
 
 def get_avg_score(target, last_n_days):
-    db = dbdst.db('dream_sentiment')
+    db = dbdst.db('dream_dog')
     current_date = datetime.datetime.now()
     start_date = (current_date - datetime.timedelta(days=last_n_days))
     ret = db.query_sentiment_by_id_date(target, start_date, current_date)

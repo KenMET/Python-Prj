@@ -64,22 +64,21 @@ def main(args):
     if not args.test:
         wait_us_market_open(log.get())
 
-    secret_list = get_secret_detail()
-    for index in secret_list:
-        user = index['user']
-        quent_type = index['type']
-        try:
-            quantitative_init(quent_type, user)
-            house_name = '%s-%s'%(quent_type, user)
-            log.get().info('start update [%s] house type: %s'%(user, quent_type))
-            house_update(house_name)
-            house = get_house_detail(house_name)
-            house_holding = get_holding(house_name)
-            log.get().info(house)
-            log.get(py_name).info(house_holding)
-        except:
-            bark_obj = notify.bark()
-            flag = bark_obj.send_title_content('House Update', '[%s-%s] update fail, please check if token expired.'%(user, quent_type))
+    user = os.environ['USER_TYPE']
+    quent_type = os.environ['USER_NAME']
+    try:
+        quantitative_init()
+        house_name = '%s-%s'%(user, quent_type)
+        log.get().info('start update [%s] house type: %s'%(user, quent_type))
+        house_update(house_name)
+        house = get_house_detail(house_name)
+        house_holding = get_holding(house_name)
+        log.get().info(house)
+        log.get(py_name).info(house_holding)
+    except:
+        log.get().error('House Update', '[%s-%s] update fail, please check if token expired.'%(user, quent_type))
+        bark_obj = notify.bark()
+        flag = bark_obj.send_title_content('House Update', '[%s-%s] update fail, please check if token expired.'%(user, quent_type))
 
 if __name__ == '__main__':
     # Create ArgumentParser Object

@@ -12,8 +12,8 @@ import db_base as dbb
 class db(dbb.basedb):
                  
 ############# Dog House Start ########################
-    def create_dog_house_class(self):
-        table_name = 'dog_house'
+    def create_house_class(self):
+        table_name = 'house'
         if table_name not in self.db_class:
             new_class = type(table_name, (self.Base, ), dict(
                 __tablename__ = table_name,
@@ -33,10 +33,10 @@ class db(dbb.basedb):
             self.db_class.update({table_name:new_class})
         return self.db_class[table_name]
 
-    def create_dog_house_table(self):
+    def create_house_table(self):
         meta = MetaData()
         tmp = Table(
-            'dog_house', meta,
+            'house', meta,
             # Primary key
             Column('Account', String(255), primary_key=True),
             # Other keys
@@ -56,14 +56,14 @@ class db(dbb.basedb):
 
     def is_table_exist(self):
         tables = self.queryTable()
-        if ('dog_house' not in tables):
+        if ('house' not in tables):
             return False
         return True
 
     def delete_house_all(self):
         if self.session is None:
             self.connectdb()
-        house_info = self.create_dog_house_class()
+        house_info = self.create_house_class()
         result = self.session.query(house_info).delete() 
         try:
             self.session.commit()
@@ -75,7 +75,7 @@ class db(dbb.basedb):
     def query_house_by_name(self, name):
         if self.session is None:
             self.connectdb()
-        house_info = self.create_dog_house_class()
+        house_info = self.create_house_class()
         result = self.session.query(house_info).filter(house_info.Account == name).all()
         try:
             self.session.commit()
@@ -86,14 +86,14 @@ class db(dbb.basedb):
 
     def is_house_exist(self, name):
         temp = self.query_house_by_name(name)
-        if len(name) != 0:
+        if len(temp) != 0:
             return True
         return False
 
     def insert_house(self, house_dict):
         if self.session is None:
             self.connectdb()
-        House = self.create_dog_house_class()
+        House = self.create_house_class()
         new = House()
         new = self.get_obj_from_dict(house_dict, new)
         if new == None:
@@ -110,7 +110,7 @@ class db(dbb.basedb):
         if self.session is None:
             self.connectdb()
         if (self.is_house_exist(name)):
-            House = self.create_dog_house_class()
+            House = self.create_house_class()
             self.session.query(House).filter(House.Account == name).update(house_dict)
             try:
                 self.session.commit()

@@ -17,12 +17,12 @@ import db_dream_secret as dbds
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
 import log
 
-def quantitative_init(quant_type, user):
-    db = dbds.db('dream_sentiment')
+def quantitative_init():
+    db = dbds.db('dream_user')
     if (not db.is_table_exist()):
         #log.get().info('Quantitative table not exist, new a table...')
         db.create_secret_table()
-    res = db.query_secret_by_type(quant_type, user)
+    res = db.query_secret_by_type(os.environ['USER_TYPE'], os.environ['USER_NAME'])
     if len(res) != 1:
         return
     os.environ['LONGPORT_APP_KEY'] = res[0].App_Key

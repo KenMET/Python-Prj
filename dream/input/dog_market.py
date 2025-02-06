@@ -137,7 +137,7 @@ def main(args):
     log.init('%s/../log'%(py_dir), py_name, log_mode='w', log_level='info', console_enable=True)
     log.get().info('Logger Creat Success')
 
-    quantitative_init(args.quantitative, 'Kanos')
+    quantitative_init()
 
     dog_list = []
     if (args.market == 'us'):
@@ -219,7 +219,6 @@ if __name__ == '__main__':
     
     # Append arguments
     parser.add_argument('--market', type=str, default='cn', help='Now supported: "cn"(default),"us"')
-    parser.add_argument('--quantitative', type=str, default='simulation', help='Now supported: "simulation"(default),"formal"')
     parser.add_argument('--test', type=bool, default=False, help='Test mode enable(True) or not(False as default)')
     
     # 解析命令行参数
