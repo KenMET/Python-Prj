@@ -3,6 +3,7 @@
 # System lib
 import os
 import sys
+import math
 import argparse
 import datetime
 import pandas as pd
@@ -162,7 +163,7 @@ def main(args):
                     continue
                 else:
                     df = pd.merge(df1, df2, on='Date', how='left')
-                    df.fillna(0, inplace=True)
+                    #df.fillna(0, inplace=True)     # do not fill as 0 to aviod over write.
             elif (args.market == 'cn'):
                 df1 = get_dog_cn_daily_hist(dog_index)
                 if (df1.empty):
@@ -172,7 +173,7 @@ def main(args):
                     df = df1
                 else:
                     df = pd.merge(df1, df2, on='Date', how='left')
-                    df.fillna(0, inplace=True)
+                    df.fillna(0, inplace=True)      # do not fill as 0 to aviod over write.
         else:
             current_date = datetime.datetime.now().strftime('%Y%m%d')
             start_date = (datetime.datetime.now() - datetime.timedelta(days=10)).strftime('%Y%m%d')    # 10 days ago
@@ -186,7 +187,7 @@ def main(args):
                     continue
                 else:
                     df = pd.merge(df1, df2, on='Date', how='left')
-                    df.fillna(0, inplace=True)
+                    #df.fillna(0, inplace=True)     # do not fill as 0 to aviod over write.
             elif (args.market == 'cn'):
                 df1 = get_dog_cn_daily_hist(dog_index, start_date=start_date, end_date=current_date)
                 if (df1.empty):
@@ -196,8 +197,13 @@ def main(args):
                     df = df1
                 else:
                     df = pd.merge(df1, df2, on='Date', how='left')
-                    df.fillna(0, inplace=True)
+                    #df.fillna(0, inplace=True)     # do not fill as 0 to aviod over write.
         dog_update_list = df.to_dict(orient='records')
+        # Remove nan value
+        for entry in dog_update_list:
+            keys_to_remove = [key for key, value in entry.items() if isinstance(value, float) and math.isnan(value)]
+            for key in keys_to_remove:
+                del entry[key]
         log.get().info('Start insert for [%s]'%(dog_index))
         for dog_update_index in dog_update_list:
             #log.get().info(dog_update_index)
