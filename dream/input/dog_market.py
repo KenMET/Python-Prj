@@ -17,7 +17,7 @@ sys.path.append(r'%s/../common'%(py_dir))
 from config import get_dog
 from longport_api import quantitative_init, get_history, get_quote_context
 from database import get_fullcode, create_if_market_inexist
-from standard import wait_us_market_open
+from other import wait_us_market_open
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
 import log
 

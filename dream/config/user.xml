@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <contents>
+    <global>
+        <realtime_interval>300</realtime_interval>  <!-- Realtime Looping interval [x second] -->
+        <min_trade_interval>10</min_trade_interval>  <!-- Max holiday days [x days] -->
+    </global>
     <kanos>     <!--Defined as house name-->
         <option>
             <price_range>0.15</price_range>  <!-- Option Strike Price Around [market_price*(1-x), market_price*(1+x)] -->

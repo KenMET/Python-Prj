@@ -73,9 +73,17 @@ def get_strategy(id):
         tmp.update({'class':'basic'})
     return tmp
 
+def get_global_config(config_name):
+    cfg = config('user')
+    return cfg.get('global', {}).get(config_name, None)
+
 def get_user_config(user, class_name, config_name):
     cfg = config('user')
     return cfg.get(user, {}).get(class_name, {}).get(config_name, None)
+
+def get_adata_key():
+    cfg = config('user')
+    return cfg.get('sentiment_key', {}).get('key', {})
 
 def get_adata_key():
     cfg = config('user')

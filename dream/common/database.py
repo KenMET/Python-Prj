@@ -2,6 +2,7 @@
 
 # System lib
 import ast
+import json
 import os, sys
 import argparse
 import datetime
@@ -12,12 +13,14 @@ py_dir = os.path.dirname(os.path.realpath(__file__))
 py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
 sys.path.append(r'%s/'%(py_dir))
 import akshare as ak
+from other import datetime_converter
 sys.path.append(r'%s/../../mysql'%(py_dir))
 import db_dream_dog as dbdd
 import db_dream_order as dbdo
 import db_dream_secret as dbds
 import db_dream_option as dbdop
 import db_dream_account as dbda
+import db_dream_realtime as dbdr
 import db_dream_dog_info as dbddi
 import db_dream_sentiment as dbdst
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
@@ -69,6 +72,16 @@ def create_if_option_inexist():
         #log.get().info('Option not exist, new a table[dog_option]...')
         db.create_dog_option_table()
     return db 
+
+def create_if_realtime_inexist():
+    db = dbdr.db('dream_dog')
+    if (not db.is_param_table_exist()):      # New a table to insert
+        #log.get().info('Realtime Parameters not exist, new a table[realtime_parameters]...')
+        db.create_realtime_param_table()
+    if (not db.is_dog_table_exist()):      # New a table to insert
+        #log.get().info('Realtime Dog not exist, new a table[realtime_dog]...')
+        db.create_realtime_dog_table()
+    return db
 
 def get_fullcode(market, dog_id):
     db_info = dbddi.db('dream_dog')
@@ -177,4 +190,37 @@ def get_avg_score(target, last_n_days):
     #log.get().info('Score Avg[%s]: %.2f'%(target, score_avg))
     return score_avg
 
+def get_registered_dog():
+    db = dbdr.db('dream_dog')
+    ret = db.query_param_by_symbol('registered')
+    return json.loads(db.get_dict_from_obj(ret[0]).get('Content'))
 
+def get_registered_time(dog_id):
+    db = dbdr.db('dream_dog')
+    ret = db.query_param_by_symbol('registered')
+    return json.loads(db.get_dict_from_obj(ret[0]).get('Content')).get(dog_id)
+
+def update_registered_time(dog_id):
+    db = dbdr.db('dream_dog')
+    content_dict = get_registered_dog()
+    dog_tmp_dict = content_dict.get(dog_id, {})
+    last_time = datetime.datetime.now()
+    dog_tmp_dict.update({'time':last_time})
+    content_dict.update({dog_id:dog_tmp_dict})
+    symbol_dict = {
+        'Symbol': 'registered',
+        'Content': json.dumps(content_dict, default=datetime_converter)
+    }
+    return db.update_param_by_symbol('registered', symbol_dict), last_time
+
+def get_dog_realtime(dog_id, last_min):
+    db = dbdr.db('dream_dog')
+    ret = db.query_sharing_by_dog(dog_id)
+    temp_list = [db.get_dict_from_obj(n) for n in ret]
+    result = []
+    for entry in temp_list:
+        dog_time_str = entry['DogTime'].split('-')[1]  # '20250207174225'
+        dog_time = datetime.datetime.strptime(dog_time_str, '%Y%m%d%H%M%S')
+        if (datetime.datetime.now() - dog_time) <= datetime.timedelta(minutes=last_min):
+            result.append(entry)
+    return result

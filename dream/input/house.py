@@ -19,7 +19,7 @@ import log
 sys.path.append(r'%s/../common'%(py_dir))
 from longport_api import quantitative_init, get_trade_context
 from database import create_if_house_inexist, get_house_detail, get_holding, get_secret_detail
-from standard import wait_us_market_open
+from other import wait_us_market_open
 
 def house_update(name):
     db = create_if_house_inexist()

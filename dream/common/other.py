@@ -4,6 +4,7 @@
 import os
 import sys
 import json
+import socket
 import random
 import datetime, time
 import pytz
@@ -40,3 +41,24 @@ def get_trade_session():
         trade_session.update({'Post': {'Start':datetime.time(5, 0, 0), 'End':datetime.time(9, 0, 0)}})
         trade_session.update({'Night': {'Start':datetime.time(9, 0, 0), 'End':datetime.time(17, 0, 0)}})
     return trade_session
+
+def datetime_converter(obj):
+    if isinstance(obj, datetime.datetime):
+        return obj.isoformat()  # 转换为ISO 8601格式的字符串
+    raise TypeError("Type not serializable")
+
+def get_socket_path():
+    return "%s/../tmp/dream_socket"%(py_dir)    # to dream root dir
+
+def get_dict_from_socket(response):
+    received_dict = json.loads(response.decode().replace("'", '"'))
+    return received_dict
+
+def push_dict_to_socket(tmp_dict):
+    client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    client.connect(get_socket_path())
+    client.send(str(tmp_dict).encode())
+    response = client.recv(1024 * 10)
+    recv_dict = get_dict_from_socket(response)
+    client.close()
+    return recv_dict

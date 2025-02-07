@@ -13,14 +13,12 @@ import threading
 py_dir = os.path.dirname(os.path.realpath(__file__))
 py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
 sys.path.append(r'%s/'%(py_dir))
-from dream_service import get_socket_path, get_dict_from_socket
-from dream_service import get_socket_path, get_dict_from_socket
+from other import push_dict_to_socket
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
 import log
 
+
 def submit_order(user, q_type, dog_id, side, price, share):
-    client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    client.connect(get_socket_path())
     tmp_dict = {
         'cmd':'submit_order',
         'user':user,
@@ -30,45 +28,27 @@ def submit_order(user, q_type, dog_id, side, price, share):
         'price':price,
         'share':share,
     }
-    client.send(str(tmp_dict).encode())
-    response = client.recv(1024 * 10)
-    recv_dict = get_dict_from_socket(response)
-    client.close()
-    return recv_dict
+    return push_dict_to_socket(tmp_dict)
 
 def query_order(user, q_type, order_id):
-    client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    client.connect(get_socket_path())
     tmp_dict = {
         'cmd':'query_order',
         'user':user,
         'type':q_type,
         'order_id':order_id,
     }
-    client.send(str(tmp_dict).encode())
-    response = client.recv(1024 * 10)
-    recv_dict = get_dict_from_socket(response)
-    client.close()
-    return recv_dict
+    return push_dict_to_socket(tmp_dict)
 
 def cancel_order(user, q_type, order_id):
-    client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    client.connect(get_socket_path())
     tmp_dict = {
         'cmd':'cancel_order',
         'user':user,
         'type':q_type,
         'order_id':order_id,
     }
-    client.send(str(tmp_dict).encode())
-    response = client.recv(1024 * 10)
-    recv_dict = get_dict_from_socket(response)
-    client.close()
-    return recv_dict
+    return push_dict_to_socket(tmp_dict)
 
 def modify_order(user, q_type, order_id, price, share):
-    client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    client.connect(get_socket_path())
     tmp_dict = {
         'cmd':'modify_order',
         'user':user,
@@ -77,11 +57,7 @@ def modify_order(user, q_type, order_id, price, share):
         'price':price,
         'share':share,
     }
-    client.send(str(tmp_dict).encode())
-    response = client.recv(1024 * 10)
-    recv_dict = get_dict_from_socket(response)
-    client.close()
-    return recv_dict
+    return push_dict_to_socket(tmp_dict)
 
 def main(args):
     log.init('%s/../log'%(py_dir), py_name, log_mode='w', log_level='info', console_enable=True)

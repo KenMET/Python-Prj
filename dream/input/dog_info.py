@@ -12,7 +12,7 @@ sys.path.append(r'%s/'%(py_dir))
 import akshare as ak
 sys.path.append(r'%s/../common'%(py_dir))
 from database import create_and_clear_info
-from standard import wait_us_market_open
+from other import wait_us_market_open
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
 import log
 

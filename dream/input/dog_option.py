@@ -16,7 +16,7 @@ sys.path.append(r'%s/../common'%(py_dir))
 from config import get_trade_list, get_user_config
 from longport_api import quantitative_init, get_quote_context, get_option_dict_from_obj
 from database import create_if_option_inexist, get_market_last
-from standard import wait_us_market_open
+from other import wait_us_market_open
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
 import log
 

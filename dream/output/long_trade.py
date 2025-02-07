@@ -19,8 +19,8 @@ sys.path.append(r'%s/../inference'%(py_dir))
 from strategy import get_stategy_handle
 sys.path.append(r'%s/../common'%(py_dir))
 from config import get_trade_list
-from standard import wait_us_market_open
-from order import submit_order
+from other import wait_us_market_open
+from sock_order import submit_order
 sys.path.append(r'%s/../input'%(py_dir))
 from house import house_update
 from longport_api import quantitative_init, trade_submit
@@ -66,6 +66,9 @@ def trade(user, q_type, house_dict, dog_opt, dog_id):
     if len(holding) == 0:
         holding.update({'Quantity':0})
 
+    order_dest = '%s-%s'%(user, q_type)
+    db = create_if_order_inexist(order_dest)
+
     for side in dog_opt:
         price = float(dog_opt[side])
         curr_share = holding.get('Quantity')
@@ -86,8 +89,7 @@ def trade(user, q_type, house_dict, dog_opt, dog_id):
             continue
 
         order_dict = trade_submit(dog_id, side, price, share)
-        order_dest = '%s-%s'%(user, q_type)
-        db = create_if_order_inexist(order_dest)
+
         #log.get().info('Insert for: %s'%(str(order_dict)))
         log.get().info('[%s] %s %d shares in price %.2f'%(dog_id, side, share, price))
         if not db.insert_order(order_dest, order_dict):
