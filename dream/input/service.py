@@ -22,10 +22,11 @@ from other import get_socket_path, get_dict_from_socket, get_trade_session
 from longport_api import quantitative_init, get_quote_context
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
 import log
+log_name = 'realtime_%s'%(py_name)
 
 def create_trade_server():
     server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    socket_path = get_socket_path()
+    socket_path = get_socket_path('realtime')
     socket_dir = os.path.dirname(socket_path)
     if not os.path.exists(socket_dir):
         os.makedirs(socket_dir)
@@ -42,27 +43,27 @@ def waiting_client(lock, server, max_client=5):
             client_handler = threading.Thread(target=handle_client, args=(client_socket, client_address, lock, ))
             client_handler.start()
     except Exception as e:
-        log.get(py_name).error('Exception captured in waiting_client: %s'%(str(e)))
+        log.get(log_name).error('Exception captured in waiting_client: %s'%(str(e)))
 
 def handle_client(client_socket, client_address, lock):
     try:
         while True:
             data = client_socket.recv(1024 * 10)
             if not data:
-                #log.get(py_name).info("Client %s disconnected"%(str(client_address)))
+                #log.get(log_name).info("Client %s disconnected"%(str(client_address)))
                 break
             recv_dict = get_dict_from_socket(data)
             handle_dict(client_socket, lock, recv_dict)
             #client_socket.sendall(data)  # 将收到的数据回传给客户端
         client_socket.close()
     except Exception as e:
-        log.get(py_name).error('Exception captured in handle_client: %s'%(str(e)))
+        log.get(log_name).error('Exception captured in handle_client: %s'%(str(e)))
 
 def market_monitor(lock):
     db = create_if_realtime_inexist()
     try:
         while(True):
-            log.get(py_name).info('Market monitor, new looping')
+            log.get(log_name).info('Market monitor, new looping')
             trade_session = get_trade_session()
             dog_list = [n for n in get_registered_dog()]
 
@@ -71,9 +72,9 @@ def market_monitor(lock):
             ctx = get_quote_context()
             current_time = datetime.datetime.now()
             timestamp_now = current_time.time()
-            log.get(py_name).info('Market monitor, Quote dog from %s'%(str(dog_list)))
+            log.get(log_name).info('Market monitor, Quote dog from %s'%(str(dog_list)))
             resp = ctx.quote(["%s.US"%(n) for n in dog_list])
-            #log.get(py_name).debug(resp)
+            #log.get(log_name).debug(resp)
             for index in resp:
                 dog_code = str(index.symbol).split('.')[0]
                 if trade_session['Pre']['Start'] <= timestamp_now < trade_session['Pre']['End']:
@@ -89,7 +90,7 @@ def market_monitor(lock):
                     trading_duration = 'Night'
                     continue
                 else:
-                    log.get(py_name).error('[%s]Datetime error: %s trade_session:%s'%(dog_code, str(timestamp_now), str(trade_session)))
+                    log.get(log_name).error('[%s]Datetime error: %s trade_session:%s'%(dog_code, str(timestamp_now), str(trade_session)))
                     break
                 timestamp = session_obj.timestamp.strftime('%Y%m%d%H%M%S')
                 dog_time = '%s-%s'%(dog_code, timestamp)
@@ -104,16 +105,16 @@ def market_monitor(lock):
                     'Turnover': float(session_obj.turnover),
                 }
                 if not db.update_sharing_by_dogtime(dog_time, temp_dict):
-                    log.get(py_name).error('[%s]Realtime update failed: %s'%(dog_code, str(temp_dict)))
-                log.get(py_name).debug('[%s][%s]:%s'%(trading_duration, dog_time, str(temp_dict)))
+                    log.get(log_name).error('[%s]Realtime update failed: %s'%(dog_code, str(temp_dict)))
+                log.get(log_name).debug('[%s][%s]:%s'%(trading_duration, dog_time, str(temp_dict)))
             lock.release()
             duration_time = (datetime.datetime.now() - current_time).total_seconds()
             time.sleep(int(get_global_config('realtime_interval')) - duration_time)
     except Exception as e:
-        log.get(py_name).error('Exception captured in market_monitor: %s'%(str(e)))
+        log.get(log_name).error('Exception captured in market_monitor: %s'%(str(e)))
 
 def handle_dict(client_socket, lock, tmp_dict):
-    log.get(py_name).info('Handle: %s'%(str(tmp_dict)))
+    log.get(log_name).info('Handle: %s'%(str(tmp_dict)))
     cmd = tmp_dict['cmd']
     ack_dict = {'cmd': '%s_ack'%(cmd)}
 
@@ -122,9 +123,9 @@ def handle_dict(client_socket, lock, tmp_dict):
         dog_id = tmp_dict['dog_id']
         flag, time = update_registered_time(dog_id)
         if flag:
-            log.get(py_name).info('[%s] registered at: %s'%(dog_id, str(time)))
+            log.get(log_name).info('[%s] registered at: %s'%(dog_id, str(time)))
         else:
-            log.get(py_name).error('[%s] register failed......'%(dog_id))
+            log.get(log_name).error('[%s] register failed......'%(dog_id))
         ack_dict.update({'ret':str(flag)})
     elif cmd == 'query_dog_market':
         dog_id = tmp_dict['dog_id']
@@ -137,8 +138,8 @@ def handle_dict(client_socket, lock, tmp_dict):
     client_socket.sendall(str(ack_dict).encode())
 
 def main(args):
-    log.init('%s/../log'%(py_dir), py_name, log_mode='w', log_level='info', console_enable=True)
-    log.get(py_name).info('Service Create Success')
+    log.init('%s/../log'%(py_dir), log_name, log_mode='w', log_level='info', console_enable=True)
+    log.get(log_name).info('Logger[%s] Create Success'%(log_name))
 
     lock = threading.Lock()
 
@@ -149,7 +150,7 @@ def main(args):
     waiting_client(lock, server)
     market_t.join()
 
-    log.get(py_name).error('You should not see this log...')
+    log.get(log_name).error('You should not see this log...')
 
 if __name__ == '__main__':
     # Create ArgumentParser Object
@@ -163,4 +164,4 @@ if __name__ == '__main__':
     try:
         main(args)
     except Exception as e:
-        log.get(py_name).error('Exception captured in main: %s'%(str(e)))
+        log.get(log_name).error('Exception captured in main: %s'%(str(e)))

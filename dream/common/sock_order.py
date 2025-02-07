@@ -28,7 +28,7 @@ def submit_order(user, q_type, dog_id, side, price, share):
         'price':price,
         'share':share,
     }
-    return push_dict_to_socket(tmp_dict)
+    return push_dict_to_socket('trade', tmp_dict)
 
 def query_order(user, q_type, order_id):
     tmp_dict = {
@@ -37,7 +37,7 @@ def query_order(user, q_type, order_id):
         'type':q_type,
         'order_id':order_id,
     }
-    return push_dict_to_socket(tmp_dict)
+    return push_dict_to_socket('trade', tmp_dict)
 
 def cancel_order(user, q_type, order_id):
     tmp_dict = {
@@ -46,7 +46,7 @@ def cancel_order(user, q_type, order_id):
         'type':q_type,
         'order_id':order_id,
     }
-    return push_dict_to_socket(tmp_dict)
+    return push_dict_to_socket('trade', tmp_dict)
 
 def modify_order(user, q_type, order_id, price, share):
     tmp_dict = {
@@ -57,7 +57,7 @@ def modify_order(user, q_type, order_id, price, share):
         'price':price,
         'share':share,
     }
-    return push_dict_to_socket(tmp_dict)
+    return push_dict_to_socket('trade', tmp_dict)
 
 def main(args):
     log.init('%s/../log'%(py_dir), py_name, log_mode='w', log_level='info', console_enable=True)

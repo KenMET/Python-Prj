@@ -47,16 +47,16 @@ def datetime_converter(obj):
         return obj.isoformat()  # 转换为ISO 8601格式的字符串
     raise TypeError("Type not serializable")
 
-def get_socket_path():
-    return "%s/../tmp/dream_socket"%(py_dir)    # to dream root dir
+def get_socket_path(service_type):
+    return "%s/../tmp/%s_socket"%(py_dir, service_type)    # to dream root dir
 
 def get_dict_from_socket(response):
     received_dict = json.loads(response.decode().replace("'", '"'))
     return received_dict
 
-def push_dict_to_socket(tmp_dict):
+def push_dict_to_socket(service_type, tmp_dict):
     client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    client.connect(get_socket_path())
+    client.connect(get_socket_path(service_type))
     client.send(str(tmp_dict).encode())
     response = client.recv(1024 * 10)
     recv_dict = get_dict_from_socket(response)

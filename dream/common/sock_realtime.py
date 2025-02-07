@@ -18,34 +18,20 @@ from other import push_dict_to_socket
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
 import log
 
-def send_dict_sock(temp_dict):
-    client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    client.connect(get_socket_path())
-    tmp_dict = {
-        'cmd':'query_dog_market',
-        'dog_id':dog_id,
-        'last_cnt':last_cnt,
-    }
-    client.send(str(tmp_dict).encode())
-    response = client.recv(1024 * 10)
-    recv_dict = get_dict_from_socket(response)
-    client.close()
-    return recv_dict
-
 def query_dog(dog_id, last_min=int(get_global_config('realtime_interval'))):
     tmp_dict = {
         'cmd':'query_dog_market',
         'dog_id':dog_id,
         'last_min':last_min,
     }
-    return push_dict_to_socket(tmp_dict)
+    return push_dict_to_socket('realtime', tmp_dict)
 
 def register_dog(dog_id):
     tmp_dict = {
         'cmd':'register_dog',
         'dog_id':dog_id,
     }
-    return push_dict_to_socket(tmp_dict)
+    return push_dict_to_socket('realtime', tmp_dict)
 
 
 def main(args):

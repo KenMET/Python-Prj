@@ -2,6 +2,7 @@
 <contents>
     <global>
         <realtime_interval>300</realtime_interval>  <!-- Realtime Looping interval [x second] -->
+        <trade_interval>300</trade_interval>  <!-- Trade Looping interval [x second] -->
         <min_trade_interval>10</min_trade_interval>  <!-- Max holiday days [x days] -->
     </global>
     <kanos>     <!--Defined as house name-->
