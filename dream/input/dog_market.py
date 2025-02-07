@@ -79,7 +79,7 @@ def get_dog_cn_capital_flow(dog_id):
         log.get().error('Dog[%s] capital fetch failed...'%(dog_id))
         return pd.DataFrame()
 
-def get_dog_us_daily_hist(dog_id, **kwargs): 
+def get_dog_us_daily_hist(quote_ctx, dog_id, **kwargs): 
     try:
         df = ak.stock_us_hist(symbol=dog_id, period="daily", adjust="qfq", **kwargs)
         df.drop(columns=['成交量', '振幅', '涨跌幅', '涨跌额', '换手率'], inplace=True)
@@ -93,13 +93,12 @@ def get_dog_us_daily_hist(dog_id, **kwargs):
             if dog_id.find('.') >= 0:
                 dog_id = dog_id.split('.')[1]       # 106.XXX -> XXX
             log.get().info('Dog[%s] fetch failed, trying to get from longport...'%(dog_id))
-            quote_ctx = get_quote_context()
             if 'start_date' in kwargs and 'end_date' in kwargs:
                 start = datetime.datetime.strptime(kwargs['start_date'], '%Y%m%d').date()
                 end = datetime.datetime.strptime(kwargs['end_date'], '%Y%m%d').date()
-                resp = get_history("%s.US"%(dog_id), start=start, end=end)
+                resp = get_history(quote_ctx, "%s.US"%(dog_id), start=start, end=end)
             else:
-                resp = get_history("%s.US"%(dog_id))
+                resp = get_history(quote_ctx, "%s.US"%(dog_id))
             df_list = []
             for index in resp:
                 tmp_dict = {
@@ -115,11 +114,10 @@ def get_dog_us_daily_hist(dog_id, **kwargs):
             log.get().error('Dog[%s] fetch from longport failed: %s'%(dog_id, str(e)))
             return pd.DataFrame()
 
-def get_dog_us_capital_flow(dog_id):
+def get_dog_us_capital_flow(quote_ctx, dog_id):
     if dog_id.find('.') >= 0:
         dog_id = dog_id.split('.')[1]       # 106.XXX -> XXX
     try:
-        quote_ctx = get_quote_context()
         resp = quote_ctx.capital_distribution("%s.US"%(dog_id))
         df = pd.DataFrame({
             'Date': [(resp.timestamp - datetime.timedelta(hours=8)).date()],
@@ -138,6 +136,7 @@ def main(args):
     log.get().info('Logger Creat Success')
 
     quantitative_init()
+    quote_ctx = get_quote_context()
 
     dog_list = []
     if (args.market == 'us'):
@@ -155,10 +154,10 @@ def main(args):
         if inexist:
             if (args.market == 'us'):
                 dog_full_code = get_fullcode(args.market, dog_index)
-                df1 = get_dog_us_daily_hist(dog_full_code)
+                df1 = get_dog_us_daily_hist(quote_ctx, dog_full_code)
                 if (df1.empty):
                     continue
-                df2 = get_dog_us_capital_flow(dog_full_code)
+                df2 = get_dog_us_capital_flow(quote_ctx, dog_full_code)
                 if (df2.empty):  
                     continue
                 else:
@@ -179,10 +178,10 @@ def main(args):
             start_date = (datetime.datetime.now() - datetime.timedelta(days=10)).strftime('%Y%m%d')    # 10 days ago
             if (args.market == 'us'):
                 dog_full_code = get_fullcode(args.market, dog_index)
-                df1 = get_dog_us_daily_hist(dog_full_code, start_date=start_date, end_date=current_date)
+                df1 = get_dog_us_daily_hist(quote_ctx, dog_full_code, start_date=start_date, end_date=current_date)
                 if (df1.empty):
                     continue
-                df2 = get_dog_us_capital_flow(dog_full_code)
+                df2 = get_dog_us_capital_flow(quote_ctx, dog_full_code)
                 if (df2.empty):  
                     continue
                 else:

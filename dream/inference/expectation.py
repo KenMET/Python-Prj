@@ -25,7 +25,7 @@ import log
 
 # Only for temp during simulation trade test
 def merge_holding(quent_type, user_name, notify_list):
-    house_holding = get_holding('%s-%s'%(quent_type, user_name))
+    house_holding = get_holding('%s-%s'%(user_name, quent_type))
     for index in house_holding:
         dog_code = index.get('Code')
         dog_code = dog_code[:dog_code.rfind('.US')]     # Support US market fornow

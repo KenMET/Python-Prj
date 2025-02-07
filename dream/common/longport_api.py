@@ -37,8 +37,7 @@ def get_quote_context():
     quote_ctx = QuoteContext(Config.from_env())
     return quote_ctx
 
-def get_history(id, **kwargs):
-    ctx = get_quote_context()
+def get_history(ctx, id, **kwargs):
     resp = ctx.history_candlesticks_by_date(id, Period.Day,
         AdjustType.ForwardAdjust, **kwargs)
     return resp
