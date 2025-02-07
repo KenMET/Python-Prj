@@ -2,6 +2,7 @@
 
 # System lib
 import os
+import re
 import sys
 import json
 import socket
@@ -46,6 +47,10 @@ def datetime_converter(obj):
     if isinstance(obj, datetime.datetime):
         return obj.isoformat()  # 转换为ISO 8601格式的字符串
     raise TypeError("Type not serializable")
+
+def is_dog_option(dog_id):
+    pattern = r'^[A-Za-z]+(\d{6})(C|P)(\d+)$'
+    return bool(re.match(pattern, dog_id))
 
 def get_socket_path(service_type):
     return "%s/../tmp/%s_socket"%(py_dir, service_type)    # to dream root dir

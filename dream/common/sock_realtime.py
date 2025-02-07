@@ -41,6 +41,12 @@ def main(args):
     #recv_dict = query_dog('TSLA', 10)
     #log.get().info('query_dog recv: %s'%(str(recv_dict)))
 
+    recv_dict = register_dog('TTWO')
+    log.get().info('register_dog recv: %s'%(str(recv_dict)))
+
+    recv_dict = register_dog('NVDA')
+    log.get().info('register_dog recv: %s'%(str(recv_dict)))
+
     recv_dict = register_dog('TSLA')
     log.get().info('register_dog recv: %s'%(str(recv_dict)))
 

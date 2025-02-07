@@ -213,14 +213,32 @@ def update_registered_time(dog_id):
     }
     return db.update_param_by_symbol('registered', symbol_dict), last_time
 
-def get_dog_realtime(dog_id, last_min):
+def del_registered_dog(dog_id):
+    db = dbdr.db('dream_dog')
+    content_dict = get_registered_dog()
+    del content_dict[dog_id]
+    symbol_dict = {
+        'Symbol': 'registered',
+        'Content': json.dumps(content_dict, default=datetime_converter)
+    }
+    return db.update_param_by_symbol('registered', symbol_dict)
+
+def get_dog_realtime(dog_id, last_min=0):     # last_min == -1 mean all need to be return
     db = dbdr.db('dream_dog')
     ret = db.query_sharing_by_dog(dog_id)
     temp_list = [db.get_dict_from_obj(n) for n in ret]
+    if last_min == 0:
+        return temp_list
     result = []
     for entry in temp_list:
         dog_time_str = entry['DogTime'].split('-')[1]  # '20250207174225'
         dog_time = datetime.datetime.strptime(dog_time_str, '%Y%m%d%H%M%S')
-        if (datetime.datetime.now() - dog_time) <= datetime.timedelta(minutes=last_min):
+        if (datetime.datetime.now() - dog_time) <= datetime.timedelta(minutes=int(last_min)):
             result.append(entry)
     return result
+
+def del_dog_realtime(dog_id):     # last_min == -1 mean all need to be return
+    db = dbdr.db('dream_dog')
+    if db.is_dog_exist(dog_id):
+        return db.del_sharing_by_dogtime(dog_id)
+    return True

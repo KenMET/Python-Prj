@@ -18,7 +18,7 @@ sys.path.append(r'%s/../common'%(py_dir))
 from config import get_global_config
 from database import create_if_realtime_inexist, update_registered_time, get_registered_dog
 from database import get_dog_realtime
-from other import get_socket_path, get_dict_from_socket, get_trade_session
+from other import get_socket_path, get_dict_from_socket, get_trade_session, is_dog_option
 from longport_api import quantitative_init, get_quote_context
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
 import log
@@ -65,7 +65,9 @@ def market_monitor(lock):
         while(True):
             log.get(log_name).info('Market monitor, new looping')
             trade_session = get_trade_session()
-            dog_list = [n for n in get_registered_dog()]
+            registered_list = [n for n in get_registered_dog()]
+            dog_list, option_list = list(filter(lambda x: not is_dog_option(x), registered_list)), list(filter(is_dog_option, registered_list))
+            log.get(log_name).info('Market monitor, Skip option from %s'%(str(option_list)))
 
             lock.acquire()
             quantitative_init()

@@ -190,3 +190,18 @@ class db(dbb.basedb):
                 return True
         else:
             return self.insert_sharing(sharing_dict)
+
+    def del_sharing_by_dogtime(self, dog_time):
+        if self.session is None:
+            self.connectdb()
+        Cls = self.create_realtime_dog_class()
+        obj = Cls()
+        obj = self.session.query(Cls).filter(Cls.DogTime == dog_time).first()
+        try:
+            self.session.delete(obj)
+            self.session.commit()
+        except:
+            return False
+        else:
+            return True
+        

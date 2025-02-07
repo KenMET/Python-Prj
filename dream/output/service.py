@@ -20,7 +20,7 @@ from other import get_socket_path, get_dict_from_socket, get_trade_session
 from longport_api import quantitative_init, get_quote_context
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
 import log
-log_name = 'trade_%s'%(py_name)
+log_name = 'trade_%s_%s_%s'%(os.environ['USER_NAME'], os.environ['USER_TYPE'], py_name)
 
 def create_trade_server():
     server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
