@@ -31,7 +31,7 @@ sys.path.append(r'%s/../../common_api/log'%(py_dir))
 import log
 
 
-def get_expect_all(user_name, quent_type):
+def get_expect_all():
     house_name = get_user_type('-')
     house_holding = get_holding(house_name)
     tobe_trade_list = get_trade_list('us')
@@ -54,7 +54,7 @@ def get_expect_all(user_name, quent_type):
 
     return notify_dict
 
-def trade(user, q_type, house_dict, dog_opt, dog_id):
+def trade(house_dict, dog_opt, dog_id):
     def get_holding_by_dog_id(holding_dict, dog_id):
         for index in holding_dict:
             if index.get('Code', '') == dog_id:
@@ -67,7 +67,7 @@ def trade(user, q_type, house_dict, dog_opt, dog_id):
         holding.update({'Quantity':0})
 
     order_dest = get_user_type('-')
-    db = create_if_order_inexist(order_dest)
+    create_if_order_inexist(order_dest).closeSession()  # No need db further.
 
     for side in dog_opt:
         price = float(dog_opt[side])
@@ -91,6 +91,7 @@ def trade(user, q_type, house_dict, dog_opt, dog_id):
         submit_order(dog_id, side, price, share)
 
         log.get().info('[%s] %s %d shares in price %.2f'%(dog_id, side, share, price))
+    
 
 def main(args):
     log.init('%s/../log'%(py_dir), py_name, log_mode='w', log_level='info', console_enable=True)
@@ -101,10 +102,8 @@ def main(args):
     if not args.test:
         wait_us_market_open(log.get())
 
-    user = os.environ['USER_NAME']
-    q_type = os.environ['USER_TYPE']
     #result = subprocess.run(["python3", "%s/../input/house.py"], capture_output=True, text=True)
-    predict_dict = get_expect_all(user, q_type)
+    predict_dict = get_expect_all()
     log.get().info('Predict result: %s'%(str(predict_dict)))
 
     house_dict = get_house_detail(get_user_type('-'))
@@ -112,7 +111,7 @@ def main(args):
     # Submit order
     for index in predict_dict:
         dog_opt = predict_dict[index]
-        trade(user, q_type, house_dict, dog_opt, index)
+        trade(house_dict, dog_opt, index)
 
 if __name__ == '__main__':
     # Create ArgumentParser Object

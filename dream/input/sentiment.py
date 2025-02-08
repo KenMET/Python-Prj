@@ -97,7 +97,7 @@ def main(args):
         #log.get().info(trimmed_data)
         #score_avg = sum(trimmed_data) / len(trimmed_data)
         #log.get().info('Score Avg[%s]: %.2f'%(start, score_avg))
-
+    db.closeSession()
 
 if __name__ == '__main__':
     # Create ArgumentParser Object

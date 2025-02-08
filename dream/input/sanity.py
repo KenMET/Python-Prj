@@ -32,6 +32,7 @@ def sanity_market(table_name):
     temp_obj = db.query_dog_market_last(dog_id)
     if (temp_obj == None):
         log.get().info('Market Sanity None:[%s]'%(dog_id))
+        db.closeSession()
         return False
     temp_dict = db.get_dict_from_obj(temp_obj)
     temp_date = temp_dict['Date']
@@ -40,10 +41,12 @@ def sanity_market(table_name):
     some_days_ago = today - datetime.timedelta(days=10)
     if some_days_ago <= temp_date <= today:
         #log.get().info('Market Sanity Success: [%s]'%(dog_id))
+        db.closeSession()
         return True
     else:
         log.get().info('Market Sanity Failed:[%s]'%(dog_id))
         #db.dropTable(table_name)
+        db.closeSession()
         return False
 
 def sanity_adjustment_market(table_name):
@@ -114,6 +117,7 @@ def main(args):
 
     db = dbdd.db('dream_dog')
     table_list = db.queryTable()
+    db.closeSession()
     for index in table_list:
         if index.find('info') > 0:
             flag = sanity_info(index)

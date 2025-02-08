@@ -68,25 +68,34 @@ def market_monitor(lock):
             trade_session = get_trade_session()
             registered_list = [n for n in get_registered_dog()]
             dog_list, option_list = list(filter(lambda x: not is_dog_option(x), registered_list)), list(filter(is_dog_option, registered_list))
-            log.get(log_name).info('Market monitor, Skip option from %s'%(str(option_list)))
 
             lock.acquire()
             quantitative_init()
             ctx = get_quote_context()
             timestamp_now = datetime.datetime.now().time()
+
             log.get(log_name).info('Market monitor, Quote dog from %s'%(str(dog_list)))
-            resp = ctx.quote(["%s.US"%(n) for n in dog_list])
+            resp_dog = ctx.quote(["%s.US"%(n) for n in dog_list])
+            log.get(log_name).info('Market monitor, Quote option from %s'%(str(option_list)))
+            resp_option = ctx.option_quote(["%s.US"%(n) for n in option_list])
+            resp = resp_dog + resp_option
             #log.get(log_name).debug(resp)
+
             for index in resp:
+                #log.get(log_name).info('Market monitor, Test: %s'%(str(index)))
                 dog_code = str(index.symbol).split('.')[0]
                 if trade_session['Pre']['Start'] <= timestamp_now < trade_session['Pre']['End']:
                     trading_duration = 'Pre'
+                    if not hasattr(index, 'pre_market_quote'):
+                        continue
                     session_obj = index.pre_market_quote
-                elif trade_session['Normal']['Start'] <= timestamp_now < trade_session['Normal']['End']:
+                elif trade_session['Normal']['Start'] <= timestamp_now or timestamp_now < trade_session['Normal']['End']:
                     trading_duration = 'Normal'
                     session_obj = index
                 elif trade_session['Post']['Start'] <= timestamp_now < trade_session['Post']['End']:
                     trading_duration = 'Post'
+                    if not hasattr(index, 'post_market_quote'):
+                        continue
                     session_obj = index.post_market_quote
                 elif trade_session['Night']['Start'] <= timestamp_now < trade_session['Night']['End']:   # Not support yet...
                     trading_duration = 'Night'
@@ -109,10 +118,13 @@ def market_monitor(lock):
                 if not db.update_sharing_by_dogtime(dog_time, temp_dict):
                     log.get(log_name).error('[%s]Realtime update failed: %s'%(dog_code, str(temp_dict)))
                 log.get(log_name).debug('[%s][%s]:%s'%(trading_duration, dog_time, str(temp_dict)))
+            
             lock.release()
             duration_time = (datetime.datetime.now() - loop_start_time).total_seconds()
             time.sleep(int(get_global_config('realtime_interval')) - duration_time)
+        db.closeSession()
     except Exception as e:
+        db.closeSession()
         log.get(log_name).error('Exception captured in market_monitor: %s'%(str(e)))
 
 def handle_dict(client_socket, lock, tmp_dict):

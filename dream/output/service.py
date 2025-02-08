@@ -61,13 +61,13 @@ def handle_client(client_socket, client_address, lock):
 
 def order_monitor(lock):
     try:
+        user, quent_type = get_user_type()
+        house_name = get_user_type('-')
+        db = create_if_order_inexist(house_name)
         while(True):
             loop_start_time = datetime.datetime.now()
-            user, quent_type = get_user_type()
-            house_name = get_user_type('-')
             log.get(log_name).info('Order monitor, new looping for [%s]'%(house_name))
 
-            db = create_if_order_inexist(house_name)
             log.get(log_name).debug('Order monitor, Getting open order for: %s'%(house_name))
             opened_order_list = get_open_order(user, quent_type)
             lock.acquire()
@@ -113,7 +113,9 @@ def order_monitor(lock):
             lock.release()
             duration_time = (datetime.datetime.now() - loop_start_time).total_seconds()
             time.sleep(int(get_global_config('order_interval')) - duration_time)
+        db.closeSession()
     except Exception as e:
+        db.closeSession()
         log.get(log_name).error('Exception captured in order_monitor: %s'%(str(e)))
 
 
@@ -135,6 +137,7 @@ def handle_dict(client_socket, lock, tmp_dict):
         log.get(log_name).info('Insert for: %s'%(str(order_dict)))
         if not db.insert_order(order_dest, order_dict):
             log.get(log_name).error('Order Inser Error...[%s] %s'%(order_dest, str(order_dict)))
+        db.closeSession()
     elif cmd == 'query_order':
         order_id = tmp_dict['order_id']
         order_dict = trade_query(order_id)

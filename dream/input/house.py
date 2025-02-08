@@ -27,10 +27,12 @@ def house_update(name):
     resp = trade_ctx.account_balance(currency='USD')
     if len(resp) != 1:
         log.get().info('Account Balance exception: %s'%(str(resp)))
+        db.closeSession()
         return
     house = resp[0]
     if len(house.cash_infos) != 1:
         log.get().info('Account Balance Cash Infos exception: %s'%(str(resp)))
+        db.closeSession()
         return
     house_cash_infos = house.cash_infos[0]
     house_dict = {
@@ -48,6 +50,7 @@ def house_update(name):
     resp = trade_ctx.stock_positions()
     if len(resp.channels) != 1:
         log.get().info('Stock Positions exception: %s'%(str(resp)))
+        db.closeSession()
         return
     positions = resp.channels[0].positions
     holding_list = []
@@ -56,6 +59,7 @@ def house_update(name):
     house_dict.update({'Holding':str(holding_list)})
     db.update_house_by_name(name, house_dict)
     log.get().info('House updated for: %s'%(name))
+    db.closeSession()
 
 # Not support for multiple user for now...
 def main(args):

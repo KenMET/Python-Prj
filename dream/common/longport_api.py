@@ -10,7 +10,7 @@ py_dir = os.path.dirname(os.path.realpath(__file__))
 py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
 sys.path.append(r'%s/'%(py_dir))
 from longport.openapi import Config, TradeContext, QuoteContext
-from longport.openapi import Period, AdjustType
+from longport.openapi import Period, AdjustType, Market
 from longport.openapi import OrderSide, OrderType, TimeInForceType, OrderStatus
 sys.path.append(r'%s/../../mysql'%(py_dir))
 import db_dream_secret as dbds
@@ -44,7 +44,7 @@ def get_history(ctx, id, **kwargs):
 
 # Supportted: US, HK, CN, SG
 def get_trading_session(market):
-    quote_ctx = QuoteContext(Config.from_env())
+    quote_ctx = get_quote_context()
     resp = quote_ctx.trading_session()
     trading_session_dict = {}
     for index in resp:
@@ -59,7 +59,7 @@ def get_trading_session(market):
     return trading_session_dict.get(market,{})
 
 def get_last_price(code):
-    quote_ctx = QuoteContext(Config.from_env())
+    quote_ctx = get_quote_context()
     resp = quote_ctx.quote([code])
     return float(resp[0].last_done)
 
@@ -100,7 +100,7 @@ def get_order_dict_from_obj(resp):
         'Quantity' : '%d/%d'%(resp.executed_quantity, resp.quantity),
         'Price' : float(resp.price),
         'ExecutedPrice' : 0.0 if resp.executed_price == None else float(resp.executed_price),
-        'Fee' : float(resp.charge_detail.total_amount),
+        'Fee' : 0.0 if not hasattr(resp, 'charge_detail') else float(resp.charge_detail.total_amount),
         'Status' : str(resp.status).replace('OrderStatus.',''),
     }
     return order_dict
@@ -172,3 +172,23 @@ def is_order_invalid(order_dict):
     elif temp_status == OrderStatus.Unknown:
         return True
     return False
+
+def get_open_order_from_longport():
+    ctx = get_trade_context()
+    resp = ctx.today_orders(
+        status = [OrderStatus.NotReported, OrderStatus.New],
+        market = Market.US,
+    )
+    return [get_order_dict_from_obj(n) for n in resp]
+
+def get_filled_order_from_longport(dog_id, side):
+    ctx = get_trade_context()
+    temp_side = OrderSide.Buy
+    if side == 'Sell':
+        temp_side = OrderSide.Sell
+    resp = ctx.history_orders(
+        symbol = '%s.US'%(dog_id),
+        status = [OrderStatus.Filled, OrderStatus.PartialFilled],
+        side = temp_side,
+    )
+    return [get_order_dict_from_obj(n) for n in resp]

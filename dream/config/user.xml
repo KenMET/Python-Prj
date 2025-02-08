@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <contents>
     <global>
-        <realtime_interval>300</realtime_interval>  <!-- Realtime Looping interval [x second] -->
-        <trade_interval>300</trade_interval>  <!-- Trade Looping interval [x second] -->
-        <order_interval>120</order_interval>  <!-- Order monitor looping interval [x second] -->
+        <realtime_interval>90</realtime_interval>  <!-- Realtime Looping interval [x second] -->
+        <order_interval>90</order_interval>  <!-- Order monitor looping interval [x second] -->
         <min_trade_interval>10</min_trade_interval>  <!-- Max holiday days [x days] -->
         <realtime_dog_expierd>5</realtime_dog_expierd>  <!-- Realtime Dog expierd days, keep [x days] realtime data only -->
         <realtime_option_expierd>30</realtime_option_expierd>  <!-- Realtime Option expierd days, keep [x days] realtime data only -->
@@ -13,7 +12,15 @@
             <price_range>0.15</price_range>  <!-- Option Strike Price Around [market_price*(1-x), market_price*(1+x)] -->
             <day_range>90</day_range>  <!-- Option Expire Date Beyond [x days] -->
             <count_limit>5</count_limit>    <!-- Option above that the first x dates -->
+            <min_earn>20</min_earn>     <!-- Acceptable earn dollar (not include fee) -->
+            <expect_earn>100</expect_earn>  <!-- Expected earn(Stop profit) dollar (not include fee) -->
+            <fee>5</fee>  <!-- Operation fee, once.........cannot get from order detail... don't know why-->
         </option>
+        <dog>
+            <min_earn>10</min_earn>     <!-- Acceptable earn dollar (not include fee) -->
+            <expect_earn>50</expect_earn>  <!-- Expected earn(Stop profit) dollar (not include fee) -->
+            <fee>3</fee>  <!-- Operation fee, once.........cannot get from order detail... don't know why-->
+        </dog>
     </kanos>
     <sentiment_key>
         <key>NSVARWKAJGLQA942</key>

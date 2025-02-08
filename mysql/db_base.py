@@ -26,7 +26,7 @@ class basedb(object):
         return self.session
 
     def closeSession(self):
-        if self.session is None:
+        if self.session != None:
             self.session.close()
 
     def connectdb(self):

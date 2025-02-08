@@ -43,6 +43,38 @@ def get_trade_session():
         trade_session.update({'Night': {'Start':datetime.time(9, 0, 0), 'End':datetime.time(17, 0, 0)}})
     return trade_session
 
+def get_current_session_and_remaining_time(last_session):
+    trade_session = get_trade_session()
+    now = datetime.datetime.now()
+    #now = datetime.datetime.strptime('2025-01-02 04:52:00', '%Y-%m-%d %H:%M:%S')
+    now_time = now.time()
+    today = now.date()
+
+    # Get current session
+    current_session = None
+    for session, times in trade_session.items():
+        start, end = times['Start'], times['End']
+        if start < end:  # For 04:00 - 21:30
+            if start <= now_time < end:
+                current_session = session
+                break
+        else:  # For 21:30 - 04:00
+            if now_time >= start or now_time < end:
+                current_session = session
+                break
+
+    # Get last session end time
+    end_time = datetime.datetime.combine(today, trade_session[last_session]['End'])
+    if trade_session[last_session]['Start'] > trade_session[last_session]['End']:
+        if now_time >= trade_session[last_session]['Start']:  
+            end_time += datetime.timedelta(days=1)
+    if now >= end_time:
+        end_time += datetime.timedelta(days=1)
+    remaining_minutes = int((end_time - now).total_seconds() // 60)
+
+    return current_session, remaining_minutes
+
+
 def get_user_type(mid_char=''):
     if mid_char == '':
         return os.environ['USER_NAME'], os.environ['USER_TYPE']

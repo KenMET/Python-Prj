@@ -13,7 +13,7 @@ import threading
 py_dir = os.path.dirname(os.path.realpath(__file__))
 py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
 sys.path.append(r'%s/'%(py_dir))
-from other import push_dict_to_socket
+from other import push_dict_to_socket, get_user_type
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
 import log
 
@@ -26,21 +26,21 @@ def submit_order(dog_id, side, price, share):
         'price':price,
         'share':share,
     }
-    return push_dict_to_socket('trade', tmp_dict)
+    return push_dict_to_socket(get_user_type('_'), tmp_dict)
 
 def query_order(order_id):
     tmp_dict = {
         'cmd':'query_order',
         'order_id':order_id,
     }
-    return push_dict_to_socket('trade', tmp_dict)
+    return push_dict_to_socket(get_user_type('_'), tmp_dict)
 
 def cancel_order(order_id):
     tmp_dict = {
         'cmd':'cancel_order',
         'order_id':order_id,
     }
-    return push_dict_to_socket('trade', tmp_dict)
+    return push_dict_to_socket(get_user_type('_'), tmp_dict)
 
 def modify_order(order_id, price, share):
     tmp_dict = {
@@ -49,7 +49,7 @@ def modify_order(order_id, price, share):
         'price':price,
         'share':share,
     }
-    return push_dict_to_socket('trade', tmp_dict)
+    return push_dict_to_socket(get_user_type('_'), tmp_dict)
 
 def main(args):
     log.init('%s/../log'%(py_dir), py_name, log_mode='w', log_level='info', console_enable=True)

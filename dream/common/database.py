@@ -84,8 +84,9 @@ def create_if_realtime_inexist():
     return db
 
 def get_fullcode(market, dog_id):
-    db_info = dbddi.db('dream_dog')
-    res = db_info.query_dog_by_code(market, dog_id)
+    db = dbddi.db('dream_dog')
+    res = db.query_dog_by_code(market, dog_id)
+    db.closeSession()
     if len(res) == 0:
         #log.get().error('Dog not found [%s]'%(dog_id))
         return dog_id 
@@ -97,8 +98,9 @@ def get_fullcode(market, dog_id):
     return dog_full_code
 
 def get_dogname(market, dog_id):
-    db_info = dbddi.db('dream_dog')
-    res = db_info.query_dog_by_code(market, dog_id)
+    db = dbddi.db('dream_dog')
+    res = db.query_dog_by_code(market, dog_id)
+    db.closeSession()
     if len(res) == 0:
         #log.get().error('Dog not found [%s]'%(dog_id))
         return dog_id 
@@ -117,12 +119,16 @@ def get_house_detail(name):
     temp = db.query_house_by_name(name)
     if len(temp) != 1:
         #log.get().info('House get exception: %s'%(name))
+        db.closeSession()
         return
-    return db.get_dict_from_obj(temp[0])
+    house_detail = db.get_dict_from_obj(temp[0])
+    db.closeSession()
+    return house_detail
 
 def get_secret_detail():
     db = dbds.db('dream_user')
     temp = db.query_all_secret()
+    db.closeSession()
     secret_list = []
     for index in temp:
         full = index.Type.split('-')
@@ -140,6 +146,7 @@ def get_holding(name):
         #log.get().info('House get exception: %s'%(name))
         return
     account_dict = db.get_dict_from_obj(temp[0])
+    db.closeSession()
     return ast.literal_eval(account_dict['Holding'])
 
 def get_open_order(user, q_type):
@@ -150,12 +157,16 @@ def get_open_order(user, q_type):
         db.create_order_table(order_dest)
         return []
     temp_list = db.query_order_opened(order_dest)
-    return [db.get_dict_from_obj(i) for i in temp_list] 
+    opened_list = [db.get_dict_from_obj(i) for i in temp_list] 
+    db.closeSession()
+    return opened_list
 
 def get_market_last(target):
     db = dbdd.db('dream_dog')
     ret = db.query_dog_market_last(target)
-    return db.get_dict_from_obj(ret)
+    market_last = db.get_dict_from_obj(ret)
+    db.closeSession()
+    return market_last
 
 def get_market_by_range(target, start, end):
     db = dbdd.db('dream_dog')
@@ -166,7 +177,7 @@ def get_market_by_range(target, start, end):
     df['Date'] = pd.to_datetime(df['Date'])
     df = df.sort_values('Date')
     df['Close'] = pd.to_numeric(df['Close'], errors='coerce')           # 确保 Close 列为数值类型
-
+    db.closeSession()
     return df
 
 def get_avg_score(target, last_n_days):
@@ -179,26 +190,33 @@ def get_avg_score(target, last_n_days):
         tmp_dict = db.get_dict_from_obj(index)
         score_list.append(float(tmp_dict.get('Score')))
     if len(score_list) == 0:
+        db.closeSession()
         return 0.0
     sorted_score_list = sorted(score_list)
     remove_min_max_count = int(len(score_list) * 0.1)     # remove 10%(min&max) of sentiment length
     trimmed_score = sorted_score_list[remove_min_max_count:-remove_min_max_count]
     if len(trimmed_score) == 0:
+        db.closeSession()
         return 0.0
     #log.get().info(trimmed_score)
     score_avg = sum(trimmed_score) / len(trimmed_score)
     #log.get().info('Score Avg[%s]: %.2f'%(target, score_avg))
+    db.closeSession()
     return score_avg
 
 def get_registered_dog():
     db = dbdr.db('dream_dog')
     ret = db.query_param_by_symbol('registered')
-    return json.loads(db.get_dict_from_obj(ret[0]).get('Content'))
+    content = json.loads(db.get_dict_from_obj(ret[0]).get('Content'))
+    db.closeSession()
+    return content
 
 def get_registered_time(dog_id):
     db = dbdr.db('dream_dog')
     ret = db.query_param_by_symbol('registered')
-    return json.loads(db.get_dict_from_obj(ret[0]).get('Content')).get(dog_id)
+    registered_time = json.loads(db.get_dict_from_obj(ret[0]).get('Content')).get(dog_id)
+    db.closeSession()
+    return registered_time
 
 def update_registered_time(dog_id):
     db = dbdr.db('dream_dog')
@@ -211,7 +229,9 @@ def update_registered_time(dog_id):
         'Symbol': 'registered',
         'Content': json.dumps(content_dict, default=datetime_converter)
     }
-    return db.update_param_by_symbol('registered', symbol_dict), last_time
+    flag = db.update_param_by_symbol('registered', symbol_dict)
+    db.closeSession()
+    return flag, last_time
 
 def del_registered_dog(dog_id):
     db = dbdr.db('dream_dog')
@@ -221,13 +241,16 @@ def del_registered_dog(dog_id):
         'Symbol': 'registered',
         'Content': json.dumps(content_dict, default=datetime_converter)
     }
-    return db.update_param_by_symbol('registered', symbol_dict)
+    flag = db.update_param_by_symbol('registered', symbol_dict)
+    db.closeSession()
+    return flag
 
 def get_dog_realtime(dog_id, last_min=0):     # last_min == -1 mean all need to be return
     db = dbdr.db('dream_dog')
     ret = db.query_sharing_by_dog(dog_id)
     temp_list = [db.get_dict_from_obj(n) for n in ret]
     if last_min == 0:
+        db.closeSession()
         return temp_list
     result = []
     for entry in temp_list:
@@ -235,10 +258,13 @@ def get_dog_realtime(dog_id, last_min=0):     # last_min == -1 mean all need to 
         dog_time = datetime.datetime.strptime(dog_time_str, '%Y%m%d%H%M%S')
         if (datetime.datetime.now() - dog_time) <= datetime.timedelta(minutes=int(last_min)):
             result.append(entry)
+    db.closeSession()
     return result
 
 def del_dog_realtime(dog_id):     # last_min == -1 mean all need to be return
     db = dbdr.db('dream_dog')
     if db.is_dog_exist(dog_id):
+        db.closeSession()
         return db.del_sharing_by_dogtime(dog_id)
+    db.closeSession()
     return True

@@ -69,8 +69,9 @@ def main(args):
             flag = db.update_option_by_symbol(symbol, index)
             if (not flag):
                 log.get().error('Option update failed: %s'%(symbol))
-                exit()
-
+                db.closeSession()
+                return None
+    db.closeSession()
 
 if __name__ == '__main__':
     # Create ArgumentParser Object
