@@ -65,7 +65,7 @@ def trade_half_manually():
         quantity = int(order_index['Quantity'].split('/')[1])
         side = order_index['Side']
 
-        content += '[%s] %s %d in Price[%.2f]'%(dog_id, side, price, quantity)
+        content += '[%s] %s %d in Price[%.2f]'%(dog_id, side, quantity, price)
         monitor_t = threading.Thread(target=half_manually_monitor, args=(order_id, dog_id, price, quantity, side, ))
         monitor_t.start()
         thread_dict.update({order_id:monitor_t})
