@@ -26,7 +26,7 @@ log_name = 'trade_%s_%s'%(get_user_type('_'), py_name)
 
 def create_trade_server():
     server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    socket_path = get_socket_path('trade')
+    socket_path = get_socket_path(get_user_type('_'))
     socket_dir = os.path.dirname(socket_path)
     if not os.path.exists(socket_dir):
         os.makedirs(socket_dir)
