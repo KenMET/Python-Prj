@@ -134,6 +134,11 @@ def selling_loop(order_id, dog_id, price, quantity):
         last_datetime = last_dict['DogTime'].split('-')[1]
         log.get(py_name).info('[%s] Last Price[%.2f] Time[%s]'%(dog_id, last_price, last_datetime))
 
+        now_seesion, surplus_min = get_current_session_and_remaining_time('Normal')   # Track till Normal session end
+        if now_seesion == 'Post' or now_seesion == 'Night':
+            log.get(py_name).info('Current Session: %s, stop monitor...'%(now_seesion))
+            return  # No need to track, wait expired
+
         # Formular: earning = (last_price - cost_price) * quantity - (fee*2), to make earning > value
         # Then, last_price = (value + (fee*2)) / quantity + cost_price
         min_earn_price = (min_earn + (fee*2)) / quantity + cost_price
@@ -143,16 +148,12 @@ def selling_loop(order_id, dog_id, price, quantity):
             log.get(py_name).info('[%s] If need achive min earning, need diff[%.2f][%.2f%%] from now[%.2f]'%(dog_id, min_earn_price, min_earn_diff*100, last_price))
             continue
         else:
-            now_seesion, surplus_min = get_current_session_and_remaining_time('Normal')   # Track till Normal session end
-            if now_seesion == 'Post' or now_seesion == 'Night':
-                log.get(py_name).info('Current Session: %s, stop monitor...'%(now_seesion))
-                return  # No need to track, wait expired
             earning = (last_price - cost_price) * quantity - (fee*2)
             if (surplus_min < 10 and earning > min_earn) or earning > expect_earn:    # 10 min, near close market or reach expected, change the price.
                 recv_dict = modify_order(order_id, last_price, quantity)
                 log.get(py_name).info('modify_order recv_dict: %s'%(str(recv_dict)))
                 bark_obj = notify.bark()
-                content = '[%s] Sell reach change to price[%.2f], Earn[%.2f]'%(dog_id, last_price, earning)
+                content = '[%s] Sell expected, price[%.2f], Earn[%.2f]'%(dog_id, last_price, earning)
                 bark_obj.send_title_content('Short Trade Success', content)
                 return
 
