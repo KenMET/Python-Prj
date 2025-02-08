@@ -16,11 +16,13 @@ py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
 sys.path.append(r'%s/'%(py_dir))
 sys.path.append(r'%s/../common'%(py_dir))
 from config import get_global_config
-from other import get_socket_path, get_dict_from_socket, get_trade_session
-from longport_api import quantitative_init, get_quote_context
+from database import create_if_order_inexist, get_open_order
+from other import get_socket_path, get_dict_from_socket, get_trade_session, get_user_type
+from longport_api import quantitative_init
+from longport_api import trade_submit, trade_cancel, trade_query, trade_modify
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
 import log
-log_name = 'trade_%s_%s_%s'%(os.environ['USER_NAME'], os.environ['USER_TYPE'], py_name)
+log_name = 'trade_%s_%s'%(get_user_type('_'), py_name)
 
 def create_trade_server():
     server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
@@ -57,30 +59,96 @@ def handle_client(client_socket, client_address, lock):
     except Exception as e:
         log.get(log_name).error('Exception captured in handle_client: %s'%(str(e)))
 
-def trade_monitor(lock):
+def order_monitor(lock):
     try:
         while(True):
-            log.get(log_name).info('Trade monitor, new looping')
+            loop_start_time = datetime.datetime.now()
+            user, quent_type = get_user_type()
+            house_name = get_user_type('-')
+            log.get(log_name).info('Order monitor, new looping for [%s]'%(house_name))
 
+            db = create_if_order_inexist(house_name)
+            log.get(log_name).debug('Order monitor, Getting open order for: %s'%(house_name))
+            opened_order_list = get_open_order(user, quent_type)
             lock.acquire()
-            current_time = datetime.datetime.now()
-            timestamp_now = current_time.time()
+            log.get(log_name).debug('Order monitor, Lock acquired, start init: %s'%(house_name))
+            for order_index in opened_order_list:
+                log.get(log_name).debug('Order monitor, Looping in order index: %s'%(str(order_index)))
+                order_id = order_index['OrderID']
+                order_status = order_index['Status']
+                log.get(log_name).debug('Order monitor, query ID: %s'%(order_id))
+                order_dict = trade_query(order_id)
+                order_query_status = order_dict.get('Status', '')
+                log.get(log_name).debug('Order monitor, order_dict: %s'%(str(order_dict)))
+                if order_query_status == '':
+                    log.get(log_name).error('Query order status failed: %s'%(str(order_dict)))
+                    continue
+                if order_status != order_query_status:
+                    if not db.update_order_by_id(house_name, order_id, order_dict):
+                        log.get(log_name).error('Order[%s] update failed')
+                        continue
+                    log.get(log_name).info('[%s][%s] status[%s]->[%s]'%(house_name, order_id, order_status, order_query_status))
+                else:
+                    order_datetime = order_dict.get('Date', '')
+                    if order_datetime == '':
+                        log.get(log_name).error('Query order datetime failed: %s'%(str(order_dict)))
+                        continue
+                    time_obj = datetime.datetime.strptime(order_datetime, '%Y-%m-%d %H:%M:%S.%f')
+                    current_time = datetime.datetime.now()
+                    log.get(log_name).info('order_time[%s] current_time[%s]'%(order_datetime, str(current_time)))
+                    time_diff = current_time - time_obj
+                    submit_price = float(order_index['Price'])
+
+                    # get realtime price, temp here
+                    realtime_price = submit_price
+
+                    expier_hour = 8     # default waiting hour
+                    if abs(realtime_price - submit_price)/submit_price < 0.01:  # diff less than 1%, then keep wait till expire
+                        expier_hour = 16
+                    if time_diff > datetime.timedelta(hours=expier_hour):
+                        log.get(log_name).info('Order expired, cancel: %s'%(order_id))
+                        trade_cancel(order_id)
+                        continue
+                    log.get(log_name).info('[%s][%s] status[%s] no change in %s'%(house_name, order_id, order_status, str(time_diff)))
             lock.release()
-            duration_time = (datetime.datetime.now() - current_time).total_seconds()
-            time.sleep(int(get_global_config('trade_interval')) - duration_time)
+            duration_time = (datetime.datetime.now() - loop_start_time).total_seconds()
+            time.sleep(int(get_global_config('order_interval')) - duration_time)
     except Exception as e:
-        log.get(log_name).error('Exception captured in trade_monitor: %s'%(str(e)))
+        log.get(log_name).error('Exception captured in order_monitor: %s'%(str(e)))
+
 
 def handle_dict(client_socket, lock, tmp_dict):
     log.get(log_name).info('Handle: %s'%(str(tmp_dict)))
     cmd = tmp_dict['cmd']
     ack_dict = {'cmd': '%s_ack'%(cmd)}
 
+    order_dest = get_user_type('-')
     lock.acquire()
-    if cmd == 'temp1':
-        pass
-    elif cmd == 'temp2':
-        pass
+    if cmd == 'submit_order':
+        dog_id = tmp_dict['dog_id']
+        side = tmp_dict['side']
+        price = tmp_dict['price']
+        share = tmp_dict['share']
+        order_dict = trade_submit(dog_id, side, price, share)
+        ack_dict.update(order_dict)
+        db = create_if_order_inexist(order_dest)
+        log.get(log_name).info('Insert for: %s'%(str(order_dict)))
+        if not db.insert_order(order_dest, order_dict):
+            log.get(log_name).error('Order Inser Error...[%s] %s'%(order_dest, str(order_dict)))
+    elif cmd == 'query_order':
+        order_id = tmp_dict['order_id']
+        order_dict = trade_query(order_id)
+        ack_dict.update(order_dict)
+    elif cmd == 'cancel_order':
+        order_id = tmp_dict['order_id']
+        order_dict = trade_cancel(order_id)
+        ack_dict.update(order_dict)
+    elif cmd == 'modify_order':
+        order_id = tmp_dict['order_id']
+        price = tmp_dict['price']
+        share = tmp_dict['share']
+        order_dict = trade_modify(order_id, price, share)
+        ack_dict.update(order_dict)
     else:
         ack_dict.update({'ack':'unknow cmd'})
     lock.release()
@@ -90,10 +158,12 @@ def main(args):
     log.init('%s/../log'%(py_dir), log_name, log_mode='w', log_level='info', console_enable=True)
     log.get(log_name).info('Logger[%s] Create Success'%(log_name))
 
+    quantitative_init()
+
     lock = threading.Lock()
 
-    trade_t = threading.Thread(target=trade_monitor, args=(lock, ))
-    trade_t.start()
+    order_t = threading.Thread(target=order_monitor, args=(lock, ))
+    order_t.start()
 
     server = create_trade_server()
     waiting_client(lock, server)

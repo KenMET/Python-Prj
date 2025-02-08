@@ -63,6 +63,7 @@ def market_monitor(lock):
     db = create_if_realtime_inexist()
     try:
         while(True):
+            loop_start_time = datetime.datetime.now()
             log.get(log_name).info('Market monitor, new looping')
             trade_session = get_trade_session()
             registered_list = [n for n in get_registered_dog()]
@@ -72,8 +73,7 @@ def market_monitor(lock):
             lock.acquire()
             quantitative_init()
             ctx = get_quote_context()
-            current_time = datetime.datetime.now()
-            timestamp_now = current_time.time()
+            timestamp_now = datetime.datetime.now().time()
             log.get(log_name).info('Market monitor, Quote dog from %s'%(str(dog_list)))
             resp = ctx.quote(["%s.US"%(n) for n in dog_list])
             #log.get(log_name).debug(resp)
@@ -110,7 +110,7 @@ def market_monitor(lock):
                     log.get(log_name).error('[%s]Realtime update failed: %s'%(dog_code, str(temp_dict)))
                 log.get(log_name).debug('[%s][%s]:%s'%(trading_duration, dog_time, str(temp_dict)))
             lock.release()
-            duration_time = (datetime.datetime.now() - current_time).total_seconds()
+            duration_time = (datetime.datetime.now() - loop_start_time).total_seconds()
             time.sleep(int(get_global_config('realtime_interval')) - duration_time)
     except Exception as e:
         log.get(log_name).error('Exception captured in market_monitor: %s'%(str(e)))

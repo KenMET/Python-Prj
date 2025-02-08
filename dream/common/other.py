@@ -43,6 +43,12 @@ def get_trade_session():
         trade_session.update({'Night': {'Start':datetime.time(9, 0, 0), 'End':datetime.time(17, 0, 0)}})
     return trade_session
 
+def get_user_type(mid_char=''):
+    if mid_char == '':
+        return os.environ['USER_NAME'], os.environ['USER_TYPE']
+    else:
+        return '%s%s%s'%(os.environ['USER_NAME'], mid_char, os.environ['USER_TYPE'])
+
 def datetime_converter(obj):
     if isinstance(obj, datetime.datetime):
         return obj.isoformat()  # 转换为ISO 8601格式的字符串

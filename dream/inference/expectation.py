@@ -17,7 +17,7 @@ from strategy import basic, get_stategy_handle
 sys.path.append(r'%s/../common'%(py_dir))
 from config import get_strategy, get_notify_list, get_trade_list
 from database import get_holding, get_market_by_range, get_dogname, get_avg_score
-from other import wait_us_market_open
+from other import wait_us_market_open, get_user_type
 sys.path.append(r'%s/../../notification'%(py_dir))
 import notification as notify
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
@@ -25,7 +25,7 @@ import log
 
 # Only for temp during simulation trade test
 def merge_holding(quent_type, user_name, notify_list):
-    house_holding = get_holding('%s-%s'%(user_name, quent_type))
+    house_holding = get_holding(get_user_type('-'))
     for index in house_holding:
         dog_code = index.get('Code')
         dog_code = dog_code[:dog_code.rfind('.US')]     # Support US market fornow

@@ -19,7 +19,7 @@ import log
 sys.path.append(r'%s/../common'%(py_dir))
 from longport_api import quantitative_init, get_trade_context
 from database import create_if_house_inexist, get_house_detail, get_holding, get_secret_detail
-from other import wait_us_market_open
+from other import wait_us_market_open, get_user_type
 
 def house_update(name):
     db = create_if_house_inexist()
@@ -69,17 +69,17 @@ def main(args):
     quent_type = os.environ['USER_TYPE']
     try:
         quantitative_init()
-        house_name = '%s-%s'%(user, quent_type)
-        log.get().info('start update [%s] house type: %s'%(user, quent_type))
+        house_name = get_user_type('-')
+        log.get().info('start update [%s]'%(get_user_type('-')))
         house_update(house_name)
         house = get_house_detail(house_name)
         house_holding = get_holding(house_name)
         log.get().info(house)
         log.get(py_name).info(house_holding)
     except:
-        log.get().error('House Update', '[%s-%s] update fail, please check if token expired.'%(user, quent_type))
+        log.get().error('House Update', '[%s] update fail, please check if token expired.'%(get_user_type('-')))
         bark_obj = notify.bark()
-        flag = bark_obj.send_title_content('House Update', '[%s-%s] update fail, please check if token expired.'%(user, quent_type))
+        flag = bark_obj.send_title_content('House Update', '[%s] update fail, please check if token expired.'%(get_user_type('-')))
 
 if __name__ == '__main__':
     # Create ArgumentParser Object

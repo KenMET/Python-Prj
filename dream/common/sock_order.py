@@ -18,11 +18,9 @@ sys.path.append(r'%s/../../common_api/log'%(py_dir))
 import log
 
 
-def submit_order(user, q_type, dog_id, side, price, share):
+def submit_order(dog_id, side, price, share):
     tmp_dict = {
         'cmd':'submit_order',
-        'user':user,
-        'type':q_type,
         'dog_id':dog_id,
         'side':side,
         'price':price,
@@ -30,29 +28,23 @@ def submit_order(user, q_type, dog_id, side, price, share):
     }
     return push_dict_to_socket('trade', tmp_dict)
 
-def query_order(user, q_type, order_id):
+def query_order(order_id):
     tmp_dict = {
         'cmd':'query_order',
-        'user':user,
-        'type':q_type,
         'order_id':order_id,
     }
     return push_dict_to_socket('trade', tmp_dict)
 
-def cancel_order(user, q_type, order_id):
+def cancel_order(order_id):
     tmp_dict = {
         'cmd':'cancel_order',
-        'user':user,
-        'type':q_type,
         'order_id':order_id,
     }
     return push_dict_to_socket('trade', tmp_dict)
 
-def modify_order(user, q_type, order_id, price, share):
+def modify_order(order_id, price, share):
     tmp_dict = {
         'cmd':'modify_order',
-        'user':user,
-        'type':q_type,
         'order_id':order_id,
         'price':price,
         'share':share,
@@ -63,17 +55,17 @@ def main(args):
     log.init('%s/../log'%(py_dir), py_name, log_mode='w', log_level='info', console_enable=True)
     log.get().info('Logger Creat Success')
 
-    recv_dict = submit_order('kanos', 'simulation', 'NVDA.US', 'buy', 99.12, 1)
+    recv_dict = submit_order('NVDA.US', 'buy', 99.12, 1)
     log.get().info('recv_dict: %s'%(str(recv_dict)))
     order_id = recv_dict['OrderID']
     time.sleep(5)
-    recv_dict = query_order('kanos', 'simulation', order_id)
+    recv_dict = query_order(order_id)
     log.get().info('recv_dict: %s'%(str(recv_dict)))
     time.sleep(5)
-    recv_dict = modify_order('kanos', 'simulation', order_id, 123.45, 20)
+    recv_dict = modify_order(order_id, 123.45, 20)
     log.get().info('recv_dict: %s'%(str(recv_dict)))
     time.sleep(5)
-    recv_dict = cancel_order('kanos', 'simulation', order_id)
+    recv_dict = cancel_order(order_id)
     log.get().info('recv_dict: %s'%(str(recv_dict)))
 
 

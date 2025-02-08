@@ -19,7 +19,7 @@ sys.path.append(r'%s/../inference'%(py_dir))
 from strategy import get_stategy_handle
 sys.path.append(r'%s/../common'%(py_dir))
 from config import get_trade_list
-from other import wait_us_market_open
+from other import wait_us_market_open, get_user_type
 from sock_order import submit_order
 sys.path.append(r'%s/../input'%(py_dir))
 from house import house_update
@@ -32,7 +32,7 @@ import log
 
 
 def get_expect_all(user_name, quent_type):
-    house_name = '%s-%s'%(user_name, quent_type)
+    house_name = get_user_type('-')
     house_holding = get_holding(house_name)
     tobe_trade_list = get_trade_list('us')
 
@@ -66,7 +66,7 @@ def trade(user, q_type, house_dict, dog_opt, dog_id):
     if len(holding) == 0:
         holding.update({'Quantity':0})
 
-    order_dest = '%s-%s'%(user, q_type)
+    order_dest = get_user_type('-')
     db = create_if_order_inexist(order_dest)
 
     for side in dog_opt:
@@ -88,12 +88,9 @@ def trade(user, q_type, house_dict, dog_opt, dog_id):
             log.get().info('[%s] Nothing to opt due to share == 0......'%(dog_id))
             continue
 
-        order_dict = trade_submit(dog_id, side, price, share)
+        submit_order(dog_id, side, price, share)
 
-        #log.get().info('Insert for: %s'%(str(order_dict)))
         log.get().info('[%s] %s %d shares in price %.2f'%(dog_id, side, share, price))
-        if not db.insert_order(order_dest, order_dict):
-            log.get().error('Order Inser Error...[%s] %s'%(order_dest, str(order_dict)))
 
 def main(args):
     log.init('%s/../log'%(py_dir), py_name, log_mode='w', log_level='info', console_enable=True)
@@ -110,7 +107,7 @@ def main(args):
     predict_dict = get_expect_all(user, q_type)
     log.get().info('Predict result: %s'%(str(predict_dict)))
 
-    house_dict = get_house_detail('%s-%s'%(user, q_type))
+    house_dict = get_house_detail(get_user_type('-'))
 
     # Submit order
     for index in predict_dict:

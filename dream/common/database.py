@@ -13,7 +13,7 @@ py_dir = os.path.dirname(os.path.realpath(__file__))
 py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
 sys.path.append(r'%s/'%(py_dir))
 import akshare as ak
-from other import datetime_converter
+from other import datetime_converter, get_user_type
 sys.path.append(r'%s/../../mysql'%(py_dir))
 import db_dream_dog as dbdd
 import db_dream_order as dbdo
@@ -144,7 +144,7 @@ def get_holding(name):
 
 def get_open_order(user, q_type):
     db = dbdo.db('dream_user')
-    order_dest = '%s-%s'%(q_type, user)
+    order_dest = get_user_type('-')
     if (not db.is_table_exist(order_dest)):      # New a table to insert
         #log.get().info('Order not exist, new a table[%s]...'%('order_%s'%(order_dest)))
         db.create_order_table(order_dest)

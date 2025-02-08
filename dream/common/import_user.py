@@ -10,7 +10,7 @@ import argparse
 py_dir = os.path.dirname(os.path.realpath(__file__))
 py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
 sys.path.append(r'%s/'%(py_dir))
-
+from other import get_user_type
 sys.path.append(r'%s/../../mysql'%(py_dir))
 import db_dream_secret as dbds
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
@@ -33,7 +33,7 @@ def main(args):
         db.create_secret_table()
 
     temp_dict = {
-        'Type' : '%s-%s'%(user_name, user_type),
+        'Type' : get_user_type('-'),
         'App_Key' : api_key,
         'App_Secret' : api_secret,
         'Access_Token' : api_token,
