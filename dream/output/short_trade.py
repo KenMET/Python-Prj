@@ -146,7 +146,6 @@ def selling_loop(order_id, dog_id, price, quantity):
         if (last_price < cost_price):   # Still under cost_price
             min_earn_diff = (abs(min_earn_price - last_price) / last_price)
             log.get(py_name).info('[%s] If need achive min earning, need diff[%.2f][%.2f%%] from now[%.2f]'%(dog_id, min_earn_price, min_earn_diff*100, last_price))
-            continue
         else:
             earning = (last_price - cost_price) * quantity - (fee*2)
             if (surplus_min < 10 and earning > min_earn) or earning > expect_earn:    # 10 min, near close market or reach expected, change the price.
@@ -155,7 +154,6 @@ def selling_loop(order_id, dog_id, price, quantity):
                 bark_obj = notify.bark()
                 content = '[%s] Sell expected, price[%.2f], Earn[%.2f]'%(dog_id, last_price, earning)
                 bark_obj.send_title_content('Short Trade Success', content)
-                return
 
 def half_manually_monitor(order_id, dog_id, price, quantity, side):
     log.get(py_name).info('Start monitor for [%s][%s][%.2f][%d]'%(order_id, dog_id, price, quantity))
