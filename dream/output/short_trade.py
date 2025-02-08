@@ -69,7 +69,7 @@ def trade_half_manually():
         monitor_t = threading.Thread(target=half_manually_monitor, args=(order_id, dog_id, price, quantity, side, ))
         monitor_t.start()
         thread_dict.update({order_id:monitor_t})
-    bark_obj.send_title_content('Short Trade', content)
+    bark_obj.send_title_content('Short Trade Monitor', content)
 
     for order_id in thread_dict:
         thread_dict[order_id].join()
@@ -153,7 +153,7 @@ def selling_loop(order_id, dog_id, price, quantity):
                 log.get(py_name).info('modify_order recv_dict: %s'%(str(recv_dict)))
                 bark_obj = notify.bark()
                 content = '[%s] Sell reach change to price[%.2f], Earn[%.2f]'%(dog_id, last_price, earning)
-                bark_obj.send_title_content('Short Trade', content)
+                bark_obj.send_title_content('Short Trade Success', content)
                 return
 
 def half_manually_monitor(order_id, dog_id, price, quantity, side):
