@@ -74,7 +74,7 @@ def trade_half_manually():
         if len(content) > 0:
             bark_obj.send_title_content('Short Trade Monitor', content)
 
-        time.sleep(20)#int(get_global_config('short_trade_order_interval')))
+        time.sleep(int(get_global_config('short_trade_order_interval')))
         now_seesion, surplus_min = get_current_session_and_remaining_time('Normal')   # Track till Normal session end
         if now_seesion == 'Post' or now_seesion == 'Night':
             log.get(log_name).info('Current Session: %s, stop order detection...'%(now_seesion))
@@ -158,8 +158,9 @@ def selling_loop(order_id, dog_id, price, quantity):
         else:
             earning = (last_price - cost_price) * quantity - (fee*2)
             if (surplus_min < 10 and earning > min_earn) or earning > expect_earn:    # 10 min, near close market or reach expected, change the price.
-                recv_dict = modify_order(order_id, last_price, quantity)
-                log.get(log_name).info('modify_order recv_dict: %s'%(str(recv_dict)))
+                if is_dog_option(dog_id):       # Enable option trade for test only, to be verify on dog trade.
+                    recv_dict = modify_order(order_id, last_price, quantity)
+                    log.get(log_name).info('modify_order recv_dict: %s'%(str(recv_dict)))
                 bark_obj = notify.bark()
                 content = '[%s] Sell expected, price[%.2f], Earn[%.2f]'%(dog_id, last_price, earning)
                 bark_obj.send_title_content('Modify Triggered', content)
