@@ -29,6 +29,7 @@ sys.path.append(r'%s/../inference'%(py_dir))
 from expectation import get_expect
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
 import log
+log_name = '%s_%s'%(py_name, get_user_type('_'))
 
 
 def get_expect_all():
@@ -43,14 +44,14 @@ def get_expect_all():
         #dog_code_filter = dog_code[:dog_code.rfind('.US')]     # Support US market fornow
         dog_code_filter = dog_index
         if re.search(r'\d{6}', dog_code_filter):   # Search if have number like '250117'
-            log.get().info('Detect share option[%s]'%(dog_code_filter))
+            log.get(log_name).info('Detect share option[%s]'%(dog_code_filter))
         else:
-            #log.get().info('Get expect for[%s]'%(dog_code_filter))
+            #log.get(log_name).info('Get expect for[%s]'%(dog_code_filter))
             next_predict = get_expect(dog_code_filter)
             if len(next_predict) != 0:
                 #notify_dict.update({dog_code:next_predict})
                 notify_dict.update({dog_code_filter+'.US':next_predict})   # Support US market fornow
-                log.get().info('[%s]: %s'%(dog_code_filter, str(next_predict)))
+                log.get(log_name).info('[%s]: %s'%(dog_code_filter, str(next_predict)))
 
     return notify_dict
 
@@ -62,7 +63,7 @@ def trade(house_dict, dog_opt, dog_id):
         return {}
     available_cash = float(house_dict['AvailableCash'])
     holding = get_holding_by_dog_id(json.loads(house_dict['Holding'].replace("'",'"')), dog_id)
-    log.get().info('[%s] holding: %s'%(dog_id, str(holding)))
+    log.get(log_name).info('[%s] holding: %s'%(dog_id, str(holding)))
     if len(holding) == 0:
         holding.update({'Quantity':0})
 
@@ -85,26 +86,26 @@ def trade(house_dict, dog_opt, dog_id):
         else:
             continue
         if share == 0:
-            log.get().info('[%s] Nothing to opt due to share == 0......'%(dog_id))
+            log.get(log_name).info('[%s] Nothing to opt due to share == 0......'%(dog_id))
             continue
 
         submit_order(dog_id, side, price, share)
 
-        log.get().info('[%s] %s %d shares in price %.2f'%(dog_id, side, share, price))
+        log.get(log_name).info('[%s] %s %d shares in price %.2f'%(dog_id, side, share, price))
     
 
 def main(args):
-    log.init('%s/../log'%(py_dir), py_name, log_mode='w', log_level='info', console_enable=True)
-    log.get().info('Logger Creat Success...[%s]'%(py_name))
+    log.init('%s/../log'%(py_dir), log_name, log_mode='w', log_level='info', console_enable=True)
+    log.get(log_name).info('Logger Creat Success...[%s]'%(log_name))
 
     quantitative_init()
 
     if not args.test:
-        wait_us_market_open(log.get())
+        wait_us_market_open(log.get(log_name))
 
     #result = subprocess.run(["python3", "%s/../input/house.py"], capture_output=True, text=True)
     predict_dict = get_expect_all()
-    log.get().info('Predict result: %s'%(str(predict_dict)))
+    log.get(log_name).info('Predict result: %s'%(str(predict_dict)))
 
     house_dict = get_house_detail(get_user_type('-'))
 

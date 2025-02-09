@@ -18,11 +18,19 @@ from other import push_dict_to_socket
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
 import log
 
-def query_dog(dog_id, last_min=int(get_global_config('realtime_interval'))):
+def query_dog_min(dog_id, last_min=int(get_global_config('realtime_interval'))):
     tmp_dict = {
         'cmd':'query_dog_market',
         'dog_id':dog_id,
         'last_min':last_min,
+    }
+    return push_dict_to_socket('realtime', tmp_dict)
+
+def query_dog_cnt(dog_id, last_cnt=1):
+    tmp_dict = {
+        'cmd':'query_dog_market',
+        'dog_id':dog_id,
+        'last_cnt':last_cnt,
     }
     return push_dict_to_socket('realtime', tmp_dict)
 

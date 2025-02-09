@@ -17,7 +17,7 @@ sys.path.append(r'%s/'%(py_dir))
 sys.path.append(r'%s/../common'%(py_dir))
 from config import get_global_config
 from database import create_if_realtime_inexist, update_registered_time, get_registered_dog
-from database import get_dog_realtime
+from database import get_dog_realtime_min, get_dog_realtime_cnt
 from other import get_socket_path, get_dict_from_socket, get_trade_session, is_dog_option
 from longport_api import quantitative_init, get_quote_context
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
@@ -143,8 +143,13 @@ def handle_dict(client_socket, lock, tmp_dict):
         ack_dict.update({'ret':str(flag)})
     elif cmd == 'query_dog_market':
         dog_id = tmp_dict['dog_id']
-        last_min = tmp_dict['last_min']
-        temp_list = get_dog_realtime(dog_id, last_min)
+        temp_list = []
+        last_min = tmp_dict.get('last_min', None)
+        last_cnt = tmp_dict.get('last_cnt', None)
+        if last_min != None:
+            temp_list = get_dog_realtime_min(dog_id, last_min)
+        elif last_cnt != None:
+            temp_list = get_dog_realtime_cnt(dog_id, last_cnt)
         ack_dict.update({'ret':temp_list})
     else:
         ack_dict.update({'ack':'unknow cmd'})

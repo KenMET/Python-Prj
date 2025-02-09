@@ -245,7 +245,7 @@ def del_registered_dog(dog_id):
     db.closeSession()
     return flag
 
-def get_dog_realtime(dog_id, last_min=0):     # last_min == -1 mean all need to be return
+def get_dog_realtime_min(dog_id, last_min=0):     # last_min == -1 mean all need to be return
     db = dbdr.db('dream_dog')
     ret = db.query_sharing_by_dog(dog_id)
     temp_list = [db.get_dict_from_obj(n) for n in ret]
@@ -260,6 +260,17 @@ def get_dog_realtime(dog_id, last_min=0):     # last_min == -1 mean all need to 
             result.append(entry)
     db.closeSession()
     return result
+
+def get_dog_realtime_cnt(dog_id, last_cnt=0):     # last_cnt == 0 mean all need to be return
+    db = dbdr.db('dream_dog')
+    ret = db.query_sharing_by_dog(dog_id)
+    temp_list = [db.get_dict_from_obj(n) for n in ret]
+    if last_cnt == 0:
+        db.closeSession()
+        return temp_list
+    result = sorted(temp_list, key=lambda x: x['DogTime'].split('-')[1], reverse=True)
+    db.closeSession()
+    return result[:last_cnt]
 
 def del_dog_realtime(dog_id):     # last_min == -1 mean all need to be return
     db = dbdr.db('dream_dog')

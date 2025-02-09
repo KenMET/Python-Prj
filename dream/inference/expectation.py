@@ -31,7 +31,8 @@ def merge_holding(quent_type, user_name, notify_list):
         dog_code = dog_code[:dog_code.rfind('.US')]     # Support US market fornow
         if dog_code not in notify_list:
             if re.search(r'\d{6}', dog_code):   # Search if have number like '250117'
-                log.get().info('Detect share option[%s], skip for now'%(dog_code))
+                #log.get().info('Detect share option[%s], skip for now'%(dog_code))
+                pass
             else:
                 notify_list.append(dog_code)
     return notify_list
@@ -39,7 +40,7 @@ def merge_holding(quent_type, user_name, notify_list):
 def get_expect(dog_code):
     stategy_handle = get_stategy_handle(dog_code)
     if stategy_handle == None:
-        log.get().error('stategy_handle Null')
+        #log.get().error('stategy_handle Null')
         return
     current_date = datetime.datetime.now().strftime('%Y%m%d')
     start_date = (datetime.datetime.now() - datetime.timedelta(days=(stategy_handle.long * 5))).strftime('%Y%m%d')
@@ -50,7 +51,7 @@ def get_expect(dog_code):
 def get_option_notify(dog_code, next_predict):
     stategy_handle = get_stategy_handle(dog_code)
     if stategy_handle == None:
-        log.get().error('stategy_handle Null')
+        #log.get().error('stategy_handle Null')
         return
     current_date = datetime.datetime.now().strftime('%Y%m%d')
     start_date = (datetime.datetime.now() - datetime.timedelta(days=(stategy_handle.long * 6))).strftime('%Y%m%d')
