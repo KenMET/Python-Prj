@@ -152,7 +152,7 @@ def main(args):
         flag = bark_obj.send_title_content('Market Sanity', '%s'%(content))
     else:
         log.get().info('All market DB works normal')
-        #flag = bark_obj.send_title_content('Market Sanity', 'All market DB works normal')
+        flag = bark_obj.send_title_content('Market Sanity', 'All market DB works normal')
     log.get().info('Bark Notification Result[%s]'%(str(flag)))
 
 if __name__ == '__main__':
