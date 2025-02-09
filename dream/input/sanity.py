@@ -15,7 +15,7 @@ sys.path.append(r'%s/../common'%(py_dir))
 from other import is_dog_option
 from config import get_global_config
 from database import get_market_by_range, get_registered_dog, del_registered_dog
-from database import get_dog_realtime, del_dog_realtime
+from database import get_dog_realtime_cnt, del_dog_realtime
 sys.path.append(r'%s/../../mysql'%(py_dir))
 import db_dream_dog as dbdd
 sys.path.append(r'%s/../../notification'%(py_dir))
@@ -75,7 +75,7 @@ def sanity_realtime_dog():
     registered_list = [n for n in get_registered_dog()]
     now = datetime.datetime.now()
     for index in registered_list:
-        temp_list = get_dog_realtime(index)
+        temp_list = get_dog_realtime_cnt(index)
         for item in temp_list:
             dog_time = item.get('DogTime', 'XXX-19700101123456')
             timestamp = dog_time.split('-')[1]
@@ -102,7 +102,7 @@ def sanity_realtime_param():
         if now > expierd_time:      # Clear all data
             log.get().info('[%s] Expierd, remove all from register list'%(dog_id))
             del_registered_dog(dog_id)
-            temp_list = get_dog_realtime(dog_id)
+            temp_list = get_dog_realtime_cnt(dog_id)
             for item in temp_list:
                 del_dog_realtime(item.get('DogTime', 'XXX-19700101123456'))
     return True

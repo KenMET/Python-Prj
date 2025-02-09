@@ -249,11 +249,11 @@ def del_registered_dog(dog_id):
     db.closeSession()
     return flag
 
-def get_dog_realtime_min(dog_id, last_min=0):     # last_min == -1 mean all need to be return
+def get_dog_realtime_min(dog_id, last_min=-1):     # last_min == -1 mean all need to be return
     db = dbdr.db('dream_dog')
     ret = db.query_sharing_by_dog(dog_id)
     temp_list = [db.get_dict_from_obj(n) for n in ret]
-    if last_min == 0:
+    if last_min == -1:
         db.closeSession()
         return temp_list
     result = []
