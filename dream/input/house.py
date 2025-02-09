@@ -81,7 +81,7 @@ def main(args):
         house = get_house_detail(house_name)
         house_holding = get_holding(house_name)
         log.get(log_name).info(house)
-        log.get(py_name).info(house_holding)
+        log.get(log_name).info(house_holding)
     except:
         log.get(log_name).error('House Update', '[%s] update fail, please check if token expired.'%(get_user_type('-')))
         bark_obj = notify.bark()
