@@ -86,29 +86,31 @@ def create_if_realtime_inexist():
 def get_fullcode(market, dog_id):
     db = dbddi.db('dream_dog')
     res = db.query_dog_by_code(market, dog_id)
-    db.closeSession()
     if len(res) == 0:
         #log.get().error('Dog not found [%s]'%(dog_id))
+        db.closeSession()
         return dog_id 
     elif len(res) != 1:
         tmp_list = [i.Code for i in res]
         dog_full_code = [item for item in tmp_list if item.endswith('.' + dog_id)][0]
     else:
         dog_full_code = res[0].Code
+    db.closeSession()
     return dog_full_code
 
 def get_dogname(market, dog_id):
     db = dbddi.db('dream_dog')
     res = db.query_dog_by_code(market, dog_id)
-    db.closeSession()
     if len(res) == 0:
         #log.get().error('Dog not found [%s]'%(dog_id))
+        db.closeSession()
         return dog_id 
     elif len(res) != 1:
         tmp_list = [i.Name for i in res]
         dog_name = [item for item in tmp_list if item.endswith('.' + dog_id)][0]
     else:
         dog_name = res[0].Name
+    db.closeSession()
     return dog_name
 
 def get_house_detail(name):
@@ -128,7 +130,6 @@ def get_house_detail(name):
 def get_secret_detail():
     db = dbds.db('dream_user')
     temp = db.query_all_secret()
-    db.closeSession()
     secret_list = []
     for index in temp:
         full = index.Type.split('-')
@@ -137,6 +138,7 @@ def get_secret_detail():
             'type': full[1],
         }
         secret_list.append(temp_secret)
+    db.closeSession()
     return secret_list
 
 def get_holding(name):
@@ -144,6 +146,7 @@ def get_holding(name):
     temp = db.query_house_by_name(name)
     if len(temp) != 1:
         #log.get().info('House get exception: %s'%(name))
+        db.closeSession()
         return
     account_dict = db.get_dict_from_obj(temp[0])
     db.closeSession()
@@ -155,6 +158,7 @@ def get_open_order(user, q_type):
     if (not db.is_table_exist(order_dest)):      # New a table to insert
         #log.get().info('Order not exist, new a table[%s]...'%('order_%s'%(order_dest)))
         db.create_order_table(order_dest)
+        db.closeSession()
         return []
     temp_list = db.query_order_opened(order_dest)
     opened_list = [db.get_dict_from_obj(i) for i in temp_list] 
