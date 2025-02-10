@@ -82,7 +82,7 @@ def market_monitor(lock):
             #log.get(log_name).debug(resp)
 
             for index in resp:
-                #log.get(log_name).info('Market monitor, Test: %s'%(str(index)))
+                log.get(log_name).info('Market monitor, Test: %s'%(str(index)))
                 dog_code = str(index.symbol).split('.')[0]
                 if trade_session['Pre']['Start'] <= timestamp_now < trade_session['Pre']['End']:
                     trading_duration = 'Pre'

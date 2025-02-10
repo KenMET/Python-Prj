@@ -47,7 +47,7 @@ def trade_half_manually():
         api_opened_order_list = get_open_order_from_longport()
         opened_order_list = list({item['OrderID']: item for item in db_opened_order_list + api_opened_order_list}.values())
         log.get(log_name).info('opened_order_list %s'%(str(opened_order_list)))
-        if len(api_opened_order_list) == 0:     # Try from longport
+        if len(api_opened_order_list) != 0:     # Try from longport
             order_dest = get_user_type('-')
             db = create_if_order_inexist(order_dest)
             for order_index in api_opened_order_list:
