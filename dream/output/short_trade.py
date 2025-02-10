@@ -127,12 +127,16 @@ def selling_loop(order_id, dog_id, price, quantity):
         fee = float(get_user_config(user, 'dog', 'fee'))
     log.get(log_name).info('This order for CostPrice[%.2f] Fee[%.2f] Quantity[%d]'%(cost_price, fee, quantity))
 
+    bark_obj = notify.bark()
     while(True):
         time.sleep(int(get_global_config('realtime_interval')))
         recv_dict = query_order(order_id)
         order_status = recv_dict['Status']
-        if order_status.find('Filled') >= 0:
-            return True # Return here True due to the order filled(successed)
+        if order_status.find('Filled') >= 0 or order_status.find('Rejected') >= 0
+            or order_status.find('Canceled') >= 0 or order_status.find('Expired') >= 0:
+            content = '[%s] New Status[%s]'%(order_id, order_status)
+            bark_obj.send_title_content('Short Trade Status', content)
+            return True
 
         recv_dict = query_dog_cnt(dog_id, 1)    # query last data
         if len(recv_dict['ret']) == 0:
@@ -161,7 +165,6 @@ def selling_loop(order_id, dog_id, price, quantity):
                 if is_dog_option(dog_id):       # Enable option trade for test only, to be verify on dog trade.
                     recv_dict = modify_order(order_id, last_price, quantity)
                     log.get(log_name).info('modify_order recv_dict: %s'%(str(recv_dict)))
-                bark_obj = notify.bark()
                 content = '[%s] Sell expected, price[%.2f], Earn[%.2f]'%(dog_id, last_price, earning)
                 bark_obj.send_title_content('Modify Triggered', content)
 
