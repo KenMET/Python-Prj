@@ -132,7 +132,7 @@ def selling_loop(order_id, dog_id, price, quantity):
         time.sleep(int(get_global_config('realtime_interval')))
         recv_dict = query_order(order_id)
         order_status = recv_dict['Status']
-        if order_status.find('Filled') >= 0 or order_status.find('Rejected') >= 0
+        if order_status.find('Filled') >= 0 or order_status.find('Rejected') >= 0   \
             or order_status.find('Canceled') >= 0 or order_status.find('Expired') >= 0:
             content = '[%s] New Status[%s]'%(order_id, order_status)
             bark_obj.send_title_content('Short Trade Status', content)
