@@ -60,9 +60,14 @@ def trade_half_manually():
         for order_index in opened_order_list:
             order_id = order_index['OrderID']
             order_status = order_index['Status']
-            if order_status.find('Filled') >= 0 or order_id in thread_dict:
-                continue    # Filled & PartialFilledStatus , already in loop, skip...
             dog_id = order_index['Code'].replace('.US','')
+            if order_status.find('Filled') >= 0:
+                log.get(log_name).info('[%s][%s] Already in Filled status [%s]'%(order_id, dog_id, order_status))
+                continue    # Filled & PartialFilledStatus , already in loop, skip...
+            if order_id in thread_dict:
+                log.get(log_name).info('[%s][%s] Already created thread'%(order_id, dog_id))
+                continue
+
             price = float(order_index['Price'])
             quantity = int(order_index['Quantity'].split('/')[1])
             side = order_index['Side']
@@ -121,19 +126,21 @@ def selling_loop(order_id, dog_id, price, quantity):
         min_earn = float(get_user_config(user, 'option', 'min_earn'))
         expect_earn = float(get_user_config(user, 'option', 'expect_earn'))
         fee = float(get_user_config(user, 'option', 'fee'))
+        multiple_factor = 100
     else:
         min_earn = float(get_user_config(user, 'dog', 'min_earn'))
         expect_earn = float(get_user_config(user, 'dog', 'expect_earn'))
         fee = float(get_user_config(user, 'dog', 'fee'))
+        multiple_factor = 1
     log.get(log_name).info('This order for CostPrice[%.2f] Fee[%.2f] Quantity[%d]'%(cost_price, fee, quantity))
 
     bark_obj = notify.bark()
+    stop_key_list = ["Filled", "Rejected", "Canceled", "Expired"]
     while(True):
         time.sleep(int(get_global_config('realtime_interval')))
         recv_dict = query_order(order_id)
         order_status = recv_dict['Status']
-        if order_status.find('Filled') >= 0 or order_status.find('Rejected') >= 0   \
-            or order_status.find('Canceled') >= 0 or order_status.find('Expired') >= 0:
+        if any(s in order_status for s in stop_key_list):
             content = '[%s] New Status[%s]'%(order_id, order_status)
             bark_obj.send_title_content('Short Trade Status', content)
             return True
@@ -154,13 +161,16 @@ def selling_loop(order_id, dog_id, price, quantity):
 
         # Formular: earning = (last_price - cost_price) * quantity - (fee*2), to make earning > value
         # Then, last_price = (value + (fee*2)) / quantity + cost_price
-        min_earn_price = (min_earn + (fee*2)) / quantity + cost_price
+        # But for option, earning = (last_price - cost_price) * quantity * 100 - (fee*2), almost option have 100 time of shares.
+        # Then, last_price = ((value + (fee*2)) / 100) / quantity + cost_price
+        # So, let multiple_factor to control.
+        min_earn_price = ((min_earn + (fee*2)) / multiple_factor) / quantity + cost_price
 
         if (last_price < cost_price):   # Still under cost_price
             min_earn_diff = (abs(min_earn_price - last_price) / last_price)
-            log.get(log_name).info('[%s] If need achive min earning, need diff[%.2f][%.2f%%] from now[%.2f]'%(dog_id, min_earn_price, min_earn_diff*100, last_price))
+            log.get(log_name).info('[%s] Min earning, now[%.2f] need achive[%.2f][%.2f%%]'%(dog_id, last_price, min_earn_price, min_earn_diff*100))
         else:
-            earning = (last_price - cost_price) * quantity - (fee*2)
+            earning = (last_price - cost_price) * quantity * multiple_factor - (fee*2)
             if (surplus_min < 10 and earning > min_earn) or earning > expect_earn:    # 10 min, near close market or reach expected, change the price.
                 if is_dog_option(dog_id):       # Enable option trade for test only, to be verify on dog trade.
                     recv_dict = modify_order(order_id, last_price, quantity)
