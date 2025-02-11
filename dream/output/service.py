@@ -63,7 +63,7 @@ def order_monitor(lock):
     try:
         user, quent_type = get_user_type()
         house_name = get_user_type('-')
-        db = create_if_order_inexist(house_name)
+        
         while(True):
             loop_start_time = datetime.datetime.now()
             log.get(log_name).info('Order monitor, new looping for [%s]'%(house_name))
@@ -84,7 +84,10 @@ def order_monitor(lock):
                     log.get(log_name).error('Query order status failed: %s'%(str(order_dict)))
                     continue
                 if order_status != order_query_status:
-                    if not db.update_order_by_id(house_name, order_id, order_dict):
+                    db = create_if_order_inexist(house_name)
+                    flag = db.update_order_by_id(house_name, order_id, order_dict)
+                    db.closeSession()
+                    if not flag:
                         log.get(log_name).error('Order[%s] update failed')
                         continue
                     log.get(log_name).info('[%s][%s] status[%s]->[%s]'%(house_name, order_id, order_status, order_query_status))
@@ -113,9 +116,10 @@ def order_monitor(lock):
             lock.release()
             duration_time = (datetime.datetime.now() - loop_start_time).total_seconds()
             time.sleep(int(get_global_config('order_interval')) - duration_time)
-        db.closeSession()
+        
     except Exception as e:
-        db.closeSession()
+        if db != None:
+            db.closeSession()
         log.get(log_name).error('Exception captured in order_monitor: %s'%(str(e)))
 
 
@@ -135,9 +139,10 @@ def handle_dict(client_socket, lock, tmp_dict):
         ack_dict.update(order_dict)
         db = create_if_order_inexist(order_dest)
         log.get(log_name).info('Insert for: %s'%(str(order_dict)))
-        if not db.insert_order(order_dest, order_dict):
-            log.get(log_name).error('Order Inser Error...[%s] %s'%(order_dest, str(order_dict)))
+        flag = db.insert_order(order_dest, order_dict)
         db.closeSession()
+        if not flag:
+            log.get(log_name).error('Order Inser Error...[%s] %s'%(order_dest, str(order_dict)))
     elif cmd == 'query_order':
         order_id = tmp_dict['order_id']
         order_dict = trade_query(order_id)

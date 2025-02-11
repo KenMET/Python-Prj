@@ -60,7 +60,6 @@ def handle_client(client_socket, client_address, lock):
         log.get(log_name).error('Exception captured in handle_client: %s'%(str(e)))
 
 def market_monitor(lock):
-    db = create_if_realtime_inexist()
     try:
         while(True):
             loop_start_time = datetime.datetime.now()
@@ -115,16 +114,18 @@ def market_monitor(lock):
                     'Volume': int(session_obj.volume),
                     'Turnover': float(session_obj.turnover),
                 }
+                db = create_if_realtime_inexist()
                 if not db.update_sharing_by_dogtime(dog_time, temp_dict):
                     log.get(log_name).error('[%s]Realtime update failed: %s'%(dog_code, str(temp_dict)))
+                db.closeSession()
                 log.get(log_name).debug('[%s][%s]:%s'%(trading_duration, dog_time, str(temp_dict)))
             
             lock.release()
             duration_time = (datetime.datetime.now() - loop_start_time).total_seconds()
             time.sleep(int(get_global_config('realtime_interval')) - duration_time)
-        db.closeSession()
     except Exception as e:
-        db.closeSession()
+        if db != None:
+            db.closeSession()
         log.get(log_name).error('Exception captured in market_monitor: %s'%(str(e)))
 
 def handle_dict(client_socket, lock, tmp_dict):
