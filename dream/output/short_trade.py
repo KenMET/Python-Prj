@@ -126,12 +126,14 @@ def selling_loop(order_id, dog_id, price, quantity):
         min_earn = float(get_user_config(user, 'option', 'min_earn'))
         expect_earn = float(get_user_config(user, 'option', 'expect_earn'))
         fee = float(get_user_config(user, 'option', 'fee'))
-        multiple_factor = 100
+        multiple_factor = 100   # one share means 100 dog shares
+        quantity_factor = 1     # use 1 option to calculate
     else:
         min_earn = float(get_user_config(user, 'dog', 'min_earn'))
         expect_earn = float(get_user_config(user, 'dog', 'expect_earn'))
         fee = float(get_user_config(user, 'dog', 'fee'))
-        multiple_factor = 1
+        multiple_factor = 1         # one share means one dog share
+        quantity_factor = quantity  # use all shares to calculate
     log.get(log_name).info('This order for CostPrice[%.2f] Fee[%.2f] Quantity[%d]'%(cost_price, fee, quantity))
 
     bark_obj = notify.bark()
@@ -164,13 +166,13 @@ def selling_loop(order_id, dog_id, price, quantity):
         # But for option, earning = (last_price - cost_price) * quantity * 100 - (fee*2), almost option have 100 time of shares.
         # Then, last_price = ((value + (fee*2)) / 100) / quantity + cost_price
         # So, let multiple_factor to control.
-        min_earn_price = ((min_earn + (fee*2)) / multiple_factor) / quantity + cost_price
+        min_earn_price = ((min_earn + (fee*2)) / multiple_factor) / quantity_factor + cost_price
 
         if (last_price < cost_price):   # Still under cost_price
             min_earn_diff = (abs(min_earn_price - last_price) / last_price)
             log.get(log_name).info('[%s] Min earning, now[%.2f] need achive[%.2f][%.2f%%]'%(dog_id, last_price, min_earn_price, min_earn_diff*100))
         else:
-            earning = (last_price - cost_price) * quantity * multiple_factor - (fee*2)
+            earning = (last_price - cost_price) * quantity_factor * multiple_factor - (fee*2)
             if (surplus_min < 10 and earning > min_earn) or earning > expect_earn:    # 10 min, near close market or reach expected, change the price.
                 if is_dog_option(dog_id):       # Enable option trade for test only, to be verify on dog trade.
                     recv_dict = modify_order(order_id, last_price, quantity)
