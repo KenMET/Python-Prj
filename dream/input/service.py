@@ -136,6 +136,7 @@ def handle_dict(client_socket, lock, tmp_dict):
     lock.acquire()
     if cmd == 'register_dog':
         dog_id = tmp_dict['dog_id']
+        log.get(log_name).info('[%s] starting register'%(dog_id))
         flag, time = update_registered_time(dog_id)
         if flag:
             log.get(log_name).info('[%s] registered at: %s'%(dog_id, str(time)))
