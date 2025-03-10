@@ -141,6 +141,7 @@ def selling_loop(order_id, dog_id, price, quantity):
     while(True):
         time.sleep(int(get_global_config('realtime_interval')))
         recv_dict = query_order(order_id)
+        log.get(log_name).debug('Query order[%s]:%s'%(order_id, str(recv_dict)))
         order_status = recv_dict['Status']
         if any(s in order_status for s in stop_key_list):
             content = '[%s] New Status[%s]'%(order_id, order_status)
@@ -151,6 +152,7 @@ def selling_loop(order_id, dog_id, price, quantity):
         if len(recv_dict['ret']) == 0:
             log.get(log_name).error('[%s]query_dog_min recv_dict null: %s, please check realtime service'%(dog_id, str(recv_dict)))
             return False
+        log.get(log_name).debug('Query dog[%s] last:%s'%(dog_id, str(recv_dict)))
         last_dict = recv_dict['ret'][0]
         last_price = float(last_dict['Price'])
         last_datetime = last_dict['DogTime'].split('-')[1]
@@ -160,6 +162,8 @@ def selling_loop(order_id, dog_id, price, quantity):
         if now_seesion == 'Post' or now_seesion == 'Night':
             log.get(log_name).info('Current Session: %s, stop monitor...'%(now_seesion))
             return  False # No need to track, wait expired
+        else:
+            log.get(log_name).debug('[%s][%s]Current Session: %s, continue...'%(dog_id, order_id, now_seesion))
 
         # Formular: earning = (last_price - cost_price) * quantity - (fee*2), to make earning > value
         # Then, last_price = (value + (fee*2)) / quantity + cost_price
@@ -175,10 +179,12 @@ def selling_loop(order_id, dog_id, price, quantity):
             earning = (last_price - cost_price) * quantity_factor * multiple_factor - (fee*2)
             if (surplus_min < 10 and earning > min_earn) or earning > expect_earn:    # 10 min, near close market or reach expected, change the price.
                 if is_dog_option(dog_id):       # Enable option trade for test only, to be verify on dog trade.
-                    recv_dict = modify_order(order_id, last_price, quantity)
-                    log.get(log_name).info('modify_order recv_dict: %s'%(str(recv_dict)))
+                    # recv_dict = modify_order(order_id, last_price, quantity)
+                    log.get(log_name).info('modify_order: [%s][%.2f][%d]'%(order_id, last_price, quantity))
                 content = '[%s] Sell expected, price[%.2f], Earn[%.2f]'%(dog_id, last_price, earning)
                 bark_obj.send_title_content('Modify Triggered', content)
+            else:
+                log.get(log_name).debug('[%s][%s] earning[%.2f]'%(dog_id, order_id, earning))
 
 def half_manually_monitor(order_id, dog_id, price, quantity, side):
     log.get(log_name).info('Start monitor for [%s][%s][%.2f][%d]'%(order_id, dog_id, price, quantity))
@@ -191,7 +197,7 @@ def half_manually_monitor(order_id, dog_id, price, quantity, side):
         flag = buy_loop(order_id, dog_id, price, quantity)
 
 def main(args):
-    log.init('%s/../log'%(py_dir), log_name, log_mode='w', log_level='info', console_enable=True)
+    log.init('%s/../log'%(py_dir), log_name, log_mode='w', log_level='debug', console_enable=True)
     log.get(log_name).info('Logger Creat Success...[%s]'%(log_name))
 
     quantitative_init()

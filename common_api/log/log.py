@@ -44,16 +44,14 @@ def init(log_dir, log_name, log_mode='w', log_level='info', console_enable=True)
         console_handler = logging.StreamHandler()
         console_handler.setFormatter(formatter)
 
-    if (log_level == 'info'):
-        logger_tmp.setLevel(logging.INFO)
-        file_handler.setLevel(logging.INFO)
-        if (console_enable):
-            console_handler.setLevel(logging.INFO)
-    elif (log_level == 'debug'):
-        logger_tmp.setLevel(logging.DEBUG)
-        logger_tmp.setLevel(logging.DEBUG)
-        if (console_enable):
-            console_handler.setLevel(logging.DEBUG)
+    level_dict = {
+        'info': logging.INFO,
+        'debug': logging.DEBUG,
+    }
+    logger_tmp.setLevel(level_dict[log_level])
+    file_handler.setLevel(level_dict[log_level])
+    if (console_enable):
+        console_handler.setLevel(level_dict[log_level])
 
     logger_tmp.addHandler(file_handler)
     if (console_enable):
