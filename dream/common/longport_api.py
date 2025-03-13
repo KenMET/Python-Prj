@@ -176,7 +176,9 @@ def is_order_invalid(order_dict):
 def get_open_order_from_longport():
     ctx = get_trade_context()
     resp = ctx.today_orders(
-        status = [OrderStatus.NotReported, OrderStatus.New],
+        status = [OrderStatus.NotReported, OrderStatus.New, 
+            OrderStatus.WaitToNew, OrderStatus.WaitToReplace,
+            OrderStatus.Replaced, OrderStatus.PendingReplace],
         market = Market.US,
     )
     return [get_order_dict_from_obj(n) for n in resp]
