@@ -42,7 +42,7 @@ def main(args):
         df = df.dropna(subset=['总市值'])   # Remove Na data
         df.drop(columns=['序号', '涨跌额', '涨跌幅', '开盘价', '最高价', '最低价', '昨收价', '成交量', '成交额', '振幅'], inplace=True)
         df.rename(columns={'总市值': 'Total_Value', '市盈率': 'PE_ratio'}, inplace=True) # Replace title
-
+        df = df.fillna(0.00)
     df.rename(columns={'名称': 'Name', '最新价': 'Last_Price'}, inplace=True) # Replace title
     df.rename(columns={'换手率': 'Turnover_Rate', '代码': 'Code'}, inplace=True) # Replace title
     df = df.astype(str)

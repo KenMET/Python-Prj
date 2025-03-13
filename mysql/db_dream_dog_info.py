@@ -50,6 +50,12 @@ class db(dbb.basedb):
             return False
         return True
 
+    def is_code_exist(self, market, dog_id):
+        ret = self.query_dog_by_code(market, dog_id)
+        if len(ret) > 0:
+            return True
+        return False
+
     def delete_dog_all(self, market):
         if self.session is None:
             self.connectdb()
@@ -77,6 +83,9 @@ class db(dbb.basedb):
     def insert_dog(self, market, dog_dict):
         if self.session is None:
             self.connectdb()
+        dog_id = dog_dict['Code']
+        if (self.is_code_exist(market, dog_id)):      # Skip if exist
+            return True
         Dog = self.create_dog_info_class(market)
         new = Dog()
         new = self.get_obj_from_dict(dog_dict, new)
