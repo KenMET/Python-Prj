@@ -68,8 +68,8 @@ def market_monitor(lock):
             registered_list = [n for n in get_registered_dog()]
             dog_list, option_list = list(filter(lambda x: not is_dog_option(x), registered_list)), list(filter(is_dog_option, registered_list))
 
-            lock.acquire()
-            quantitative_init()
+            #lock.acquire()
+
             ctx = get_quote_context()
             timestamp_now = datetime.datetime.now().time()
 
@@ -120,7 +120,7 @@ def market_monitor(lock):
                 db.closeSession()
                 log.get(log_name).debug('[%s][%s]:%s'%(trading_duration, dog_time, str(temp_dict)))
             
-            lock.release()
+            #lock.release()
             duration_time = (datetime.datetime.now() - loop_start_time).total_seconds()
             time.sleep(int(get_global_config('realtime_interval')) - duration_time)
     except Exception as e:
@@ -133,7 +133,7 @@ def handle_dict(client_socket, lock, tmp_dict):
     cmd = tmp_dict['cmd']
     ack_dict = {'cmd': '%s_ack'%(cmd)}
 
-    lock.acquire()
+    #lock.acquire()
     if cmd == 'register_dog':
         dog_id = tmp_dict['dog_id']
         log.get(log_name).info('[%s] starting register'%(dog_id))
@@ -155,12 +155,14 @@ def handle_dict(client_socket, lock, tmp_dict):
         ack_dict.update({'ret':temp_list})
     else:
         ack_dict.update({'ack':'unknow cmd'})
-    lock.release()
+    #lock.release()
     client_socket.sendall(str(ack_dict).encode())
 
 def main(args):
     log.init('%s/../log'%(py_dir), log_name, log_mode='w', log_level='info', console_enable=True)
     log.get(log_name).info('Logger[%s] Create Success'%(log_name))
+
+    quantitative_init()
 
     lock = threading.Lock()
 

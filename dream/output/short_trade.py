@@ -110,7 +110,34 @@ def get_cost_price_fee(filled_order_list, quantity):
     return -1.0, -1.0
 
 def buy_loop(order_id, dog_id, price, quantity):
-    return
+    stop_key_list = ["Filled", "Rejected", "Canceled", "Expired"]
+    while(True):
+        time.sleep(int(get_global_config('realtime_interval')))
+        recv_dict = query_order(order_id)
+        log.get(log_name).debug('Query order[%s]:%s'%(order_id, str(recv_dict)))
+        order_status = recv_dict['Status']
+        if any(s in order_status for s in stop_key_list):
+            content = '[%s] New Status[%s]'%(order_id, order_status)
+            bark_obj.send_title_content('Short Trade Status', content)
+            return True
+
+        recv_dict = query_dog_cnt(dog_id, 1)    # query last data
+        if len(recv_dict['ret']) == 0:
+            log.get(log_name).error('[%s]query_dog_min recv_dict null: %s, please check realtime service'%(dog_id, str(recv_dict)))
+            return False
+        log.get(log_name).debug('Query dog[%s] last:%s'%(dog_id, str(recv_dict)))
+        last_dict = recv_dict['ret'][0]
+        last_price = float(last_dict['Price'])
+        last_datetime = last_dict['DogTime'].split('-')[1]
+        log.get(log_name).info('[%s] Last Price[%.2f] Time[%s]'%(dog_id, last_price, last_datetime))
+
+        now_seesion, surplus_min = get_current_session_and_remaining_time('Normal')   # Track till Normal session end
+        if now_seesion == 'Post' or now_seesion == 'Night':
+            log.get(log_name).info('Current Session: %s, stop monitor...'%(now_seesion))
+            return  False # No need to track, wait expired
+        else:
+            log.get(log_name).debug('[%s][%s]Current Session: %s, continue...'%(dog_id, order_id, now_seesion))
+    return True
 
 # Skip when order already done (Filled)
 # in last few min, check if the price meet the min_earn, if match, sell in current price.
@@ -187,7 +214,7 @@ def selling_loop(order_id, dog_id, price, quantity):
                 log.get(log_name).debug('[%s][%s] earning[%.2f]'%(dog_id, order_id, earning))
 
 def half_manually_monitor(order_id, dog_id, price, quantity, side):
-    log.get(log_name).info('Start monitor for [%s][%s][%.2f][%d]'%(order_id, dog_id, price, quantity))
+    log.get(log_name).info('Start monitor for [%s][%s][%.2f][%s][%d]'%(order_id, dog_id, price, side, quantity))
     recv_dict = register_dog(dog_id)
     log.get(log_name).info('register realtime for: %s %s'%(dog_id, str(recv_dict)))
 

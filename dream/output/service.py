@@ -129,13 +129,14 @@ def handle_dict(client_socket, lock, tmp_dict):
     ack_dict = {'cmd': '%s_ack'%(cmd)}
 
     order_dest = get_user_type('-')
-    lock.acquire()
+    #lock.acquire()
     if cmd == 'submit_order':
         dog_id = tmp_dict['dog_id']
         side = tmp_dict['side']
         price = tmp_dict['price']
         share = tmp_dict['share']
         order_dict = trade_submit(dog_id, side, price, share)
+        log.get(log_name).debug('trade_submit[%s] (%s,%.2f,%d) %s'%(order_id, side, price, share, str(order_dict)))
         ack_dict.update(order_dict)
         db = create_if_order_inexist(order_dest)
         log.get(log_name).info('Insert for: %s'%(str(order_dict)))
@@ -146,24 +147,27 @@ def handle_dict(client_socket, lock, tmp_dict):
     elif cmd == 'query_order':
         order_id = tmp_dict['order_id']
         order_dict = trade_query(order_id)
+        log.get(log_name).debug('trade_query[%s] %s'%(order_id, str(order_dict)))
         ack_dict.update(order_dict)
     elif cmd == 'cancel_order':
         order_id = tmp_dict['order_id']
         order_dict = trade_cancel(order_id)
+        log.get(log_name).debug('trade_cancel[%s] %s'%(order_id, str(order_dict)))
         ack_dict.update(order_dict)
     elif cmd == 'modify_order':
         order_id = tmp_dict['order_id']
         price = tmp_dict['price']
         share = tmp_dict['share']
         order_dict = trade_modify(order_id, price, share)
+        log.get(log_name).debug('trade_modify[%s] (%.2f,%d) %s'%(order_id, price, share, str(order_dict)))
         ack_dict.update(order_dict)
     else:
         ack_dict.update({'ack':'unknow cmd'})
-    lock.release()
+    #lock.release()
     client_socket.sendall(str(ack_dict).encode())
 
 def main(args):
-    log.init('%s/../log'%(py_dir), log_name, log_mode='w', log_level='info', console_enable=True)
+    log.init('%s/../log'%(py_dir), log_name, log_mode='w', log_level='debug', console_enable=True)
     log.get(log_name).info('Logger[%s] Create Success'%(log_name))
 
     quantitative_init()
