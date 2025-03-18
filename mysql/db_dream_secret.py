@@ -85,3 +85,20 @@ class db(dbb.basedb):
         else:
             return True
 
+    def update_secret(self, user_dict):
+        if self.session is None:
+            self.connectdb()
+        user_type = user_dict['Type']
+        user = user_type.split('-')[0]
+        q_type = user_type.split('-')[1]
+        if (len(self.query_secret_by_type(q_type, user)) > 0):
+            Secret = self.create_secret_class()
+            self.session.query(Secret).filter(Secret.Type == user_type).update(user_dict)
+            try:
+                self.session.commit()
+            except:
+                return False
+            else:
+                return True
+        else:
+            return self.insert_secret(user_dict)

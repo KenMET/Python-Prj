@@ -21,11 +21,13 @@ def main(args):
     log.get().info('Logger Creat Success')
 
     user_name = 'kanos'
-    user_type = 'formal'
+    user_type = 'formal'  # simulation or formal
 
     api_key = '4322cccc27e178df4e5169eb1403a903'
     api_secret = 'e8d5674918efe0b7a788fdd3d9ed6cdf619264545a07533301bf34da3763dbcc'
-    api_token = 'm_eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJsb25nYnJpZGdlIiwic3ViIjoiYWNjZXNzX3Rva2VuIiwiZXhwIjoxNzQyMjExMTMxLCJpYXQiOjE3MzQ0MzUxMzAsImFrIjoiNDMyMmNjY2MyN2UxNzhkZjRlNTE2OWViMTQwM2E5MDMiLCJhYWlkIjoyMDMwMDQzMywiYWMiOiJsYiIsIm1pZCI6MTI4MDQ5MjQsInNpZCI6ImNVOXN3S1lGS0JEWTZOVTdiRno1ZGc9PSIsImJsIjozLCJ1bCI6MCwiaWsiOiJsYl8yMDMwMDQzMyJ9.xppc0Mp_S0BoqDbOBPQBmXjPwiFLuV_pLpBt4C8qb4cKmRofUrbb3Zl6d0eRBa4nkpni_sYlL9iH1qYwOBY3trXfOWsg9T3EWhUkGcd5lv4yAk3zabG5iFwsoIzgjpIeW8sH4m3MxC1xj61APRU6WjG7-WlOr6vxP2qatD7DSn63Q2A64FRjP7qGjK0Fp-TLeR3BEmC3IW9jUeGREAnw7g0yEqlj5WlADtUHxsBNX-czWNWYW_O2FWIaOV64kMdp8NarbtPRuxGifkO5ePCrDTGAns_cX_c6PfYHFkRCRaoN6Ya26Uk3Oe7fwWD365oArG56TfWaxf91nOzhv5F8znLfGYlYkphCNhqVR019M8pa9NioE0cSZUbKASOwLAIb_rijA70KSnWF7tnBSsYaHd8xyhWk-fBnSfitzlW5-Fywj-5YJJ5mpbyoM4L_GLCP7U9PnDeOnRP6SCaJDg5S4jB1-1avu9A-Ssc8Ma5jrW8uM_VJebIilH6NXdQsZ38-mrpx9OBQYOFForaPRrqGuoAFJfY_9f9k7Ouf9cP20oIZ3z1Iv7jb47iXNHPYZ9S6pRaBhcUqIte0Qw2syzhU2JMfofahvijyNl0HJ87pHdQCwsbYR8e5FjsCynrphmYjqonBC70DNdKU3NHdCeIm1ZZkK_aHjZl7wIv52aYJXGA'
+    api_token = 'm_eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJsb25nYnJpZGdlIiwic3ViIjoiYWNjZXNzX3Rva2VuIiwiZXhwIjoxNzUwMDc3NTYwLCJpYXQiOjE3NDIzMDE1NTksImFrIjoiNDMyMmNjY2MyN2UxNzhkZjRlNTE2OWViMTQwM2E5MDMiLCJhYWlkIjoyMDMwMDQzMywiYWMiOiJsYiIsIm1pZCI6MTI4MDQ5MjQsInNpZCI6ImNzQlZsa2ZxMTlac3dUN1AzcHcyL3c9PSIsImJsIjozLCJ1bCI6MCwiaWsiOiJsYl8yMDMwMDQzMyJ9.t_L8UMAS8m1QnTfOFruk5F6fgsmOuUcTHqR-P_yV0WQ1G17jOS6E5GfPc7ytB0Jh1Ga0oG4jzL34c1ph5VrehrpwMh_nlqmQqXqPb9vQ5sESuzUlixaVhDnK49xO5I99YieacC6s_dn2Pp1lw8ZQvvVQfr6PG_1KajHNotTb3DIqqWPs2MBwbgGHyj9d1tE7tlzH4XleC2F-89UcR2wzPAlJSFghm11SUP_uq7YCyUpF4uNDZ3aZkGlpMCVvz5Q4UzDnGkaGVBg60QdlwwrdHyjVtfQ4eS77k4zFSXmvKhRTs4IKBA7ikHwKKzVOS2GZFH4a-McKZcVl2YWiAfmKzYf1mBlaYFa5gZATqXHeNTseozqpHeBHIcmQmzvkfN18o7tctfAqTefTxqrgUH3uc6fEDiVkwc3CxTajoRneQsIZQPuTCzy6Ahm2IINV-34SaJndNxv55Fj-kcIDs5Ml2X5llE1qMHg88oum6kiyMZ7qXm-5Zoou2-z3XCihiaEpACfY7WGMemcjRXAEP9ri0IMrHyfJ94MNEa09GSRRKIjCC4anmvls5_pCNISIKz4TLyqqzlbUZezPncJza-Xp4_oM7x6pDs-tVIg3sea7i8T5cHTdOTwQpA4DgGzMGtPzTGfAVepAp7cmPhOEOgn7po0ewsxZo-i-MGzBZBmudQg'
+
+
 
     db = dbds.db('dream_user')
     if (not db.is_table_exist()):
@@ -39,11 +41,12 @@ def main(args):
         'Access_Token' : api_token,
     }
 
-    flag = db.insert_secret(temp_dict)
+    #flag = db.insert_secret(temp_dict)
+    flag = db.update_secret(temp_dict)
     if (not flag):
-        log.get().error('Quantitative table insert failed for [%s]...'%(user_name))
+        log.get().error('Quantitative table update failed for [%s][%s]...'%(user_name, user_type))
     else:
-        log.get().info('Quantitative table insert successful for [%s]...'%(user_name))
+        log.get().info('Quantitative table update successful for [%s][%s]...'%(user_name, user_type))
 
 
 if __name__ == '__main__':
