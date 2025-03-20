@@ -53,6 +53,7 @@ def main(args):
         flag = db.insert_dog(args.market, dog_index)
         if (not flag):
             log.get().info('%s dog insert failed: %s'%(args.market, str(dog_index)))
+    db.closeSession()
 
 if __name__ == '__main__':
     # Create ArgumentParser Object

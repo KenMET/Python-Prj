@@ -23,6 +23,7 @@ import db_dream_account as dbda
 import db_dream_realtime as dbdr
 import db_dream_dog_info as dbddi
 import db_dream_sentiment as dbdst
+import db_dream_expectation as dbde
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
 import log
 
@@ -71,6 +72,13 @@ def create_if_option_inexist():
     if (not db.is_table_exist()):      # New a table to insert
         #log.get().info('Option not exist, new a table[dog_option]...')
         db.create_dog_option_table()
+    return db 
+
+def create_if_expectation_inexist():
+    db = dbde.db('dream_dog')
+    if (not db.is_table_exist()):      # New a table to insert
+        #log.get().info('Expectation not exist, new a table[dog_expectation]...')
+        db.create_expectation_table()
     return db 
 
 def create_if_realtime_inexist():
@@ -283,3 +291,38 @@ def del_dog_realtime(dog_id):     # last_min == -1 mean all need to be return
         return db.del_sharing_by_dogtime(dog_id)
     db.closeSession()
     return True
+
+def get_dog_options(dog_id, direction):
+    db = create_if_option_inexist()
+    ret = db.query_option_by_dog(dog_id, direction)    
+    result = [db.get_dict_from_obj(n) for n in ret]
+    db.closeSession()
+    return result
+
+def update_expectation(market, tmp_dict):
+    today_date = datetime.date.today()
+    expectation_dict = {'Date':today_date}
+    tmp = {'cn':'Cn_Expectation', 'us':'Us_Expectation'}
+    expectation_dict.update({tmp.get(market, 'us'):str(tmp_dict)})
+    db = dbde.db('dream_dog')
+    flag = db.update_expectation_by_date(today_date, expectation_dict)
+    db.closeSession()
+    return flag
+
+def get_last_expectation(market):
+    today_date = datetime.date.today()
+    tmp = {'cn':'Cn_Expectation', 'us':'Us_Expectation'}
+    db = dbde.db('dream_dog')
+    for i in range(10):
+        expectation_obj = db.get_latest_expectation(i)
+        if expectation_obj == None:
+            db.closeSession()
+            return {}
+        expectation_dict = db.get_dict_from_obj(expectation_obj)
+        date_tmp = expectation_dict['Date']
+        result_dict = expectation_dict.get(tmp.get(market, 'us'), {})
+        if len(result_dict) != 0:
+            db.closeSession()
+            return result_dict
+
+    return {}

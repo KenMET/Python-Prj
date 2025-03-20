@@ -58,8 +58,8 @@ def get_trading_session(market):
         trading_session_dict.update({market_temp:market_session_dict})
     return trading_session_dict.get(market,{})
 
-def get_last_price(code):
-    quote_ctx = get_quote_context()
+def get_last_price(quote_ctx, code):
+    #quote_ctx = get_quote_context()
     resp = quote_ctx.quote([code])
     return float(resp[0].last_done)
 

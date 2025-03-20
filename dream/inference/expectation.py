@@ -16,6 +16,7 @@ sys.path.append(r'%s/'%(py_dir))
 from strategy import basic, get_stategy_handle
 sys.path.append(r'%s/../common'%(py_dir))
 from config import get_strategy, get_notify_list, get_trade_list
+from database import create_if_expectation_inexist, update_expectation
 from database import get_holding, get_market_by_range, get_dogname, get_avg_score
 from other import wait_us_market_open, get_user_type
 sys.path.append(r'%s/../../notification'%(py_dir))
@@ -117,6 +118,12 @@ def main(args):
             content += sub_content
             log.get().info('Ready to send content: %s'%(sub_content))
         bark_obj.send_title_content('Kanos Stock House', content)
+
+        create_if_expectation_inexist().closeSession()
+        flag = update_expectation(args.market, notify_dict)
+        if not flag:
+            log.get().error('Expectation update failed: %s'%(str(notify_dict)))
+
 
 if __name__ == '__main__':
     # Create ArgumentParser Object
