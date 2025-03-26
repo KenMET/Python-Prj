@@ -103,6 +103,9 @@ def get_fullcode(market, dog_id):
         dog_full_code = [item for item in tmp_list if item.endswith('.' + dog_id)][0]
     else:
         dog_full_code = res[0].Code
+        if not dog_full_code.endswith('.' + dog_id):
+            db.closeSession()
+            return dog_id
     db.closeSession()
     return dog_full_code
 

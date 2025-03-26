@@ -51,7 +51,7 @@ def trade_half_manually():
         api_opened_order_list = get_open_order_from_longport()
         #log.get(log_name).info('api_opened_order_list %s'%(str(api_opened_order_list)))
         opened_order_list = list({item['OrderID']: item for item in db_opened_order_list + api_opened_order_list}.values())
-        log.get(log_name).info('opened_order_list %s'%(str(opened_order_list)))
+        log.get(log_name).debug('opened_order_list %s'%(str(opened_order_list)))
         if len(api_opened_order_list) != 0:     # Try from longport
             order_dest = get_user_type('-')
             db = create_if_order_inexist(order_dest)
@@ -72,7 +72,7 @@ def trade_half_manually():
                 log.get(log_name).info('[%s][%s] Already in Filled status [%s]'%(order_id, dog_id, order_status))
                 continue    # Filled & PartialFilledStatus , already in loop, skip...
             if order_id in thread_dict:
-                log.get(log_name).info('[%s][%s] Already created thread'%(order_id, dog_id))
+                log.get(log_name).debug('[%s][%s] Already created thread'%(order_id, dog_id))
                 continue
 
             price = float(order_index['Price'])
@@ -172,7 +172,8 @@ def monitor_loop(order_id, dog_id, side, price, quantity):
         flag, last_price, last_datetime = query_dog_last(dog_id)
         if not flag:
             return False
-        log.get(log_name).info('[%s] Last Price[%.2f] Time[%s]'%(dog_id, last_price, last_datetime))
+        diff = (abs(last_price - price) / price) * 100
+        log.get(log_name).info('[%s][%s] LastPrice[%.2f] ExpectPrice[%.2f] Diff[%.2f%%]'%(dog_id, last_datetime, last_price, price, diff))
 
         now_seesion, surplus_min = get_current_session_and_remaining_time('Normal')   # Track till Normal session end
         if now_seesion == 'Post' or now_seesion == 'Night':
@@ -197,13 +198,17 @@ def monitor_loop(order_id, dog_id, side, price, quantity):
                 if (surplus_min < 10 and earning > min_earn) or earning > expect_earn:    # 10 min, near close market or reach expected, change the price.
                     if is_dog_option(dog_id):       # Enable option trade for test only, to be verify on dog trade.
                         # recv_dict = modify_order(order_id, last_price, quantity)
-                        log.get(log_name).info('modify_order: [%s][%.2f][%d]'%(order_id, last_price, quantity))
+                        log.get(log_name).info('Modify sell order: [%s][%.2f][%d]'%(order_id, last_price, quantity))
                     content = '[%s] Sell expected, price[%.2f], Earn[%.2f]'%(dog_id, last_price, earning)
                     bark_obj.send_title_content('Modify Triggered', content)
                 else:
                     log.get(log_name).debug('[%s][%s] earning[%.2f]'%(dog_id, order_id, earning))
         elif side == 'Buy':
-            pass
+            if surplus_min < 10:    # 10 min, near close market, change the price.
+                if is_dog_option(dog_id):       # Enable option trade for test only, to be verify on dog trade.
+                    # recv_dict = modify_order(order_id, last_price, quantity)
+                    log.get(log_name).info('Modify buy order: [%s][%.2f][%d]'%(order_id, last_price, quantity))
+
 
 def half_manually_monitor(order_id, dog_id, price, quantity, side):
     log.get(log_name).info('Start monitor for [%s][%s][%.2f][%s][%d]'%(order_id, dog_id, price, side, quantity))

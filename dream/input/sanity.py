@@ -44,7 +44,7 @@ def sanity_market(table_name):
         db.closeSession()
         return True
     else:
-        log.get().info('Market Sanity Failed:[%s]'%(dog_id))
+        log.get().info('Market Sanity Failed:[%s] (%s < %s < %s)'%(dog_id, str(some_days_ago), str(temp_date), str(today)))
         #db.dropTable(table_name)
         db.closeSession()
         return False

@@ -87,6 +87,8 @@ def get_dog_us_daily_hist(quote_ctx, dog_id, **kwargs):
         df.rename(columns={'收盘': 'Close', '最高': 'High'}, inplace=True) # Replace title
         df.rename(columns={'最低': 'Low', '成交额': 'Amount'}, inplace=True) # Replace title
         df['Date'] = pd.to_datetime(df['Date'])
+        if len(df) == 0:
+            raise ValueError("Dataframe empty")
         return df
     except Exception as e:
         try:
@@ -154,11 +156,14 @@ def main(args):
         if inexist:
             if (args.market == 'us'):
                 dog_full_code = get_fullcode(args.market, dog_index)
+                log.get().info('[%s] -> [%s]'%(dog_index, dog_full_code))
                 df1 = get_dog_us_daily_hist(quote_ctx, dog_full_code)
                 if (df1.empty):
+                    log.get().info('History data empty, skip... [%s]'%(dog_index))
                     continue
                 df2 = get_dog_us_capital_flow(quote_ctx, dog_full_code)
-                if (df2.empty):  
+                if (df2.empty):
+                    log.get().info('Capital data empty, skip... [%s]'%(dog_index))
                     continue
                 else:
                     df = pd.merge(df1, df2, on='Date', how='left')
@@ -166,6 +171,7 @@ def main(args):
             elif (args.market == 'cn'):
                 df1 = get_dog_cn_daily_hist(dog_index)
                 if (df1.empty):
+                    log.get().info('History data empty, skip... [%s]'%(dog_index))
                     continue
                 df2 = get_dog_cn_capital_flow(dog_index)
                 if (df2.empty):
@@ -178,11 +184,14 @@ def main(args):
             start_date = (datetime.datetime.now() - datetime.timedelta(days=10)).strftime('%Y%m%d')    # 10 days ago
             if (args.market == 'us'):
                 dog_full_code = get_fullcode(args.market, dog_index)
+                log.get().info('[%s] -> [%s]'%(dog_index, dog_full_code))
                 df1 = get_dog_us_daily_hist(quote_ctx, dog_full_code, start_date=start_date, end_date=current_date)
                 if (df1.empty):
+                    log.get().info('History data empty, skip... [%s]'%(dog_index))
                     continue
                 df2 = get_dog_us_capital_flow(quote_ctx, dog_full_code)
-                if (df2.empty):  
+                if (df2.empty):
+                    log.get().info('Capital data empty, skip... [%s]'%(dog_index))
                     continue
                 else:
                     df = pd.merge(df1, df2, on='Date', how='left')
@@ -190,6 +199,7 @@ def main(args):
             elif (args.market == 'cn'):
                 df1 = get_dog_cn_daily_hist(dog_index, start_date=start_date, end_date=current_date)
                 if (df1.empty):
+                    log.get().info('History data empty, skip... [%s]'%(dog_index))
                     continue
                 df2 = get_dog_cn_capital_flow(dog_index)
                 if (df2.empty):
@@ -197,6 +207,7 @@ def main(args):
                 else:
                     df = pd.merge(df1, df2, on='Date', how='left')
                     #df.fillna(0, inplace=True)     # do not fill as 0 to aviod over write.
+
         dog_update_list = df.to_dict(orient='records')
         # Remove nan value
         for entry in dog_update_list:
