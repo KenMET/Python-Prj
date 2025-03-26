@@ -95,22 +95,24 @@ def main(args):
         if not args.test:
             wait_us_market_open(log.get())
         notify_list = merge_holding('formal', 'Kanos', notify_list)
+    code_name_dict = {}
     for index in notify_list:
         next_predict = get_expect(index)
         if len(next_predict) != 0:
             dog_name = get_dogname(args.market, index)
+            code_name_dict.update({index:dog_name})
             option_opt = get_option_notify(index, next_predict)
             next_predict.update({'option':option_opt})
             avg_score = get_avg_score(index, 3)
             next_predict.update({'avg_score':avg_score})
-            notify_dict.update({dog_name:next_predict})
+            notify_dict.update({index:next_predict})
             log.get().info('[%s(%s)]: %s'%(dog_name, index, str(next_predict)))
 
     if len(notify_dict) != 0:
         bark_obj = notify.bark()
         content = ''
         for index in notify_dict:
-            sub_content = '%s(%s)[%.3f (%.2f) %.3f]\n'%(index, 
+            sub_content = '%s(%s)[%.3f (%.2f) %.3f]\n'%(code_name_dict.get(index, 'UnknowName'), 
                 notify_dict[index].get('option', 'NA'),
                 notify_dict[index].get('buy',-1),
                 notify_dict[index].get('avg_score',0), 
