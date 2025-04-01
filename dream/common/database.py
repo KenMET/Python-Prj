@@ -323,9 +323,9 @@ def get_last_expectation(market):
             return {}
         expectation_dict = db.get_dict_from_obj(expectation_obj)
         date_tmp = expectation_dict['Date']
-        result_dict = expectation_dict.get(tmp.get(market, 'us'), {})
+        result_dict_str = expectation_dict.get(tmp.get(market, 'us'), {})
+        result_dict = ast.literal_eval(result_dict_str)
         if len(result_dict) != 0:
             db.closeSession()
             return result_dict
-
     return {}

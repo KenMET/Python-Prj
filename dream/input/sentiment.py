@@ -53,6 +53,14 @@ def is_up_limit(data):
         return True
     return False
 
+# "sentiment_score_definition": 
+#   x <= -0.35: Bearish
+#   -0.35 < x <= -0.15: Somewhat-Bearish
+#   -0.15 < x < 0.15: Neutral
+#   0.15 <= x < 0.35: Somewhat_Bullish
+#   x >= 0.35: Bullish
+# "relevance_score_definition": "0 < x <= 1, with a higher score indicating higher relevance.",
+
 def main(args):
     log.init('%s/../log'%(py_dir), py_name, log_mode='w', log_level='info', console_enable=True)
     log.get().info('Logger Creat Success')
