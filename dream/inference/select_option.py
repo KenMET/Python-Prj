@@ -104,10 +104,10 @@ def main(args):
         #   x >= 0.35: Bullish
         if (-0.15 < avg_score < 0.15) and target_option != 'Put' and target_option != 'Call':
             log.get().info('[%s] Neutral, and status not specific'%(dog_code))
-            #continue
+            continue
         if (avg_score <= -0.15) and target_option != 'Put' and target_option != 'Drop':
             log.get().info('[%s] Bearish, but status expect to sell it. (might to be going down)'%(dog_code))
-                continue
+            continue
         if (avg_score >= 0.15) and target_option != 'Call' and target_option != 'Rise':
             log.get().info('[%s] Bullish, but status expect to sell it. (might to be going up)'%(dog_code))
             continue
