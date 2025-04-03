@@ -312,7 +312,7 @@ def update_expectation(market, tmp_dict):
     db.closeSession()
     return flag
 
-def get_last_expectation(market):
+def get_last_expectation(market, today=False):  # If need today's exception, then True
     today_date = datetime.date.today()
     tmp = {'cn':'Cn_Expectation', 'us':'Us_Expectation'}
     db = dbde.db('dream_dog')
@@ -323,9 +323,14 @@ def get_last_expectation(market):
             return {}
         expectation_dict = db.get_dict_from_obj(expectation_obj)
         date_tmp = expectation_dict['Date']
-        result_dict_str = expectation_dict.get(tmp.get(market, 'us'), {})
+        result_dict_str = expectation_dict.get(tmp.get(market, 'us'), '{}')
         result_dict = ast.literal_eval(result_dict_str)
         if len(result_dict) != 0:
             db.closeSession()
-            return result_dict
+            if (today and date_tmp == datetime.datetime.today()) or (not today):
+                return result_dict
+            else:
+                return {}
     return {}
+
+

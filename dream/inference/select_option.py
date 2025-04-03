@@ -43,7 +43,7 @@ def main(args):
     option_price_min = 5.0
     option_price_max = 15.0
 
-    expectation_dict = get_last_expectation('us')
+    expectation_dict = get_last_expectation('us', today=True)
     log.get().info('expectation_dict :%s'%(str(expectation_dict)))
 
     create_if_option_inexist().closeSession()

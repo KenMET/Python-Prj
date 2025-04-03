@@ -25,6 +25,7 @@ sys.path.append(r'%s/../input'%(py_dir))
 from house import house_update
 from longport_api import quantitative_init, trade_submit
 from database import get_house_detail, get_holding, get_market_by_range, create_if_order_inexist
+from database import get_last_expectation
 sys.path.append(r'%s/../inference'%(py_dir))
 from expectation import get_expect
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
@@ -62,6 +63,7 @@ def trade(house_dict, dog_opt, dog_id):
                 return index
         return {}
     available_cash = float(house_dict['AvailableCash'])
+    log.get(log_name).info('available_cash: %.3f'%(available_cash))
     holding = get_holding_by_dog_id(json.loads(house_dict['Holding'].replace("'",'"')), dog_id)
     log.get(log_name).info('[%s] holding: %s'%(dog_id, str(holding)))
     if len(holding) == 0:
@@ -79,6 +81,14 @@ def trade(house_dict, dog_opt, dog_id):
                 share = 1
             else:
                 share = curr_share * 2  # buy double
+            if (share * price) > available_cash:
+                log.get(log_name).info('[%s] No enough money to buy[%d], all in ......'%(dog_id, share))
+                all_in_share = available_cash // price
+                if all_in_share * 3 < share:
+                    log.get(log_name).info('[%s] no need to buy, too less[%d], ignore ......'%(dog_id, all_in_share))
+                    share = 0
+                else:
+                    share = all_in_share
         elif side == 'sell':
             if (curr_share == 0):
                 continue
@@ -98,15 +108,17 @@ def main(args):
     log.init('%s/../log'%(py_dir), log_name, log_mode='w', log_level='info', console_enable=True)
     log.get(log_name).info('Logger Creat Success...[%s]'%(log_name))
 
-    quantitative_init()
-
     if not args.test:
         wait_us_market_open(log.get(log_name))
+
+    expectation_dict = get_last_expectation('us', today=True)
+    log.get(log_name).info('expectation_dict: %s'%(str(expectation_dict)))
 
     #result = subprocess.run(["python3", "%s/../input/house.py"], capture_output=True, text=True)
     predict_dict = get_expect_all()
     log.get(log_name).info('Predict result: %s'%(str(predict_dict)))
 
+    quantitative_init()
     house_dict = get_house_detail(get_user_type('-'))
 
     # Submit order
