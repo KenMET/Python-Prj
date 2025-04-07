@@ -22,7 +22,7 @@ from other import wait_us_market_open, get_user_type, get_current_session_and_re
 from sock_order import submit_order, query_order, cancel_order, modify_order
 from sock_realtime import query_dog_min, query_dog_cnt, register_dog
 from database import get_open_order, del_registered_dog, create_if_order_inexist
-from longport_api import quantitative_init, get_order_detail
+from longport_api import quantitative_init, get_cost_price_fee
 from longport_api import get_open_order_from_longport, get_filled_order_from_longport
 sys.path.append(r'%s/../input'%(py_dir))
 sys.path.append(r'%s/../inference'%(py_dir))
@@ -93,28 +93,6 @@ def trade_half_manually():
             break
 
     return thread_dict
-
-def get_cost_price_fee(filled_order_list, quantity):
-    match_list = []
-    for index in filled_order_list:
-        temp_quantity = int(index['Quantity'].split('/')[0])    # Get position 0 for actrully success share. (x/y)
-        if quantity == temp_quantity:
-            match_list.append(index)
-
-    last_datetime = datetime.datetime.strptime('2000-01-01 01:01:01', '%Y-%m-%d %H:%M:%S')
-    last_order = None
-    for index in match_list:
-        order_datetime = datetime.datetime.strptime(index['Date'], '%Y-%m-%d %H:%M:%S.%f')
-        if order_datetime > last_datetime:
-            last_datetime = order_datetime
-            last_order = index
-
-    if last_order != None:
-        resp = get_order_detail(last_order['OrderID'])     # Get fee detail fail from this api, don't know why...
-        log.get(log_name).info('Last Order Detail: %s'%(str(resp)))
-        return float(resp['ExecutedPrice']), float(resp['Fee'])
-
-    return -1.0, -1.0
 
 def is_order_done(oder_id, order_status):
     if any(s in order_status for s in ["Filled", "Rejected", "Canceled", "Expired"]):

@@ -194,3 +194,26 @@ def get_filled_order_from_longport(dog_id, side):
         side = temp_side,
     )
     return [get_order_dict_from_obj(n) for n in resp]
+
+def get_cost_price_fee(filled_order_list, quantity):
+    match_list = []
+    for index in filled_order_list:
+        temp_quantity = int(index['Quantity'].split('/')[0])    # Get position 0 for actrully success share. (x/y)
+        if quantity == temp_quantity:
+            match_list.append(index)
+
+    last_datetime = datetime.datetime.strptime('2000-01-01 01:01:01', '%Y-%m-%d %H:%M:%S')
+    last_order = None
+    for index in match_list:
+        order_datetime = datetime.datetime.strptime(index['Date'], '%Y-%m-%d %H:%M:%S.%f')
+        if order_datetime > last_datetime:
+            last_datetime = order_datetime
+            last_order = index
+
+    if last_order != None:
+        resp = get_order_detail(last_order['OrderID'])     # Get fee detail fail from this api, don't know why...
+        #log.get(log_name).info('Last Order Detail: %s'%(str(resp)))
+        return float(resp['ExecutedPrice']), float(resp['Fee'])
+
+    return -1.0, -1.0
+

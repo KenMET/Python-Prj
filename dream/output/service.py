@@ -136,7 +136,7 @@ def handle_dict(client_socket, lock, tmp_dict):
         price = tmp_dict['price']
         share = tmp_dict['share']
         order_dict = trade_submit(dog_id, side, price, share)
-        log.get(log_name).debug('trade_submit[%s] (%s,%.2f,%d) %s'%(order_id, side, price, share, str(order_dict)))
+        log.get(log_name).debug('trade_submit (%s,%.2f,%d) %s'%(side, price, share, str(order_dict)))
         ack_dict.update(order_dict)
         db = create_if_order_inexist(order_dest)
         log.get(log_name).info('Insert for: %s'%(str(order_dict)))

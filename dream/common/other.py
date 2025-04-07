@@ -5,6 +5,7 @@ import os
 import re
 import sys
 import json
+import math
 import socket
 import random
 import datetime, time
@@ -105,3 +106,23 @@ def push_dict_to_socket(service_type, tmp_dict):
     recv_dict = get_dict_from_socket(response)
     client.close()
     return recv_dict
+
+def get_next_inject(a, factor=1.0):
+    inc = math.floor(a * factor)
+    if inc == a:
+        inc += 1
+    return inc
+
+def get_last_inject(a, factor=1.0):
+    if a == 0:
+        return 0
+
+    for possible_inc in range(1, a + 1):
+        a_prev = a - possible_inc
+        expected_inc = math.floor(a_prev * factor)
+        if expected_inc == a_prev:
+            expected_inc += 1
+        if expected_inc == possible_inc:
+            return possible_inc
+
+    return -1
