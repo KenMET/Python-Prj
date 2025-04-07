@@ -130,7 +130,10 @@ def handle_dict(client_socket, lock, tmp_dict):
 
     order_dest = get_user_type('-')
     #lock.acquire()
-    if cmd == 'submit_order':
+    if cmd == 'ping':
+        log.get(log_name).debug('Ping detected')
+        ack_dict.update({'ack':'Ping[%s]'%(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))})
+    elif cmd == 'submit_order':
         dog_id = tmp_dict['dog_id']
         side = tmp_dict['side']
         price = tmp_dict['price']

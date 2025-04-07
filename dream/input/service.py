@@ -134,7 +134,10 @@ def handle_dict(client_socket, lock, tmp_dict):
     ack_dict = {'cmd': '%s_ack'%(cmd)}
 
     #lock.acquire()
-    if cmd == 'register_dog':
+    if cmd == 'ping':
+        log.get(log_name).debug('Ping detected')
+        ack_dict.update({'ack':'Ping[%s]'%(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))})
+    elif cmd == 'register_dog':
         dog_id = tmp_dict['dog_id']
         log.get(log_name).info('[%s] starting register'%(dog_id))
         flag, time = update_registered_time(dog_id)

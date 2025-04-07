@@ -17,6 +17,11 @@ from other import push_dict_to_socket, get_user_type
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
 import log
 
+def ping_order_sock():
+    tmp_dict = {
+        'cmd':'ping',
+    }
+    return push_dict_to_socket(get_user_type('_'), tmp_dict)
 
 def submit_order(dog_id, side, price, share):
     tmp_dict = {
@@ -55,19 +60,21 @@ def main(args):
     log.init('%s/../log'%(py_dir), py_name, log_mode='w', log_level='info', console_enable=True)
     log.get().info('Logger Creat Success')
 
-    recv_dict = submit_order('NVDA.US', 'buy', 99.12, 1)
-    log.get().info('recv_dict: %s'%(str(recv_dict)))
-    order_id = recv_dict['OrderID']
-    time.sleep(5)
-    recv_dict = query_order(order_id)
-    log.get().info('recv_dict: %s'%(str(recv_dict)))
-    time.sleep(5)
-    recv_dict = modify_order(order_id, 123.45, 20)
-    log.get().info('recv_dict: %s'%(str(recv_dict)))
-    time.sleep(5)
-    recv_dict = cancel_order(order_id)
-    log.get().info('recv_dict: %s'%(str(recv_dict)))
+    #recv_dict = submit_order('NVDA.US', 'buy', 99.12, 1)
+    #log.get().info('recv_dict: %s'%(str(recv_dict)))
+    #order_id = recv_dict['OrderID']
+    #time.sleep(5)
+    #recv_dict = query_order(order_id)
+    #log.get().info('recv_dict: %s'%(str(recv_dict)))
+    #time.sleep(5)
+    #recv_dict = modify_order(order_id, 123.45, 20)
+    #log.get().info('recv_dict: %s'%(str(recv_dict)))
+    #time.sleep(5)
+    #recv_dict = cancel_order(order_id)
+    #log.get().info('recv_dict: %s'%(str(recv_dict)))
 
+    recv_dict = ping_order_sock()
+    log.get().info('ping recv: %s'%(str(recv_dict)))
 
 if __name__ == '__main__':
     # Create ArgumentParser Object

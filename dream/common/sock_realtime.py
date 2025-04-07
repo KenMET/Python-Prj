@@ -18,6 +18,12 @@ from other import push_dict_to_socket
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
 import log
 
+def ping_realtime_sock():
+    tmp_dict = {
+        'cmd':'ping',
+    }
+    return push_dict_to_socket('realtime', tmp_dict)
+
 def query_dog_min(dog_id, last_min=int(get_global_config('realtime_interval'))):
     tmp_dict = {
         'cmd':'query_dog_market',
@@ -49,15 +55,18 @@ def main(args):
     #recv_dict = query_dog('TSLA', 10)
     #log.get().info('query_dog recv: %s'%(str(recv_dict)))
 
-    recv_dict = register_dog('TTWO')
-    log.get().info('register_dog recv: %s'%(str(recv_dict)))
+    #recv_dict = register_dog('TTWO')
+    #log.get().info('register_dog recv: %s'%(str(recv_dict)))
 
-    recv_dict = register_dog('NVDA')
-    log.get().info('register_dog recv: %s'%(str(recv_dict)))
+    #recv_dict = register_dog('NVDA')
+    #log.get().info('register_dog recv: %s'%(str(recv_dict)))
 
-    recv_dict = register_dog('TSLA')
-    log.get().info('register_dog recv: %s'%(str(recv_dict)))
+    #recv_dict = register_dog('TSLA')
+    #log.get().info('register_dog recv: %s'%(str(recv_dict)))
 
+    recv_dict = ping_realtime_sock()
+    log.get().info('ping recv: %s'%(str(recv_dict)))
+    
 
 
 if __name__ == '__main__':
