@@ -291,7 +291,7 @@ def main(args):
     if not args.test:
         wait_us_market_open(log.get(log_name))
 
-    expectation_dict = get_last_expectation('us', today=False)
+    expectation_dict = get_last_expectation('us', today=True)
     log.get(log_name).info('expectation_dict: %s'%(str(expectation_dict)))
 
     quantitative_init()
