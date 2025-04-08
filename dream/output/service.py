@@ -60,6 +60,7 @@ def handle_client(client_socket, client_address, lock):
         log.get(log_name).error('Exception captured in handle_client: %s'%(str(e)))
 
 def order_monitor(lock):
+    db = None
     try:
         user, quent_type = get_user_type()
         house_name = get_user_type('-')

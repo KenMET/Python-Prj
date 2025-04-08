@@ -209,7 +209,7 @@ def monitor_loop(order_id, dog_id, side, price, quantity):
                 else:
                     log.get(log_name).debug('[%s][%s] earning[%.2f][%.2f%%], keep monitor'%(dog_id, order_id, earning, earning_diff))
             else:
-                min_earn_price = (min_diff * (cost_price * quantity * multiple_factor) + (fee*2)) / (quantity * multiple_factor) + cost_price
+                min_earn_price = ((min_diff/100) * (cost_price * quantity * multiple_factor) + (fee*2)) / (quantity * multiple_factor) + cost_price
                 log.get(log_name).info('[%s] Min earning, now[%.2f] need achive[%.2f][%.2f%%]'%(dog_id, last_price, min_earn_price, min_diff))
         elif side == 'Buy':
             if surplus_min < 10:    # 10 min, near close market, change the price.
