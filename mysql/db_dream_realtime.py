@@ -154,7 +154,7 @@ class db(dbb.basedb):
         if self.session is None:
             self.connectdb()
         Cls = self.create_realtime_dog_class()
-        result = self.session.query(Cls).filter(Cls.DogTime.like('{0}%'.format(dog_id))).all()
+        result = self.session.query(Cls).filter(Cls.DogTime.like('{0}-%'.format(dog_id))).all()
         try:
             self.session.commit()
         except:
