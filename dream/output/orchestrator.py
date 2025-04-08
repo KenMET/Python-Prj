@@ -24,7 +24,8 @@ from other import get_current_session_and_remaining_time, is_dog_option
 from sock_order import submit_order, query_order, cancel_order, modify_order
 from sock_realtime import query_dog_cnt, register_dog
 sys.path.append(r'%s/../input'%(py_dir))
-from longport_api import quantitative_init, get_cost_price_fee, get_open_order_from_longport
+from longport_api import quantitative_init, get_cost_price_fee
+from longport_api import get_open_order_from_longport, get_filled_order_from_longport
 from database import get_house_detail, get_holding, create_if_order_inexist
 from database import get_last_expectation, get_open_order
 sys.path.append(r'%s/../inference'%(py_dir))
