@@ -190,10 +190,10 @@ def monitor_loop(order_id, dog_id, side, price, quantity):
             # But for option
             #   earning_diff = ((last_price - cost_price) * quantity * 100 - (fee*2)) / (cost_price * quantity * 100), almost option have 100 time of shares.
             # So, let multiple_factor to control.
-            
+
             earning = ((last_price - cost_price) * quantity * multiple_factor) - (fee*2)
             earning_diff = earning / (cost_price * quantity * multiple_factor)
-            
+
             if earning_diff >= profit_diff:
                 log.get(log_name).info('Modify sell order now: [%s][%.2f][%d]'%(order_id, last_price, quantity))
                 # recv_dict = modify_order(order_id, last_price, quantity)
