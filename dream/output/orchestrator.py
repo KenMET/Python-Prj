@@ -18,7 +18,7 @@ py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
 sys.path.append(r'%s/'%(py_dir))
 sys.path.append(r'%s/../inference'%(py_dir))
 sys.path.append(r'%s/../common'%(py_dir))
-from config import get_trade_list, get_global_config
+from config import get_trade_list, get_global_config, get_user_config
 from other import wait_us_market_open, get_user_type, get_next_inject, get_last_inject
 from other import get_current_session_and_remaining_time, is_dog_option
 from sock_order import submit_order, query_order, cancel_order, modify_order
