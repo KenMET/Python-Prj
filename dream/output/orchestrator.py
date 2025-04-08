@@ -77,7 +77,11 @@ def trade(house_dict, dog_opt, dog_id):
                 return index
         return {}
     available_cash = float(house_dict['AvailableCash'])
-    log.get(log_name).info('available_cash: %.3f'%(available_cash))
+    if available_cash < 0:
+        log.get(log_name).info('Already over all-in [%.3f]'%(available_cash))
+        return
+    else:
+        log.get(log_name).info('available_cash: %.3f'%(available_cash))
     holding = get_holding_by_dog_id(json.loads(house_dict['Holding'].replace("'",'"')), dog_id)
     log.get(log_name).info('[%s] holding: %s'%(dog_id, str(holding)))
     if len(holding) == 0:
