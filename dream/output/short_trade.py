@@ -132,7 +132,7 @@ def monitor_loop(order_id, dog_id, side, price, quantity):
             fee = float(get_user_config(user, 'dog', 'fee'))
             multiple_factor = 1         # one share means one dog share
             quantity_factor = quantity  # use all shares to calculate
-        log.get(log_name).info('This order for CostPrice[%.2f] Fee[%.2f] Quantity[%d]'%(cost_price, fee, quantity))
+        log.get(log_name).info('Order[%s] for CostPrice[%.2f] Fee[%.2f] Quantity[%d]'%(order_id, cost_price, fee, quantity))
     elif side == 'Buy':
         pass
 

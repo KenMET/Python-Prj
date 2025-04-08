@@ -1,27 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <contents>
     <global>
-        <realtime_interval>180</realtime_interval>  <!-- Realtime Looping interval [x second] -->
-        <order_interval>180</order_interval>  <!-- Order monitor looping interval [x second] -->
-        <min_trade_interval>10</min_trade_interval>  <!-- Max holiday days [x days] -->
-        <short_trade_order_interval>1200</short_trade_order_interval>  <!-- How many second to check if there have new order [x second] -->
-        <realtime_dog_expierd>5</realtime_dog_expierd>  <!-- Realtime Dog expierd days, keep [x days] realtime data only -->
-        <realtime_option_expierd>30</realtime_option_expierd>  <!-- Realtime Option expierd days, keep [x days] realtime data only -->
-        <next_inject_factor>1.1</next_inject_factor>  <!-- Realtime Option expierd days, keep [x days] realtime data only -->
+        <realtime_interval>180</realtime_interval>                      <!-- Realtime Looping interval [x second] -->
+        <order_interval>180</order_interval>                            <!-- Order monitor looping interval [x second] -->
+        <min_trade_interval>10</min_trade_interval>                     <!-- Max holiday days [x days] -->
+        <order_monitor>600</order_monitor>                              <!-- How many second to check if there have new order [x second] -->
+        <realtime_dog_expierd>5</realtime_dog_expierd>                  <!-- Realtime Dog expierd days, keep [x days] realtime data only -->
+        <realtime_option_expierd>30</realtime_option_expierd>           <!-- Realtime Option expierd days, keep [x days] realtime data only -->
+        <next_inject_factor>1.1</next_inject_factor>                    <!-- How many to buy/sell in sequence -->
     </global>
     <kanos>     <!--Defined as house name-->
         <option>
-            <price_range>0.15</price_range>  <!-- Option Strike Price Around [market_price*(1-x), market_price*(1+x)] -->
-            <day_range>90</day_range>  <!-- Option Expire Date Beyond [x days] -->
-            <count_limit>5</count_limit>    <!-- Option above that the first x dates -->
-            <min_earn>20</min_earn>     <!-- Acceptable earn dollar (not include fee) -->
-            <expect_earn>100</expect_earn>  <!-- Expected earn(Stop profit) dollar (not include fee) -->
-            <fee>5</fee>  <!-- Operation fee, once.........cannot get from order detail... don't know why-->
+            <price_range>0.15</price_range>         <!-- Option Strike Price Around [market_price*(1-x), market_price*(1+x)] -->
+            <day_range>90</day_range>               <!-- Option Expire Date Beyond [x days] -->
+            <count_limit>5</count_limit>            <!-- Option above that the first x dates -->
+            <fee>5</fee>                            <!-- Operation fee, once.........cannot get from order detail... don't know why-->
+            <min_percent>10</min_percent>           <!-- Acceptable earn present (not include fee) -->
+            <profit_percent>50</profit_percent>     <!-- Expected earn(Stop profit) dollar (not include fee) -->
         </option>
         <dog>
-            <min_earn>10</min_earn>     <!-- Acceptable earn dollar (not include fee) -->
-            <expect_earn>50</expect_earn>  <!-- Expected earn(Stop profit) dollar (not include fee) -->
-            <fee>3</fee>  <!-- Operation fee, once.........cannot get from order detail... don't know why-->
+            <min_percent>1</min_percent>            <!-- Acceptable earn present (not include fee) -->
+            <profit_percent>10</profit_percent>     <!-- Expected earn(Stop profit) dollar (not include fee) -->
+            <fee>3</fee>                            <!-- Operation fee, once.........cannot get from order detail... don't know why-->
         </dog>
     </kanos>
     <sentiment_key>
