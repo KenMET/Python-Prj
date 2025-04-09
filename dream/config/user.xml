@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <contents>
     <global>
-        <realtime_interval>180</realtime_interval>                      <!-- Realtime Looping interval [x second] -->
-        <order_interval>180</order_interval>                            <!-- Order monitor looping interval [x second] -->
-        <min_trade_interval>10</min_trade_interval>                     <!-- Max holiday days [x days] -->
+        <realtime_interval>60</realtime_interval>                      <!-- Realtime Looping interval [x second] -->
+        <order_interval>60</order_interval>                            <!-- Order monitor looping interval [x second] -->
         <order_monitor_interval>600</order_monitor_interval>            <!-- How many second to check if there have new order [x second] -->
         <realtime_dog_expierd>5</realtime_dog_expierd>                  <!-- Realtime Dog expierd days, keep [x days] realtime data only -->
         <realtime_option_expierd>30</realtime_option_expierd>           <!-- Realtime Option expierd days, keep [x days] realtime data only -->

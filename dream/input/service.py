@@ -60,45 +60,61 @@ def handle_client(client_socket, client_address, lock):
         log.get(log_name).error('Exception captured in handle_client: %s'%(str(e)))
 
 def market_monitor(lock):
+    db = None
     try:
+        ctx = get_quote_context()
         while(True):
             loop_start_time = datetime.datetime.now()
             log.get(log_name).info('Market monitor, new looping')
-            trade_session = get_trade_session()
-            registered_list = [n for n in get_registered_dog()]
+            try:
+                trade_session = get_trade_session()
+            except Exception as e:
+                log.get(log_name).error('Exception captured in market_monitor get_trade_session: %s'%(str(e)))
+                trade_session = []
+            try:
+                registered_list = [n for n in get_registered_dog()]
+            except Exception as e:
+                log.get(log_name).error('Exception captured in market_monitor get_registered_dog: %s'%(str(e)))
+                registered_list = []
             dog_list, option_list = list(filter(lambda x: not is_dog_option(x), registered_list)), list(filter(is_dog_option, registered_list))
 
             #lock.acquire()
 
-            ctx = get_quote_context()
             timestamp_now = datetime.datetime.now().time()
 
             log.get(log_name).info('Market monitor, Quote dog from %s'%(str(dog_list)))
-            resp_dog = ctx.quote(["%s.US"%(n) for n in dog_list])
+            try:
+                if len(dog_list) > 0:
+                    resp_dog = ctx.quote(["%s.US"%(n) for n in dog_list])
+            except Exception as e:
+                log.get(log_name).error('Exception captured in market_monitor ctx.quote: %s'%(str(e)))
+                resp_dog = []
             log.get(log_name).info('Market monitor, Quote option from %s'%(str(option_list)))
-            resp_option = ctx.option_quote(["%s.US"%(n) for n in option_list])
+            try:
+                if len(option_list) > 0:
+                    resp_option = ctx.option_quote(["%s.US"%(n) for n in option_list])
+            except Exception as e:
+                log.get(log_name).error('Exception captured in market_monitor ctx.option_quote: %s'%(str(e)))
+                resp_option = []
             resp = resp_dog + resp_option
             #log.get(log_name).debug(resp)
 
             for index in resp:
                 log.get(log_name).info('Market monitor, Test: %s'%(str(index)))
                 dog_code = str(index.symbol).split('.')[0]
+                session_obj = index     # Default to use normal info
                 if trade_session['Pre']['Start'] <= timestamp_now < trade_session['Pre']['End']:
                     trading_duration = 'Pre'
-                    if not hasattr(index, 'pre_market_quote'):
-                        continue
-                    session_obj = index.pre_market_quote
+                    if hasattr(index, 'pre_market_quote'):      # If there is pre_market info, using it
+                        session_obj = index.pre_market_quote
                 elif trade_session['Normal']['Start'] <= timestamp_now or timestamp_now < trade_session['Normal']['End']:
                     trading_duration = 'Normal'
-                    session_obj = index
                 elif trade_session['Post']['Start'] <= timestamp_now < trade_session['Post']['End']:
                     trading_duration = 'Post'
-                    if not hasattr(index, 'post_market_quote'):
-                        continue
-                    session_obj = index.post_market_quote
-                elif trade_session['Night']['Start'] <= timestamp_now < trade_session['Night']['End']:   # Not support yet...
+                    if not hasattr(index, 'post_market_quote'): # If there is post_market info, using it
+                        session_obj = index.post_market_quote
+                elif trade_session['Night']['Start'] <= timestamp_now < trade_session['Night']['End']:  # For night, not support yet, using normal info for now
                     trading_duration = 'Night'
-                    continue
                 else:
                     log.get(log_name).error('[%s]Datetime error: %s trade_session:%s'%(dog_code, str(timestamp_now), str(trade_session)))
                     break

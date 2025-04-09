@@ -169,7 +169,10 @@ def monitor_loop(order_id, dog_id, side, price, quantity):
         time.sleep(int(get_global_config('realtime_interval')))
         recv_dict = query_order(order_id)
         log.get(log_name).debug('Query order[%s]:%s'%(order_id, str(recv_dict)))
-        order_status = recv_dict['Status']
+        order_status = recv_dict.get('Status', '')
+        if order_status == '':
+            continue
+        price = recv_dict['Price']      # Need update price in case of modified order
         if any(s in order_status for s in ["Filled", "Rejected", "Canceled", "Expired"]):
             content = '[%s] New Status[%s]'%(order_id, order_status)
             bark_obj.send_title_content('Order Status', content)
@@ -223,16 +226,13 @@ def monitor_loop(order_id, dog_id, side, price, quantity):
                     bark_obj.send_title_content('Test', content)
 
 def order_monitor(order_id, dog_id, price, quantity, side):
+    log.get(log_name).info('Start monitor for [%s][%s][%.2f][%s][%d]'%(order_id, dog_id, price, side, quantity))
     try:
-        log.get(log_name).info('Start monitor for [%s][%s][%.2f][%s][%d]'%(order_id, dog_id, price, side, quantity))
         recv_dict = register_dog(dog_id)
+        log.get(log_name).info('register realtime for: %s %s'%(dog_id, str(recv_dict)))
     except Exception as e:
         log.get(log_name).error('Exception captured in register_dog: %s'%(str(e)))
-    try:
-        log.get(log_name).info('register realtime for: %s %s'%(dog_id, str(recv_dict)))
-        monitor_loop(order_id, dog_id, side, price, quantity)
-    except Exception as e:
-        log.get(log_name).error('Exception captured in monitor_loop: %s'%(str(e)))
+    monitor_loop(order_id, dog_id, side, price, quantity)
 
 # According exist order to trade.
 # Reason: usually in us dog trade, our body need to sleep, cannot watch the dog market.
