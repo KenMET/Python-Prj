@@ -76,65 +76,68 @@ def trade(house_dict, dog_opt, dog_id):
             if index.get('Code', '') == dog_id:
                 return index
         return {}
-    available_cash = float(house_dict['AvailableCash'])
-    log.get(log_name).info('available_cash: %.3f'%(available_cash))
-    holding = get_holding_by_dog_id(json.loads(house_dict['Holding'].replace("'",'"')), dog_id)
-    log.get(log_name).info('[%s] holding: %s'%(dog_id, str(holding)))
-    if len(holding) == 0:
-        holding.update({'Quantity':0})
+    try:
+        available_cash = float(house_dict['AvailableCash'])
+        log.get(log_name).info('available_cash: %.3f'%(available_cash))
+        holding = get_holding_by_dog_id(json.loads(house_dict['Holding'].replace("'",'"')), dog_id)
+        log.get(log_name).info('[%s] holding: %s'%(dog_id, str(holding)))
+        if len(holding) == 0:
+            holding.update({'Quantity':0})
 
-    order_dest = get_user_type('-')
-    create_if_order_inexist(order_dest).closeSession()  # No need db further.
+        order_dest = get_user_type('-')
+        create_if_order_inexist(order_dest).closeSession()  # No need db further.
 
-    buy_price = float(dog_opt.get('buy', -1))
-    sell_price = float(dog_opt.get('sell', -1))
-    expct_option = dog_opt.get('option', 'NA')
-    avg_score = dog_opt.get('avg_score', 0)
-    curr_share = holding.get('Quantity', 0)
-    bark_obj = notify.bark()
-    if buy_price > 0 and available_cash > 0:
-        share = get_next_inject(curr_share, float(get_global_config('next_inject_factor')))
-        if (share * buy_price) > available_cash:
-            log.get(log_name).info('[%s] No enough money to buy[%d], all in ......'%(dog_id, share))
-            all_in_share = available_cash // buy_price
-            if all_in_share * 3 < share:
-                log.get(log_name).info('[%s] no need to buy, too less[%d], ignore ......'%(dog_id, all_in_share))
-                share = 0
+        buy_price = float(dog_opt.get('buy', -1))
+        sell_price = float(dog_opt.get('sell', -1))
+        expct_option = dog_opt.get('option', 'NA')
+        avg_score = dog_opt.get('avg_score', 0)
+        curr_share = holding.get('Quantity', 0)
+        bark_obj = notify.bark()
+        if buy_price > 0 and available_cash > 0:
+            share = get_next_inject(curr_share, float(get_global_config('next_inject_factor')))
+            if (share * buy_price) > available_cash:
+                log.get(log_name).info('[%s] No enough money to buy[%d], all in ......'%(dog_id, share))
+                all_in_share = available_cash // buy_price
+                if all_in_share * 3 < share:
+                    log.get(log_name).info('[%s] no need to buy, too less[%d], ignore ......'%(dog_id, all_in_share))
+                    share = 0
+                else:
+                    share = all_in_share
+            if share != 0:
+                recv_dict = None#submit_order(dog_id, 'buy', buy_price, share)
+                content = '[%s] Buy %d shares in %.2f'%(dog_id, share, buy_price)
+                log.get(log_name).info(content + ', ret: %s'%(str(recv_dict)))
+                bark_obj.send_title_content('Orchestrator', content)
+
+        if sell_price > 0:
+            share = get_last_inject(curr_share, float(get_global_config('next_inject_factor')))
+            if share <= 0:
+                log.get(log_name).info('[%s] Nothing to Sell due to share == %d......'%(dog_id, share))
             else:
-                share = all_in_share
-        if share != 0:
-            recv_dict = None#submit_order(dog_id, 'buy', buy_price, share)
-            content = '[%s] Buy %d shares in %.2f'%(dog_id, share, buy_price)
-            log.get(log_name).info(content + ', ret: %s'%(str(recv_dict)))
-            bark_obj.send_title_content('Orchestrator', content)
+                filled_order_list = get_filled_order_from_longport(dog_id, 'Buy')
+                cost_price, fee = get_cost_price_fee(filled_order_list, share)
+                log.get(log_name).info('[%s] Curr[%d], Cost[%.2f, %.2f] to be sell[%d]'%(dog_id, curr_share, cost_price, fee, share))
+                flag, last_price, last_datetime = query_dog_last(dog_id)
+                if not flag:
+                    log.get(log_name).error('Query last dog[%s] price failed...'%(dog_id))
+                else:
+                    diff = ((last_price - cost_price) / cost_price) * 100
+                    log.get(log_name).info('[%s][%s] LastPrice[%.2f] CostPrice[%.2f] Diff[%.2f%%]'%(dog_id, last_datetime, last_price, cost_price, diff))
 
-    if sell_price > 0:
-        share = get_last_inject(curr_share, float(get_global_config('next_inject_factor')))
-        if share <= 0:
-            log.get(log_name).info('[%s] Nothing to Sell due to share == %d......'%(dog_id, share))
-        else:
-            filled_order_list = get_filled_order_from_longport(dog_id, 'Buy')
-            cost_price, fee = get_cost_price_fee(filled_order_list, share)
-            log.get(log_name).info('[%s] Curr[%d], Cost[%.2f, %.2f] to be sell[%d]'%(dog_id, curr_share, cost_price, fee, share))
-            flag, last_price, last_datetime = query_dog_last(dog_id)
-            if not flag:
-                log.get(log_name).error('Query last dog[%s] price failed...'%(dog_id))
-            else:
-                diff = ((last_price - cost_price) / cost_price) * 100
-                log.get(log_name).info('[%s][%s] LastPrice[%.2f] CostPrice[%.2f] Diff[%.2f%%]'%(dog_id, last_datetime, last_price, cost_price, diff))
-
-                if diff >= float(get_user_config(user, 'dog', 'profit_percent')):     # Sell now 
-                    recv_dict = None#submit_order(dog_id, 'sell', last_price, share)
-                    content = '[%s] Sell now %d shares in %.2f'%(dog_id, share, last_price)
-                    log.get(log_name).info(content + ', ret: %s'%(str(recv_dict)))
-                    bark_obj.send_title_content('Orchestrator', content)
-                elif diff >= float(get_user_config(user, 'dog', 'min_percent')):
-                    diff_lower = ((sell_price - cost_price) / cost_price) * 100
-                    if diff_lower >= float(get_user_config(user, 'option', 'min_percent')):     # Set target price and wait order done
-                        recv_dict = None#submit_order(dog_id, 'sell', sell_price, share)
-                        content = '[%s] Sell set %d shares in %.2f'%(dog_id, share, sell_price)
+                    if diff >= float(get_user_config(user, 'dog', 'profit_percent')):     # Sell now 
+                        recv_dict = None#submit_order(dog_id, 'sell', last_price, share)
+                        content = '[%s] Sell now %d shares in %.2f'%(dog_id, share, last_price)
                         log.get(log_name).info(content + ', ret: %s'%(str(recv_dict)))
                         bark_obj.send_title_content('Orchestrator', content)
+                    elif diff >= float(get_user_config(user, 'dog', 'min_percent')):
+                        diff_lower = ((sell_price - cost_price) / cost_price) * 100
+                        if diff_lower >= float(get_user_config(user, 'option', 'min_percent')):     # Set target price and wait order done
+                            recv_dict = None#submit_order(dog_id, 'sell', sell_price, share)
+                            content = '[%s] Sell set %d shares in %.2f'%(dog_id, share, sell_price)
+                            log.get(log_name).info(content + ', ret: %s'%(str(recv_dict)))
+                            bark_obj.send_title_content('Orchestrator', content)
+    except Exception as e:
+        log.get(log_name).error('Exception captured in trade: %s'%(str(e)))
 
 # Skip when order already done (Filled)
 # in last few min, check if the price meet the min_earn, if match, sell in current price.
@@ -220,10 +223,16 @@ def monitor_loop(order_id, dog_id, side, price, quantity):
                     bark_obj.send_title_content('Test', content)
 
 def order_monitor(order_id, dog_id, price, quantity, side):
-    log.get(log_name).info('Start monitor for [%s][%s][%.2f][%s][%d]'%(order_id, dog_id, price, side, quantity))
-    recv_dict = register_dog(dog_id)
-    log.get(log_name).info('register realtime for: %s %s'%(dog_id, str(recv_dict)))
-    monitor_loop(order_id, dog_id, side, price, quantity)
+    try:
+        log.get(log_name).info('Start monitor for [%s][%s][%.2f][%s][%d]'%(order_id, dog_id, price, side, quantity))
+        recv_dict = register_dog(dog_id)
+    except Exception as e:
+        log.get(log_name).error('Exception captured in register_dog: %s'%(str(e)))
+    try:
+        log.get(log_name).info('register realtime for: %s %s'%(dog_id, str(recv_dict)))
+        monitor_loop(order_id, dog_id, side, price, quantity)
+    except Exception as e:
+        log.get(log_name).error('Exception captured in monitor_loop: %s'%(str(e)))
 
 # According exist order to trade.
 # Reason: usually in us dog trade, our body need to sleep, cannot watch the dog market.
@@ -306,9 +315,12 @@ def main(args):
             dog_id = index + '.US'
         trade(house_dict, dog_opt, dog_id)
 
-    thread_dict = trigger_order_monitor()
-    for order_id in thread_dict:
-        thread_dict[order_id].join()
+    try:
+        thread_dict = trigger_order_monitor()
+        for order_id in thread_dict:
+            thread_dict[order_id].join()
+    except Exception as e:
+        log.get(log_name).error('Exception captured in trigger_order_monitor: %s'%(str(e)))
 
 if __name__ == '__main__':
     # Create ArgumentParser Object

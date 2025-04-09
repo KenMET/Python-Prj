@@ -139,6 +139,7 @@ def handle_dict(client_socket, lock, tmp_dict):
         side = tmp_dict['side']
         price = tmp_dict['price']
         share = tmp_dict['share']
+        log.get(log_name).debug('trade_submit[%s] start'%(dog_id))
         order_dict = trade_submit(dog_id, side, price, share)
         log.get(log_name).debug('trade_submit (%s,%.2f,%d) %s'%(side, price, share, str(order_dict)))
         ack_dict.update(order_dict)
@@ -150,18 +151,21 @@ def handle_dict(client_socket, lock, tmp_dict):
             log.get(log_name).error('Order Inser Error...[%s] %s'%(order_dest, str(order_dict)))
     elif cmd == 'query_order':
         order_id = tmp_dict['order_id']
+        log.get(log_name).debug('trade_query[%s] start'%(order_id))
         order_dict = trade_query(order_id)
-        log.get(log_name).debug('trade_query[%s] %s'%(order_id, str(order_dict)))
+        log.get(log_name).debug('trade_query[%s] done %s'%(order_id, str(order_dict)))
         ack_dict.update(order_dict)
     elif cmd == 'cancel_order':
         order_id = tmp_dict['order_id']
+        log.get(log_name).debug('trade_cancel[%s] start'%(order_id))
         order_dict = trade_cancel(order_id)
-        log.get(log_name).debug('trade_cancel[%s] %s'%(order_id, str(order_dict)))
+        log.get(log_name).debug('trade_cancel[%s] done %s'%(order_id, str(order_dict)))
         ack_dict.update(order_dict)
     elif cmd == 'modify_order':
         order_id = tmp_dict['order_id']
         price = tmp_dict['price']
         share = tmp_dict['share']
+        log.get(log_name).debug('trade_modify[%s] start'%(order_id))
         order_dict = trade_modify(order_id, price, share)
         log.get(log_name).debug('trade_modify[%s] (%.2f,%d) %s'%(order_id, price, share, str(order_dict)))
         ack_dict.update(order_dict)

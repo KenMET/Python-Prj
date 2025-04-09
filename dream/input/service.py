@@ -155,6 +155,7 @@ def handle_dict(client_socket, lock, tmp_dict):
             temp_list = get_dog_realtime_min(dog_id, last_min)
         elif last_cnt != None:
             temp_list = get_dog_realtime_cnt(dog_id, last_cnt)
+        log.get(log_name).info('get_dog_realtime done [%s]:%s'%(dog_id, str(temp_list)))
         ack_dict.update({'ret':temp_list})
     else:
         ack_dict.update({'ack':'unknow cmd'})
