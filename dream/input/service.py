@@ -111,7 +111,7 @@ def market_monitor(lock):
                     trading_duration = 'Normal'
                 elif trade_session['Post']['Start'] <= timestamp_now < trade_session['Post']['End']:
                     trading_duration = 'Post'
-                    if not hasattr(index, 'post_market_quote'): # If there is post_market info, using it
+                    if hasattr(index, 'post_market_quote'): # If there is post_market info, using it
                         session_obj = index.post_market_quote
                 elif trade_session['Night']['Start'] <= timestamp_now < trade_session['Night']['End']:  # For night, not support yet, using normal info for now
                     trading_duration = 'Night'
