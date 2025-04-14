@@ -1,12 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <contents>
-    <strategy>
+    <long_strategy>
+        <AAPL><type>bollinger</type><item>config_0</item></AAPL>
         <NVDA><type>mean_reversion</type><item>config_1</item></NVDA>
         <TSLA><type>mean_reversion</type><item>config_2</item></TSLA>
         <MSFT><type>mean_reversion</type><item>config_3</item></MSFT>
         <GOLD><type>mean_reversion</type><item>config_4</item></GOLD>
         <YANG><type>mean_reversion</type><item>config_5</item></YANG>
-    </strategy>
+    </long_strategy>
+
+    <short_strategy>
+        <NVDA><type>bollinger</type><item>config_0</item></NVDA>
+    </short_strategy>
 
     <mean_reversion>
         <config_0>
@@ -40,4 +45,11 @@
             <cool_down_period>4</cool_down_period>  <!--Minimum trading day interval -->
         </config_5>
     </mean_reversion>
+    <bollinger>
+        <config_0>
+            <window_size>40</window_size>   <!--Should match with config: realtime_interval-->
+            <k_val>3.5</k_val>    <!--Should match with config: window_size-->
+            <probability_limit>80</probability_limit>  <!--Minimum probability -->
+        </config_0>
+    </bollinger>
 </contents>

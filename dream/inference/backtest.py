@@ -72,7 +72,7 @@ def get_portfolio(df):
     return total_capital
 
 def backtest_single(target, df):
-    stategy_handle = get_stategy_handle(target)
+    stategy_handle = get_stategy_handle(target, 'long')
     if stategy_handle == None:
         log.get().error('stategy_handle Null')
         return init_capital

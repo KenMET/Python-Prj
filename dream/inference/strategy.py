@@ -4,6 +4,7 @@
 import os
 import sys
 import json
+import math
 import random
 import datetime, time
 import numpy as np
@@ -15,20 +16,28 @@ py_dir = os.path.dirname(os.path.realpath(__file__))
 py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
 sys.path.append(r'%s/'%(py_dir))
 sys.path.append(r'%s/../common'%(py_dir))
-from config import get_strategy
+from config import get_strategy, get_global_config
+from database import get_dog_last_price
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
 import log
 
-def get_stategy_handle(target):
+
+def get_stategy_handle(target, trade_type):
     strategy_dict = get_strategy(target)
-    strategy_type = strategy_dict['class']
-    if strategy_type == 'basic':
-        short = int(strategy_dict['short_window'])
-        long = int(strategy_dict['long_window'])
-        th = float(strategy_dict['threshold'])
-        trade_interval = int(strategy_dict['cool_down_period'])
+    strategy_type = strategy_dict[trade_type]['class']
+    #log.get('backtest').info('get_stategy_handle:%s %s %s'%(target, strategy_type, str(strategy_dict)))
+    if strategy_type == 'mean_reversion':
+        short = int(strategy_dict[trade_type]['detail']['short_window'])
+        long = int(strategy_dict[trade_type]['detail']['long_window'])
+        th = float(strategy_dict[trade_type]['detail']['threshold'])
+        trade_interval = int(strategy_dict[trade_type]['detail']['cool_down_period'])
         stategy_handle = basic(short, long, th, trade_interval)
-    elif strategy_type == 'xxxx':   # to be update
+    elif strategy_type == 'bollinger':
+        window_size = int(strategy_dict[trade_type]['detail']['window_size'])
+        k_val = float(strategy_dict[trade_type]['detail']['k_val'])
+        probability_limit = float(strategy_dict[trade_type]['detail']['probability_limit'])
+        stategy_handle = bollinger(window_size, k_val, probability_limit)
+    elif strategy_type == 'xxx':   # to be update
         pass
     return stategy_handle
 
@@ -113,36 +122,83 @@ class basic:
     # 满足条件时[x,+∞]会触发sell: (219.16 + 219.57 + x) / 3 = (1 + th) * (217.8 + 219.16 + 219.57 + x) / 4
     # 满足条件时[-∞,x]会触发buy:  (219.16 + 219.57 + x) / 3 = (1 - th) * (217.8 + 219.16 + 219.57 + x) / 4
     # Then [x,+∞] trigger sell:  (sum(short_df) + x) / short_window_size = threshold * (sum(long_df) + x) / long_window_size
+    #
     #                 sum(short_df) * long_window_size - threshold * short_window_size * sum(long_df)
     # expect = x = -------------------------------------------------------------------------------------
     #                   threshold * short_window_size - long_window_size
-    def mean_reversion_expect(self, df):
+    def probability(self, df, dog_id=None):
         df = self.mean_reversion(df)
         last_index = len(df) - 1
         if last_index - self.last_signal_day < self.trade_interval:
-            return {}  # 仍在冷却期内
+            return 0.1, 0.1  # 仍在冷却期内
 
-        short_df = df['Close'].tail(self.short - 1)
-        long_df = df['Close'].tail(self.long - 1)
-        last = df['Close'].tail(1).item()
-        #log.get('backtest').info('last:%.2f'%(last))
+        price_column_name = ''
+        if 'Price' in df.columns:
+            price_column_name = 'Price'
+        elif 'Close' in df.columns:
+            price_column_name = 'Close'
+        else:
+            return 0.1, 0.2
+        short_df = df[price_column_name].tail(self.short - 1)
+        long_df = df[price_column_name].tail(self.long - 1)
+        if dog_id == None:
+            last = df[price_column_name].tail(1).item()
+        else:
+            last = get_dog_last_price(dog_id)
+        log.get('backtest').info('last:%.2f'%(last))
         #log.get('backtest').info('threshold:%.2f'%(self.th))
 
         threshold = (1 - self.th)
         expect_buy = sum(short_df) * self.long - threshold * self.short * sum(long_df)
         expect_buy /= threshold * self.short - self.long
-        #log.get('backtest').info('expect_buy:[0, %.2f]'%(expect_buy))
+        log.get('backtest').info('expect_buy:[0, %.2f]'%(expect_buy))
         
         threshold = (1 + self.th)
         expect_sell = sum(short_df) * self.long - threshold * self.short * sum(long_df)
         expect_sell /= threshold * self.short - self.long
-        #log.get('backtest').info('expect_sell: [%.2f, +∞]'%(expect_sell))
+        log.get('backtest').info('expect_sell: [%.2f, +∞]'%(expect_sell))
 
-        ret_dict = {}
-        if expect_buy > 0 and abs((last - expect_buy) / last) < 0.1:         # expect > 0 or diff under 10%
-            ret_dict.update({'buy':expect_buy})
-        if expect_sell > 0 and abs((last - expect_sell) / last) < 0.1:       # expect > 0 or diff under 10%
-            ret_dict.update({'sell':expect_sell})
+        steepness = float(get_global_config('price_steepness'))
+        trough_probability = 100 * max(0.0, min(1.0, math.exp(-steepness * (last - expect_buy))))
+        peak_probability =100 * max(0.0, min(1.0, math.exp(-steepness * (expect_sell - last))))
 
-        return ret_dict
+        return float(trough_probability), float(peak_probability)
 
+class bollinger:
+    def __init__(self, window_size, k_val, probability_limit):
+        self.window_size = window_size
+        self.k_val = k_val
+        self.probability_limit = probability_limit
+        self.bollinger_list = []
+
+    def probability(self, df, dog_id=None):
+        price_column_name = ''
+        if 'Price' in df.columns:
+            price_column_name = 'Price'
+        elif 'Close' in df.columns:
+            price_column_name = 'Close'
+        else:
+            return 0.1, 0.1
+        rolling_mean = df[price_column_name].rolling(self.window_size).mean()
+        rolling_std = df[price_column_name].rolling(self.window_size).std()
+        upper_band = rolling_mean + self.k_val * rolling_std
+        lower_band = rolling_mean - self.k_val * rolling_std
+
+        current_price = df[price_column_name].iloc[-1]
+        dist_upper = (upper_band.iloc[-1] - current_price) / (2 * self.k_val * rolling_std.iloc[-1])
+        dist_lower = (current_price - lower_band.iloc[-1]) / (2 * self.k_val * rolling_std.iloc[-1])
+
+        self.bollinger_list.append({
+            "peak": max(0, 100 * (1 - dist_upper)),
+            "trough": max(0, 100 * (1 - dist_lower))
+        })
+
+        if len(self.bollinger_list) < 2:
+            return float(self.bollinger_list[-1]["trough"]), float(self.bollinger_list[-1]["peak"])
+
+        last_trough_probability = [round(float(i.get("trough", 0.0)), 2) for i in self.bollinger_list[-2:]]
+        avg_trough_probability = (last_trough_probability[0] + last_trough_probability[1]) / 2
+        last_peak_probability = [round(float(i.get("peak", 0.0)), 2) for i in self.bollinger_list[-2:]]
+        avg_peak_probability = (last_peak_probability[0] + last_peak_probability[1]) / 2
+
+        return float(avg_trough_probability), float(avg_peak_probability)

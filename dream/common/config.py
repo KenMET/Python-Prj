@@ -55,23 +55,41 @@ def get_notify_list(market='cn'):
 
 def get_strategy(id):
     cfg = config('strategy')
-    tmp = cfg.get('strategy', {})
+    long_tmp = cfg.get('long_strategy', {})
+    short_tmp = cfg.get('short_strategy', {})
+
+    # Default short/long-term trade strategy
+    strategy_dict = {}
+    strategy_dict.update({'long':{'class':'bollinger', 'detail':cfg.get('bollinger', {}).get('config_0', {})}})
+    strategy_dict.update({'short':{'class':'bollinger', 'detail':cfg.get('bollinger', {}).get('config_0', {})}})
+
     strategy_type = ''
     strategy_item = ''
-    default_config = {'class':'basic'}
-    default_config.update(cfg.get('mean_reversion', {}).get('config_0', {}))
-
-    for index in tmp:
+    for index in long_tmp:
         if index == id:
-            strategy_type = tmp[index].get('type', '')
-            strategy_item = tmp[index].get('item', '')
+            strategy_type = long_tmp[index].get('type', '')
+            strategy_item = long_tmp[index].get('item', '')
+            break
     if strategy_type == '' or strategy_item == '':
-        return default_config
+        return strategy_dict
+    detail = cfg.get(strategy_type, {}).get(strategy_item, {})
+    tmp = {'class':strategy_type, 'detail':detail}
+    strategy_dict.update({'long':tmp})
 
-    tmp = cfg.get(strategy_type, {}).get(strategy_item, {})
-    if strategy_type == 'mean_reversion':
-        tmp.update({'class':'basic'})
-    return tmp
+    strategy_type = ''
+    strategy_item = ''
+    for index in short_tmp:
+        if index == id:
+            strategy_type = short_tmp[index].get('type', '')
+            strategy_item = short_tmp[index].get('item', '')
+            break
+    if strategy_type == '' or strategy_item == '':
+        return strategy_dict
+    detail = cfg.get(strategy_type, {}).get(strategy_item, {})
+    tmp = {'class':strategy_type, 'detail':detail}
+    strategy_dict.update({'short':tmp})
+
+    return strategy_dict
 
 def get_global_config(config_name):
     cfg = config('user')
@@ -80,6 +98,12 @@ def get_global_config(config_name):
 def get_user_config(user, class_name, config_name):
     cfg = config('user')
     return cfg.get(user, {}).get(class_name, {}).get(config_name, None)
+
+def get_short_trade_list(user, market='us'):
+    tmp_list = get_user_config(user, 'short_term_trade_list', market).get('id', [])
+    if type(tmp_list) == type(''):
+        tmp_list = [tmp_list, ]
+    return tmp_list
 
 def get_adata_key():
     cfg = config('user')
@@ -94,7 +118,7 @@ def main():
     log.get().info('Logger Creat Success...')
 
     
-    log.get().info(get_strategy('NVDA'))
+    log.get().info(get_short_trade_list('kanos'))
 
 
 if __name__ == '__main__':

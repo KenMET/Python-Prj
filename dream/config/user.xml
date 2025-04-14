@@ -1,12 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <contents>
     <global>
-        <realtime_interval>60</realtime_interval>                      <!-- Realtime Looping interval [x second] -->
-        <order_interval>60</order_interval>                            <!-- Order monitor looping interval [x second] -->
+        <realtime_interval>60</realtime_interval>                       <!-- Realtime Looping interval [x second] -->
+        <order_interval>60</order_interval>                             <!-- Order monitor looping interval [x second] -->
         <order_monitor_interval>600</order_monitor_interval>            <!-- How many second to check if there have new order [x second] -->
         <realtime_dog_expierd>5</realtime_dog_expierd>                  <!-- Realtime Dog expierd days, keep [x days] realtime data only -->
         <realtime_option_expierd>30</realtime_option_expierd>           <!-- Realtime Option expierd days, keep [x days] realtime data only -->
         <next_inject_factor>1.1</next_inject_factor>                    <!-- How many to buy/sell in sequence -->
+        <price_steepness>0.8</price_steepness>                          <!-- Attenuation coefficient for mean_reversion, larger means higher probability when now price close to expect price-->
+        <bollinger_limit>75</bollinger_limit>                           <!-- Percent that probability > this value, than trigger operation -->
+        <bollinger_avg_cnt>2</bollinger_avg_cnt>                        <!-- Avg Count that probability > this value how many times to trigger -->
+        <opt_cash_limit>1200</opt_cash_limit>                           <!-- Operation up limit cash every operation -->
     </global>
     <kanos>     <!--Defined as house name-->
         <option>
@@ -22,6 +26,9 @@
             <profit_percent>10</profit_percent>     <!-- Expected earn(Stop profit) dollar (not include fee) -->
             <fee>3</fee>                            <!-- Operation fee, once.........cannot get from order detail... don't know why-->
         </dog>
+        <short_term_trade_list>
+            <us><id>NVDA</id><id>TSLA</id></us>
+        </short_term_trade_list>
     </kanos>
     <sentiment_key>
         <key>NSVARWKAJGLQA942</key>

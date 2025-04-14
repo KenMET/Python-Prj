@@ -295,6 +295,14 @@ def del_dog_realtime(dog_id):     # last_min == -1 mean all need to be return
     db.closeSession()
     return True
 
+def get_dog_last_price(dog_id):
+    rt_last_list = get_dog_realtime_cnt(dog_id, 1)
+    if len(rt_last_list) > 0:
+        rt_last = rt_last_list[0]
+        return float(rt_last.get('Price', 0.0))
+    daily_last = get_market_last(dog_id)
+    return float(daily_last.get('Close', 0.0))
+
 def get_dog_options(dog_id, direction):
     db = create_if_option_inexist()
     ret = db.query_option_by_dog(dog_id, direction)    
@@ -327,7 +335,7 @@ def get_last_expectation(market, today=False):  # If need today's exception, the
         result_dict = ast.literal_eval(result_dict_str)
         if len(result_dict) != 0:
             db.closeSession()
-            if (today and date_tmp == datetime.datetime.today()) or (not today):
+            if (today and date_tmp == datetime.date.today()) or (not today):
                 return result_dict
             else:
                 return {}

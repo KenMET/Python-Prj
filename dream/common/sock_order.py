@@ -24,6 +24,8 @@ def ping_order_sock():
     return push_dict_to_socket(get_user_type('_'), tmp_dict)
 
 def submit_order(dog_id, side, price, share):
+    if dog_id.find('.US') <= 0:
+        dog_id = dog_id + '.US'
     tmp_dict = {
         'cmd':'submit_order',
         'dog_id':dog_id,
