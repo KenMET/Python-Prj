@@ -22,14 +22,14 @@ sys.path.append(r'%s/../inference'%(py_dir))
 sys.path.append(r'%s/../common'%(py_dir))
 from config import get_trade_list, get_global_config, get_user_config, get_short_trade_list
 from other import wait_us_market_open, get_user_type, get_next_inject, get_last_inject
-from other import get_current_session_and_remaining_time, is_dog_option
+from other import get_current_session_and_remaining_time, is_dog_option, append_dict_list, clear_dict_list
 from sock_order import submit_order, query_order, cancel_order, modify_order
 from sock_realtime import query_dog_cnt, register_dog
 sys.path.append(r'%s/../input'%(py_dir))
-from longport_api import quantitative_init, get_quote_context, get_cost_price_fee, get_last_price
+from longport_api import quantitative_init, get_cost_price_fee
 from longport_api import get_open_order_from_longport, get_filled_order_from_longport
-from database import get_house_detail, get_holding, create_if_order_inexist
-from database import get_last_expectation, get_open_order, get_dog_realtime_min
+from database import create_if_order_inexist, get_house_detail, get_holding, get_open_order
+from database import get_last_expectation, get_dog_realtime_min, get_dog_realtime_cnt
 sys.path.append(r'%s/../inference'%(py_dir))
 from expectation import get_expect
 from strategy import get_stategy_handle
@@ -304,10 +304,26 @@ def trigger_order_monitor():
 
     return thread_dict
 
+def get_realtime_filter_df(target, minutes):
+    # Fetch dog realtime market info
+    df = pd.DataFrame(get_dog_realtime_min(target, last_min=minutes))
+    #log.get(log_name).info(df)
+    df = df.sort_values(by='DogTime', ascending=True)
+    df['Time'] = pd.to_datetime(df['DogTime'].str.extract(r'(\d{8}\d{6})')[0], format='%Y%m%d%H%M%S')
+
+    # Filter for time range
+    df['Time_only'] = df['Time'].dt.time
+    start_time = pd.to_datetime('16:00:00').time()
+    end_time = pd.to_datetime('02:00:00').time()
+    filtered_df = df[((df['Time_only'] >= start_time)|(df['Time_only'] <= end_time))]
+    return filtered_df
+
+
 def short_term_trade(house_dict):
     def init_prob_list():
         return [0.0 for i in range(int(get_global_config('bollinger_avg_cnt')))]
-    available_cash = float(house_dict['AvailableCash'])
+
+    # Register dog to realtime service
     user_type = get_user_type('-')
     user = user_type.split('-')[0]
     trade_list = get_short_trade_list(user)
@@ -317,75 +333,91 @@ def short_term_trade(house_dict):
             log.get(log_name).info('register realtime for: %s %s'%(index, str(recv_dict)))
     except Exception as e:
         log.get(log_name).error('Exception captured in short_term_trade register_dog: %s'%(str(e)))
-    target = random.choice(trade_list)
-    log.get(log_name).info('random choice target: %s'%(target))
 
-    trough_prob_list = init_prob_list()
-    peak_prob_list = init_prob_list()
+    # Get target list and global static parameters
+    target_list = random.sample(trade_list, 2)
+    log.get(log_name).info('random choice target_list: %s'%(str(target_list)))
+    available_cash = float(house_dict['AvailableCash'])
     avg_cnt = int(get_global_config('bollinger_avg_cnt'))
     opt_cash_limit = float(get_global_config('opt_cash_limit'))
-    stategy_handle = get_stategy_handle(target, 'short')
-    trade_order_list = []
-    quote_ctx = get_quote_context()
+    bollinger_limit = float(get_global_config('bollinger_limit'))
+    price_float_th = float(get_global_config('price_float_th'))
+
+    # Init data or object
+    trade_order_dict = {}
+    prob_dict = {}
+    last_trigger_price_dict = {}
     bark_obj = notify.bark()
+
     while(True):
-        now_seesion, surplus_min = get_current_session_and_remaining_time('Normal')   # Track till Normal session end
-        if now_seesion == 'Post' or now_seesion == 'Night' or surplus_min < 30:
+        time.sleep(int(get_global_config('realtime_interval')))
+
+        # Check current session
+        now_seesion, surplus_min = get_current_session_and_remaining_time('Post')   # Track till Post session end
+        if now_seesion == 'Night' or surplus_min < 30:
             log.get(log_name).info('Current Session: %s, [%d] minutes left, stop short trade monitor...'%(now_seesion, surplus_min))
             break
         else:
-            log.get(log_name).debug('[%s]Current Session: %s, [%d] minutes left, continue short trade monitor...'%(target, now_seesion, surplus_min))
-        time.sleep(int(get_global_config('realtime_interval')))
-        # Fetch dog realtime market info
-        df = pd.DataFrame(get_dog_realtime_min(target, last_min=(1 * 60)))    # 1 hours
-        #log.get(log_name).info(df)
-        df = df.sort_values(by='DogTime', ascending=True)
-        df['Time'] = pd.to_datetime(df['DogTime'].str.extract(r'(\d{8}\d{6})')[0], format='%Y%m%d%H%M%S')
+            log.get(log_name).debug('Current Session: %s, [%d] minutes left, continue short trade monitor...'%(now_seesion, surplus_min))
 
-        # Filter for time range
-        df['Time_only'] = df['Time'].dt.time
-        start_time = pd.to_datetime('16:00:00').time()
-        end_time = pd.to_datetime('02:00:00').time()
-        filtered_df = df[((df['Time_only'] >= start_time)|(df['Time_only'] <= end_time))]
-
-        # Get probability
-        trough_prob, peak_prob = stategy_handle.probability(filtered_df, dog_id=target)
-        trough_prob_list.append(trough_prob)
-        peak_prob_list.append(peak_prob)
-
-        bollinger_limit = float(get_global_config('bollinger_limit'))
-        if trough_prob >= bollinger_limit and peak_prob >= bollinger_limit:
-            log.get(log_name).error('%s: Probability Error both > %.2f [%.2f%% , %.2f%%]'%(target, bollinger_limit, trough_prob, peak_prob))
-            break
-        last_symbol_price = get_last_price(quote_ctx, target+'.US')
-        log.get(log_name).info('[%s]:%.2f trough[%.2f], peak[%.2f]'%(target, last_symbol_price, trough_prob, peak_prob))
         content = ''
-        if all(val > bollinger_limit for val in peak_prob_list[-avg_cnt:]):
+        for target in trade_list:
+            stategy_handle = get_stategy_handle(target, 'short')
+
+            # Get and update probability
+            df = get_realtime_filter_df(target, 1 * 60)     # 1 hour
+            trough_prob, peak_prob = stategy_handle.probability(df, dog_id=target)
+            trough_prob_list = prob_dict.get(target, {}).get('trough', init_prob_list())
+            peak_prob_list = prob_dict.get(target, {}).get('peak', init_prob_list())
+            append_dict_list(prob_dict, target, trough_prob, key_sub='trough')
+            append_dict_list(prob_dict, target, peak_prob, key_sub='peak')
+            if trough_prob >= bollinger_limit and peak_prob >= bollinger_limit:
+                log.get(log_name).error('%s: Probability Error both > %.2f [%.2f%% , %.2f%%]'%(target, bollinger_limit, trough_prob, peak_prob))
+                break
+
+            # Get price of now
+            now_price = get_dog_realtime_cnt(target, 1)[0].get('Price', 0.1)
+            log.get(log_name).info('[%s]:%.2f trough[%.2f], peak[%.2f]'%(target, now_price, trough_prob, peak_prob))
+
             share = 0
-            for index in trade_order_list:
-                if index['status'] == 'New':
-                    share += index['share']
-            trade_order_list = []
-            if share == 0:
-                continue
-            recv_dict = None#submit_order(dog_id, 'sell', last_symbol_price, share)
-            content = '[%s] Sell [%d] in %.2f'%(target, share, last_symbol_price)
-            peak_prob_list = init_prob_list()
-        elif all(val > bollinger_limit for val in trough_prob_list[-avg_cnt:]):
-            share = opt_cash_limit // last_symbol_price
-            if share == 0:
-                continue
-            recv_dict = None#submit_order(dog_id, 'sell', last_symbol_price, share)
-            content = '[%s] Buy [%d] in %.2f'%(target, share, last_symbol_price)
-            trough_prob_list = init_prob_list()
-            trade_order_list.append({
-                'order_id': str(time.time()),
-                'price':last_symbol_price,
-                'shares':share,
-                'status':'New',
-            })
+            last = last_trigger_price_dict.get(target, init_prob_list())[-1]
+            action_type = 'sell' if all(val > bollinger_limit for val in peak_prob_list[-avg_cnt:]) else \
+                        'buy' if all(val > bollinger_limit for val in trough_prob_list[-avg_cnt:]) else ''
+
+            # Get operation shares
+            if action_type == 'sell':
+                share = 0
+                for index in trade_order_dict.get(target, []):
+                    if index['status'] == 'New':
+                        share += index['share']
+                clear_dict_list(trade_order_dict, target)
+                if share == 0:
+                    log.get(log_name).debug('[%s]Nothing to Sell this time...'%(target))
+                    #continue
+            elif action_type == 'buy':
+                share = opt_cash_limit // now_price
+                if share == 0:
+                    log.get(log_name).debug('[%s]No Cash to Buy this time...'%(target))
+                    #continue
+
+            # Start submit order and update data and notify to phone
+            if action_type != '':
+                append_dict_list(last_trigger_price_dict, target, now_price)
+                price_diff = ((now_price - last) / last) if (action_type == 'sell') else ((last - now_price) / last)
+                if last > 0.01 and price_diff < price_float_th:
+                    log.get(log_name).debug('[%s]%s, too less diff last[%.2f], now[%.2f]'%(target, action_type, last, now_price))
+                    continue
+                recv_dict = None#submit_order(dog_id, action_type, now_price, share)
+                content += '[%s] %s [%d] in %.2f\n'%(target, action_type, share, now_price)
+                if action_type == 'buy':
+                    append_dict_list(trade_order_dict, target, {
+                        'order_id': str(time.time()),
+                        'price':now_price,
+                        'shares':share,
+                        'status':'New',
+                    })
         if content != '':
-            log.get(log_name).info(content + ', ret: %s'%(str(recv_dict)))
+            #log.get(log_name).info(content + ', ret: %s'%(str(recv_dict)))
             bark_obj.send_title_content('Short Trade-%s'%(get_user_type('-')), content)
 
 def main(args):

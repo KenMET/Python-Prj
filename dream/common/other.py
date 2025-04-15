@@ -7,7 +7,7 @@ import sys
 import json
 import math
 import socket
-import random
+import argparse
 import datetime, time
 import pytz
 
@@ -126,3 +126,63 @@ def get_last_inject(a, factor=1.0):
             return possible_inc
 
     return -1
+
+# Append item to dict
+# Scense-1
+# Origin: my_dict = {'NVDA': [1, 2, 3, 4], 'TSLA': [6]}
+# After append with append_dict_list(my_dict, "NVDA", 5)
+# Then print (my_dict) ->
+#   my_dict = {'NVDA': [1, 2, 3, 4, 5], 'TSLA': [6]}
+#
+# Scense-2
+# Origin: my_dict = {'NVDA': {'peak':[1, 2], 'trough':[3, 4]}, 'TSLA': {'peak':[5, 6], 'trough':[7, 8]}}
+# After append with append_dict_list(my_dict, "NVDA", 10, key_sub='peak')
+# Then print (my_dict) ->
+#   my_dict = {'NVDA': {'peak':[1, 2，10], 'trough':[3, 4]}, 'TSLA': {'peak':[5, 6], 'trough':[7, 8]}}
+def append_dict_list(tmp_dict, key_main, val, key_sub=None):
+    if key_sub is None:
+        if key_main in tmp_dict:
+            tmp_dict[key_main].append(val)
+        else:
+            tmp_dict[key_main] = [val]
+    else:
+        if key_main not in tmp_dict:
+            tmp_dict[key_main] = {}
+        sub_dict = tmp_dict[key_main]
+        if key_sub not in sub_dict:
+            sub_dict[key_sub] = []
+        sub_dict[key_sub].append(val)
+
+def clear_dict_list(tmp_dict, key_main, key_sub=None):
+    if key_sub is None:
+        if key_main in tmp_dict:
+            tmp_dict[key_main] = []
+    else:
+        if key_main in tmp_dict:
+            sub_dict = tmp_dict[key_main]
+            if key_sub in sub_dict:
+                sub_dict[key_sub] = []
+
+def main(args):
+    log.init('%s/../log'%(py_dir), py_name, log_mode='w', log_level='info', console_enable=True)
+    log.get().info('Logger Creat Success...[%s]'%(py_name))
+
+    my_dict1 = {"NVDA": [1, 2, 3]}
+    append_dict_list(my_dict1, "NVDA", 4)
+    append_dict_list(my_dict1, "TSLA", 6)
+    log.get().info('my_dict1:%s'%(str(my_dict1)))
+
+    my_dict2 = {'NVDA': {'peak':[1, 2], 'trough':[3, 4]}, 'TSLA': {'peak':[5, 6], 'trough':[7, 8]}}
+    append_dict_list(my_dict2, "NVDA", 10, key_sub='peak')
+    log.get().info('my_dict2:%s'%(str(my_dict2)))
+
+if __name__ == '__main__':
+    # Create ArgumentParser Object
+    parser = argparse.ArgumentParser(description="A API subset")
+
+    # Append arguments
+    parser.add_argument('--test', type=bool, default=False, help='Test mode enable(True) or not(False as default)')
+
+    # 解析命令行参数
+    args = parser.parse_args()
+    main(args)

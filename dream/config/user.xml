@@ -8,9 +8,10 @@
         <realtime_option_expierd>30</realtime_option_expierd>           <!-- Realtime Option expierd days, keep [x days] realtime data only -->
         <next_inject_factor>1.1</next_inject_factor>                    <!-- How many to buy/sell in sequence -->
         <price_steepness>0.8</price_steepness>                          <!-- Attenuation coefficient for mean_reversion, larger means higher probability when now price close to expect price-->
-        <bollinger_limit>75</bollinger_limit>                           <!-- Percent that probability > this value, than trigger operation -->
-        <bollinger_avg_cnt>2</bollinger_avg_cnt>                        <!-- Avg Count that probability > this value how many times to trigger -->
+        <bollinger_limit>80</bollinger_limit>                           <!-- Percent that probability > this value, than trigger operation -->
+        <bollinger_avg_cnt>3</bollinger_avg_cnt>                        <!-- Avg Count that probability > this value how many times to trigger -->
         <opt_cash_limit>1200</opt_cash_limit>                           <!-- Operation up limit cash every operation -->
+        <price_float_th>0.015</price_float_th>                           <!-- 2 continue same operation need have price diff -->
     </global>
     <kanos>     <!--Defined as house name-->
         <option>

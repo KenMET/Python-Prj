@@ -84,7 +84,7 @@ def main(args):
             if (abs(format_price - dog_last_price) / dog_last_price) > dog_price_diff:
                 continue
 
-            last_symbol_price = get_last_price(quote_ctx, symbol)     # Using api directly, do not register to realtime service
+            last_symbol_price = get_last_price(quote_ctx, 'Normal', symbol)     # Using api directly, do not register to realtime service
             if option_price_min <= last_symbol_price <= option_price_max:
                 goal_option_list = goal_option_dict.get(symbol_type, [])
                 goal_option_list.append(option_index)

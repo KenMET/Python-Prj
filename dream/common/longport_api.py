@@ -58,10 +58,18 @@ def get_trading_session(market):
         trading_session_dict.update({market_temp:market_session_dict})
     return trading_session_dict.get(market,{})
 
-def get_last_price(quote_ctx, code):
-    #quote_ctx = get_quote_context()
+def get_last_price(quote_ctx, session, code):
     resp = quote_ctx.quote([code])
-    return float(resp[0].last_done)
+    for index in resp:
+        if session == 'Normal':
+            return float(index.last_done)
+        if session == 'Pre':
+            return float(index.pre_market_quote.last_done)
+        if session == 'Post':
+            return float(index.post_market_quote.last_done)
+        if session == 'Night':
+            return -0.1
+    return -0.2
 
 def get_option_dict_from_obj(option_status_index):
     option_dict = {
