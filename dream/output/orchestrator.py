@@ -313,15 +313,33 @@ def get_realtime_filter_df(target, minutes):
 
     # Filter for time range
     df['Time_only'] = df['Time'].dt.time
-    start_time = pd.to_datetime('16:00:00').time()
-    end_time = pd.to_datetime('02:00:00').time()
-    filtered_df = df[((df['Time_only'] >= start_time)|(df['Time_only'] <= end_time))]
-    return filtered_df
+    #start_time = pd.to_datetime('16:00:00').time()
+    #end_time = pd.to_datetime('02:00:00').time()
+    #filtered_df = df[((df['Time_only'] >= start_time)|(df['Time_only'] <= end_time))]
+    #return filtered_df
+    return df
 
+def get_continue_cnt(lst):
+    if len(lst) == 0:
+        return 1, 1
+
+    count = 1
+    last_element = lst[-1]
+    for i in range(len(lst) - 2, -1, -1):
+        if lst[i] == last_element:
+            count += 1
+        else:
+            break
+    if last_element == 'sell':
+        return 1, count
+    elif last_element == 'buy':
+        return count, 1
+    else:
+        return 1, 1
 
 def short_term_trade(house_dict):
     def init_prob_list():
-        return [0.0 for i in range(int(get_global_config('bollinger_avg_cnt')))]
+        return [0.001 for i in range(int(get_global_config('bollinger_avg_cnt')))]
 
     # Register dog to realtime service
     user_type = get_user_type('-')
@@ -346,7 +364,8 @@ def short_term_trade(house_dict):
     # Init data or object
     trade_order_dict = {}
     prob_dict = {}
-    last_trigger_price_dict = {}
+    trigger_price_dict = {}
+    trigger_action_list = []
     bark_obj = notify.bark()
 
     while(True):
@@ -365,7 +384,9 @@ def short_term_trade(house_dict):
             stategy_handle = get_stategy_handle(target, 'short')
 
             # Get and update probability
-            df = get_realtime_filter_df(target, 1 * 60)     # 1 hour
+            #start_time = time.time()
+            df = get_realtime_filter_df(target, int(1 * 60))     # Must large then window size
+            #log.get(log_name).debug('get_realtime_filter_df elapsed_time: %.3f'%(time.time() - start_time))    # Read database cost time
             trough_prob, peak_prob = stategy_handle.probability(df, dog_id=target)
             trough_prob_list = prob_dict.get(target, {}).get('trough', init_prob_list())
             peak_prob_list = prob_dict.get(target, {}).get('peak', init_prob_list())
@@ -375,16 +396,22 @@ def short_term_trade(house_dict):
                 log.get(log_name).error('%s: Probability Error both > %.2f [%.2f%% , %.2f%%]'%(target, bollinger_limit, trough_prob, peak_prob))
                 break
 
-            # Get price of now
-            now_price = get_dog_realtime_cnt(target, 1)[0].get('Price', 0.1)
-            log.get(log_name).info('[%s]:%.2f trough[%.2f], peak[%.2f]'%(target, now_price, trough_prob, peak_prob))
+            # Get continue action and increase avg_cnt as pyramid
+            buy_continue, sell_continue = get_continue_cnt(trigger_action_list)
+            buy_avg_cnt = buy_continue * avg_cnt
+            sell_avg_cnt = sell_continue * avg_cnt
+            action_type = 'sell' if all(val > bollinger_limit for val in peak_prob_list[-sell_avg_cnt:]) else \
+                        'buy' if all(val > bollinger_limit for val in trough_prob_list[-buy_avg_cnt:]) else ''
 
-            share = 0
-            last = last_trigger_price_dict.get(target, init_prob_list())[-1]
-            action_type = 'sell' if all(val > bollinger_limit for val in peak_prob_list[-avg_cnt:]) else \
-                        'buy' if all(val > bollinger_limit for val in trough_prob_list[-avg_cnt:]) else ''
+            # Get price of now
+            #start_time = time.time()
+            now_price = get_dog_realtime_cnt(target, 1)[0].get('Price', 0.1)
+            #log.get(log_name).debug('trigger_price_dict.get elapsed_time: %.3f'%(time.time() - start_time))    # Read database cost time
+            log.get(log_name).info('[%s]:%.2f trough[%.2f], peak[%.2f], action[%s]'%(target, now_price, trough_prob, peak_prob, action_type))
+            last = trigger_price_dict.get(target, init_prob_list())[-1]     # using init_prob_list for init only, but store price data in fact
 
             # Get operation shares
+            share = 0
             if action_type == 'sell':
                 share = 0
                 for index in trade_order_dict.get(target, []):
@@ -402,13 +429,16 @@ def short_term_trade(house_dict):
 
             # Start submit order and update data and notify to phone
             if action_type != '':
-                append_dict_list(last_trigger_price_dict, target, now_price)
+                trigger_action_list.append(action_type)
+                append_dict_list(trigger_price_dict, target, now_price)
+                #log.get(log_name).debug('[%s] last[%.2f] now_price[%.2f]'%(target, last, now_price))
                 price_diff = ((now_price - last) / last) if (action_type == 'sell') else ((last - now_price) / last)
                 if last > 0.01 and price_diff < price_float_th:
                     log.get(log_name).debug('[%s]%s, too less diff last[%.2f], now[%.2f]'%(target, action_type, last, now_price))
                     continue
                 recv_dict = None#submit_order(dog_id, action_type, now_price, share)
                 content += '[%s] %s [%d] in %.2f\n'%(target, action_type, share, now_price)
+                log.get(log_name).info('[%s] %s [%d] in %.2f'%(target, action_type, share, now_price) + ', ret: %s'%(str(recv_dict)))
                 if action_type == 'buy':
                     append_dict_list(trade_order_dict, target, {
                         'order_id': str(time.time()),
