@@ -464,18 +464,13 @@ def main(args):
     house_dict = get_house_detail(get_user_type('-'))
     log.get(log_name).info('house_dict: %s'%(str(house_dict)))
 
-    short_trade_t = threading.Thread(target=short_term_trade, args=(house_dict, ))
-    short_trade_t.start()
-    short_trade_t.join()
-
-    exit()
     # Submit order for Long-term trade
     for dog_index in expectation_dict:
         dog_opt = expectation_dict[dog_index]
         trade(house_dict, dog_opt, dog_index)
 
     # Start Short-term trade monitor
-    short_trade_t = threading.Thread(target=short_term_trade, args=(expectation_dict, ))
+    short_trade_t = threading.Thread(target=short_term_trade, args=(house_dict, ))
     short_trade_t.start()
 
     # Start order monitor
