@@ -391,7 +391,7 @@ def short_term_trade(house_dict):
                 if len(df) == 0:
                     log.get(log_name).error('%s Nothing in df'%(target))
                     error_cnt += 1
-                    break
+                    continue
                 #log.get(log_name).debug('get_realtime_filter_df elapsed_time: %.3f'%(time.time() - start_time))    # Read database cost time
                 trough_prob, peak_prob = stategy_handle.probability(df, dog_id=target)
                 trough_prob_list = prob_dict.get(target, {}).get('trough', init_prob_list())
@@ -400,7 +400,8 @@ def short_term_trade(house_dict):
                 append_dict_list(prob_dict, target, peak_prob, key_sub='peak')
                 if trough_prob >= bollinger_limit and peak_prob >= bollinger_limit:
                     log.get(log_name).error('%s: Probability Error both > %.2f [%.2f%% , %.2f%%]'%(target, bollinger_limit, trough_prob, peak_prob))
-                    break
+                    error_cnt += 1
+                    continue
 
                 # Get continue action and increase avg_cnt as pyramid
                 buy_continue, sell_continue = get_continue_cnt(trigger_action_dict.get(target, []))
