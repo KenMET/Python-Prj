@@ -307,6 +307,8 @@ def trigger_order_monitor():
 def get_realtime_filter_df(target, minutes):
     # Fetch dog realtime market info
     df = pd.DataFrame(get_dog_realtime_min(target, last_min=minutes))
+    if 'DogTime' not in df.columns:
+        return pd.DataFrame()
     #log.get(log_name).info(df)
     df = df.sort_values(by='DogTime', ascending=True)
     df['Time'] = pd.to_datetime(df['DogTime'].str.extract(r'(\d{8}\d{6})')[0], format='%Y%m%d%H%M%S')
@@ -369,6 +371,7 @@ def short_term_trade(house_dict):
     try:
         while(True):
             time.sleep(int(get_global_config('realtime_interval')))
+            error_cnt = 0
 
             # Check current session
             now_seesion, surplus_min = get_current_session_and_remaining_time('Post')   # Track till Post session end
@@ -385,6 +388,10 @@ def short_term_trade(house_dict):
                 # Get and update probability
                 #start_time = time.time()
                 df = get_realtime_filter_df(target, int(1 * 60))     # Must large then window size
+                if len(df) == 0:
+                    log.get(log_name).error('%s Nothing in df'%(target))
+                    error_cnt += 1
+                    break
                 #log.get(log_name).debug('get_realtime_filter_df elapsed_time: %.3f'%(time.time() - start_time))    # Read database cost time
                 trough_prob, peak_prob = stategy_handle.probability(df, dog_id=target)
                 trough_prob_list = prob_dict.get(target, {}).get('trough', init_prob_list())
@@ -449,6 +456,9 @@ def short_term_trade(house_dict):
                             'shares':share,
                             'status':'New',
                         })
+            if error_cnt == len(trade_list):
+                log.get(log_name).error('Error occurred in %s, exit short trade...'%(str(trade_list)))
+                break
             if content != '':
                 #log.get(log_name).info(content + ', ret: %s'%(str(recv_dict)))
                 bark_obj.send_title_content('Short Trade-%s'%(get_user_type('-')), content)
