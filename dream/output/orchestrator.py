@@ -24,7 +24,7 @@ from config import get_trade_list, get_global_config, get_user_config, get_short
 from other import wait_us_market_open, get_user_type, get_next_inject, get_last_inject
 from other import get_current_session_and_remaining_time, is_dog_option, append_dict_list, clear_dict_list
 from sock_order import submit_order, query_order, cancel_order, modify_order
-from sock_realtime import query_dog_cnt, register_dog
+from sock_realtime import register_dog
 sys.path.append(r'%s/../input'%(py_dir))
 from longport_api import quantitative_init, get_cost_price_fee
 from longport_api import get_open_order_from_longport, get_filled_order_from_longport
@@ -41,9 +41,9 @@ log_name = '%s_%s'%(py_name, get_user_type('_'))
 
 
 def query_dog_last(dog_id):
-    recv_dict = query_dog_cnt(dog_id, 1)    # query last data
+    recv_dict = get_dog_realtime_cnt(dog_id, 1)    # query last data
     if len(recv_dict['ret']) == 0:
-        log.get(log_name).error('[%s]query_dog_cnt recv_dict null: %s, please check realtime service'%(dog_id, str(recv_dict)))
+        log.get(log_name).error('[%s]get_dog_realtime_cnt recv_dict null: %s, please check realtime service'%(dog_id, str(recv_dict)))
         return False, 0, None
     last_dict = recv_dict['ret'][0]
     last_price = float(last_dict['Price'])
@@ -412,7 +412,7 @@ def short_term_trade(house_dict):
 
                 # Get price of now
                 #start_time = time.time()
-                now_price = get_dog_realtime_cnt(target, 1)[0].get('Price', 0.1)
+                now_price = get_dog_last_price(target)
                 #log.get(log_name).debug('trigger_price_dict.get elapsed_time: %.3f'%(time.time() - start_time))    # Read database cost time
                 log.get(log_name).info('[%s]:%.2f trough[%.2f], peak[%.2f], action[%s]'%(target, now_price, trough_prob, peak_prob, action_type))
                 last = trigger_price_dict.get(target, init_prob_list())[-1]     # using init_prob_list for init only, but store price data in fact

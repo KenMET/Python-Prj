@@ -24,22 +24,6 @@ def ping_realtime_sock():
     }
     return push_dict_to_socket('realtime', tmp_dict)
 
-def query_dog_min(dog_id, last_min=int(get_global_config('realtime_interval'))):
-    tmp_dict = {
-        'cmd':'query_dog_market',
-        'dog_id':dog_id,
-        'last_min':last_min,
-    }
-    return push_dict_to_socket('realtime', tmp_dict)
-
-def query_dog_cnt(dog_id, last_cnt=1):
-    tmp_dict = {
-        'cmd':'query_dog_market',
-        'dog_id':dog_id,
-        'last_cnt':last_cnt,
-    }
-    return push_dict_to_socket('realtime', tmp_dict)
-
 def register_dog(dog_id):
     tmp_dict = {
         'cmd':'register_dog',
@@ -51,9 +35,6 @@ def register_dog(dog_id):
 def main(args):
     log.init('%s/../log'%(py_dir), py_name, log_mode='w', log_level='info', console_enable=True)
     log.get().info('Logger Creat Success')
-
-    #recv_dict = query_dog('TSLA', 10)
-    #log.get().info('query_dog recv: %s'%(str(recv_dict)))
 
     #recv_dict = register_dog('TTWO')
     #log.get().info('register_dog recv: %s'%(str(recv_dict)))

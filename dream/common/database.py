@@ -3,6 +3,7 @@
 # System lib
 import ast
 import json
+import time
 import os, sys
 import argparse
 import datetime
@@ -260,32 +261,27 @@ def del_registered_dog(dog_id):
     db.closeSession()
     return flag
 
-def get_dog_realtime_min(dog_id, last_min=-1):     # last_min == -1 mean all need to be return
+def get_dog_realtime_min(dog_id, last_min=0):     # last_min == 0 mean all need to be return
     db = dbdr.db('dream_dog')
-    ret = db.query_sharing_by_dog(dog_id)
+    if last_min == 0:
+        ret = db.query_sharing_by_dog(dog_id)
+    elif last_min >= 1:
+        ret = db.query_dog_sharing_last_min(dog_id, last_min)
     temp_list = [db.get_dict_from_obj(n) for n in ret]
-    if last_min == -1:
-        db.closeSession()
-        return temp_list
-    result = []
-    for entry in temp_list:
-        dog_time_str = entry['DogTime'].split('-')[1]  # '20250207174225'
-        dog_time = datetime.datetime.strptime(dog_time_str, '%Y%m%d%H%M%S')
-        if (datetime.datetime.now() - dog_time) <= datetime.timedelta(minutes=int(last_min)):
-            result.append(entry)
+    result = sorted(temp_list, key=lambda x: x['DogTime'].split('-')[1], reverse=False)
     db.closeSession()
     return result
 
 def get_dog_realtime_cnt(dog_id, last_cnt=0):     # last_cnt == 0 mean all need to be return
     db = dbdr.db('dream_dog')
-    ret = db.query_sharing_by_dog(dog_id)
-    temp_list = [db.get_dict_from_obj(n) for n in ret]
     if last_cnt == 0:
-        db.closeSession()
-        return temp_list
-    result = sorted(temp_list, key=lambda x: x['DogTime'].split('-')[1], reverse=True)
+        ret = db.query_sharing_by_dog(dog_id)
+    elif last_cnt >= 1:
+        ret = db.query_dog_sharing_last(dog_id, last_cnt)
+    temp_list = [db.get_dict_from_obj(n) for n in ret]
+    result = sorted(temp_list, key=lambda x: x['DogTime'].split('-')[1], reverse=False)
     db.closeSession()
-    return result[:last_cnt]
+    return result
 
 def del_dog_realtime(dog_id):     # last_min == -1 mean all need to be return
     db = dbdr.db('dream_dog')
@@ -298,10 +294,10 @@ def del_dog_realtime(dog_id):     # last_min == -1 mean all need to be return
 def get_dog_last_price(dog_id):
     rt_last_list = get_dog_realtime_cnt(dog_id, 1)
     if len(rt_last_list) > 0:
-        rt_last = rt_last_list[0]
-        return float(rt_last.get('Price', 0.0))
+        rt_last = rt_last_list[-1]
+        return float(rt_last.get('Price', 0.00001))
     daily_last = get_market_last(dog_id)
-    return float(daily_last.get('Close', 0.0))
+    return float(daily_last.get('Close', 0.00001))
 
 def get_dog_options(dog_id, direction):
     db = create_if_option_inexist()
@@ -340,5 +336,26 @@ def get_last_expectation(market, today=False):  # If need today's exception, the
             else:
                 return {}
     return {}
+
+def main(args):
+    log.init('%s/../log'%(py_dir), py_name, log_mode='w', log_level='debug', console_enable=True)
+    log.get().info('Logger Creat Success...[%s]'%(py_name))
+
+    start_time = time.time()
+    test = get_dog_realtime_min('NVDA', 1000)
+    log.get().debug('ElapsedTime get_dog_realtime: %.3f'%(time.time() - start_time))
+    log.get().info(test[-2:])
+
+
+if __name__ == '__main__':
+    # Create ArgumentParser Object
+    parser = argparse.ArgumentParser(description="A input module for dog info fetch")
+
+    # Append arguments
+    parser.add_argument('--test', type=bool, default=False, help='Test mode enable(True) or not(False as default)')
+
+    # 解析命令行参数
+    args = parser.parse_args()
+    main(args)
 
 

@@ -3,7 +3,7 @@
 # System lib
 import os, sys
 import time, datetime
-from sqlalchemy import MetaData, Table, desc
+from sqlalchemy import MetaData, Table, desc, asc
 from sqlalchemy import Column, Integer, String, DATETIME, DATE, Text, VARCHAR, JSON, FLOAT
 
 # Customsized lib
@@ -155,6 +155,37 @@ class db(dbb.basedb):
             self.connectdb()
         Cls = self.create_realtime_dog_class()
         result = self.session.query(Cls).filter(Cls.DogTime.like('{0}-%'.format(dog_id))).all()
+        try:
+            self.session.commit()
+        except:
+            return []
+        else:
+            return result
+
+    def query_dog_sharing_last(self, dog_id, last_cnt):
+        if self.session is None:
+            self.connectdb()
+        Cls = self.create_realtime_dog_class()
+        result = self.session.query(Cls).filter(Cls.DogTime.like('{0}-%'.format(dog_id)))\
+            .order_by(desc(Cls.DogTime))\
+            .limit(last_cnt)\
+            .all()
+        try:
+            self.session.commit()
+        except:
+            return []
+        else:
+            return result
+
+    def query_dog_sharing_last_min(self, dog_id, last_min):
+        if self.session is None:
+            self.connectdb()
+        Cls = self.create_realtime_dog_class()
+        end = datetime.datetime.now()
+        end_dogtime = '%s-%s'%(dog_id, end.strftime('%Y%m%d%H%M%S'))
+        time_minutes_ago = end - datetime.timedelta(minutes=last_min)
+        start_dogtime = '%s-%s'%(dog_id, time_minutes_ago.strftime('%Y%m%d%H%M%S'))
+        result = self.session.query(Cls).filter(Cls.DogTime.between(start_dogtime, end_dogtime)).all()
         try:
             self.session.commit()
         except:

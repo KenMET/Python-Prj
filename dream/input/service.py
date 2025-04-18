@@ -162,17 +162,6 @@ def handle_dict(client_socket, lock, tmp_dict):
         else:
             log.get(log_name).error('[%s] register failed......'%(dog_id))
         ack_dict.update({'ret':str(flag)})
-    elif cmd == 'query_dog_market':
-        dog_id = tmp_dict['dog_id']
-        temp_list = []
-        last_min = tmp_dict.get('last_min', None)
-        last_cnt = tmp_dict.get('last_cnt', None)
-        if last_min != None:
-            temp_list = get_dog_realtime_min(dog_id, last_min)
-        elif last_cnt != None:
-            temp_list = get_dog_realtime_cnt(dog_id, last_cnt)
-        log.get(log_name).info('get_dog_realtime done [%s]:%s'%(dog_id, str(temp_list)))
-        ack_dict.update({'ret':temp_list})
     else:
         ack_dict.update({'ack':'unknow cmd'})
     #lock.release()
