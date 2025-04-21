@@ -29,7 +29,7 @@ sys.path.append(r'%s/../input'%(py_dir))
 from longport_api import quantitative_init, get_cost_price_fee
 from longport_api import get_open_order_from_longport, get_filled_order_from_longport
 from database import create_if_order_inexist, get_house_detail, get_holding, get_open_order
-from database import get_last_expectation, get_dog_realtime_min, get_dog_realtime_cnt
+from database import get_last_expectation, get_dog_realtime_min, get_dog_realtime_cnt, get_dog_last_price
 sys.path.append(r'%s/../inference'%(py_dir))
 from expectation import get_expect
 from strategy import get_stategy_handle
