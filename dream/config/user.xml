@@ -28,7 +28,7 @@
             <fee>3</fee>                            <!-- Operation fee, once.........cannot get from order detail... don't know why-->
         </dog>
         <short_term_trade_list>
-            <us><id>NVDA</id><id>TSLA</id></us>
+            <us><id>NVDL</id><id>TSLL</id></us>
         </short_term_trade_list>
     </kanos>
     <sentiment_key>
