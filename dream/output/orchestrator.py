@@ -42,7 +42,7 @@ log_name = '%s_%s'%(py_name, get_user_type('_'))
 
 def query_dog_last(dog_id):
     temp_list = get_dog_realtime_cnt(dog_id, 1)    # query last data
-    if len(temp_list) != 0:
+    if len(temp_list) != 1:
         log.get(log_name).error('[%s]get_dog_realtime_cnt temp_list null: %s, please check realtime service'%(dog_id, str(temp_list)))
         return False, 0, None
     last_dict = temp_list[-1]
