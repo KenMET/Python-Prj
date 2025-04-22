@@ -104,7 +104,6 @@ def trade(house_dict, dog_opt, dog_id):
         sell_price = (-1.0) if (peak_prob < bollinger_limit) else sell_price
         avg_score = dog_opt.get('avg_score', 0)
         curr_share = holding.get('Quantity', 0)
-        bark_obj = notify.bark()
         if buy_price > 0 and available_cash > 0:
             share = get_next_inject(curr_share, float(get_global_config('next_inject_factor')))
             if (share * buy_price) > available_cash:
@@ -119,7 +118,7 @@ def trade(house_dict, dog_opt, dog_id):
                 recv_dict = None#submit_order(dog_id, 'buy', buy_price, share)
                 content = '[%s] Buy %d shares in %.2f'%(dog_id, share, buy_price)
                 log.get(log_name).info(content + ', ret: %s'%(str(recv_dict)))
-                bark_obj.send_title_content('Orchestrator-%s'%(get_user_type('-')), content)
+                notify.bark().send_title_content('Orchestrator-%s'%(get_user_type('-')), content)
 
         if sell_price > 0:
             share = get_last_inject(curr_share, float(get_global_config('next_inject_factor')))
@@ -140,14 +139,14 @@ def trade(house_dict, dog_opt, dog_id):
                         recv_dict = None#submit_order(dog_id, 'sell', last_price, share)
                         content = '[%s] Sell now %d shares in %.2f'%(dog_id, share, last_price)
                         log.get(log_name).info(content + ', ret: %s'%(str(recv_dict)))
-                        bark_obj.send_title_content('Orchestrator-%s'%(get_user_type('-')), content)
+                        notify.bark().send_title_content('Orchestrator-%s'%(get_user_type('-')), content)
                     elif diff >= float(get_user_config(user, 'dog', 'min_percent')):
                         diff_lower = ((sell_price - cost_price) / cost_price) * 100
                         if diff_lower >= float(get_user_config(user, 'option', 'min_percent')):     # Set target price and wait order done
                             recv_dict = None#submit_order(dog_id, 'sell', sell_price, share)
                             content = '[%s] Sell set %d shares in %.2f'%(dog_id, share, sell_price)
                             log.get(log_name).info(content + ', ret: %s'%(str(recv_dict)))
-                            bark_obj.send_title_content('Orchestrator-%s'%(get_user_type('-')), content)
+                            notify.bark().send_title_content('Orchestrator-%s'%(get_user_type('-')), content)
     except Exception as e:
         log.get(log_name).error('Exception captured in trade: %s'%(str(e)))
 
@@ -177,7 +176,6 @@ def monitor_loop(order_id, dog_id, side, price, quantity):
     elif side == 'Buy':
         pass
 
-    bark_obj = notify.bark()
     while(True):
         time.sleep(int(get_global_config('realtime_interval')))
         recv_dict = query_order(order_id)
@@ -188,7 +186,7 @@ def monitor_loop(order_id, dog_id, side, price, quantity):
         price = recv_dict['Price']      # Need update price in case of modified order
         if any(s in order_status for s in ["Filled", "Rejected", "Canceled", "Expired"]):
             content = '[%s] New Status[%s]'%(order_id, order_status)
-            bark_obj.send_title_content('Order Status', content)
+            notify.bark().send_title_content('Order Status', content)
             return True
 
         flag, last_price, last_datetime = query_dog_last(dog_id)
@@ -217,13 +215,13 @@ def monitor_loop(order_id, dog_id, side, price, quantity):
                 log.get(log_name).info('[%s]Modify sell order now: [%s][%.2f][%d]'%(dog_id, order_id, last_price, quantity))
                 # recv_dict = modify_order(order_id, last_price, quantity)
                 content = '[%s] Sell %d[%.2f] Profit-Earn[%.2f]'%(dog_id, quantity, last_price, earning)
-                bark_obj.send_title_content('Profit-Earn', content)
+                notify.bark().send_title_content('Profit-Earn', content)
             elif earning_diff >= min_diff:
                 if surplus_min < 10:
                     log.get(log_name).info('[%s]Modify sell order due to near close: [%s][%.2f][%d]'%(dog_id, order_id, last_price, quantity))
                     # recv_dict = modify_order(order_id, last_price, quantity)
                     content = '[%s] Sell %d[%.2f] Min-Earn[%.2f]'%(dog_id, quantity, last_price, earning)
-                    bark_obj.send_title_content('Min-Earn', content)
+                    notify.bark().send_title_content('Min-Earn', content)
                 else:
                     log.get(log_name).debug('[%s][%s] earning[%.2f][%.2f%%], keep monitor'%(dog_id, order_id, earning, earning_diff))
             else:
@@ -235,7 +233,7 @@ def monitor_loop(order_id, dog_id, side, price, quantity):
                     log.get(log_name).info('Modify buy order: [%s][%.2f][%d]'%(order_id, last_price, quantity))
                     # recv_dict = modify_order(order_id, last_price, quantity)
                     content = '[%s] Buy %d[%.2f] Expect:%.2f'%(dog_id, quantity, last_price, price)
-                    bark_obj.send_title_content('Test', content)
+                    notify.bark().send_title_content('Test', content)
 
 def order_monitor(order_id, dog_id, price, quantity, side):
     log.get(log_name).info('Start monitor for [%s][%s][%.2f][%s][%d]'%(order_id, dog_id, price, side, quantity))
@@ -253,7 +251,6 @@ def order_monitor(order_id, dog_id, price, quantity, side):
 # Support Sell only for now...
 def trigger_order_monitor():
     user, quent_type = get_user_type()
-    bark_obj = notify.bark()
     thread_dict = {}
     while(True):
         db_opened_order_list = get_open_order(user, quent_type)
@@ -294,7 +291,7 @@ def trigger_order_monitor():
             monitor_t.start()
             thread_dict.update({order_id:monitor_t})
         if len(content) > 0:
-            bark_obj.send_title_content('Monitor Trigger', content)
+            notify.bark().send_title_content('Monitor Trigger', content)
 
         time.sleep(int(get_global_config('order_monitor_interval')))
         now_seesion, surplus_min = get_current_session_and_remaining_time('Normal')   # Track till Normal session end
@@ -367,104 +364,122 @@ def short_term_trade(house_dict):
     prob_dict = {}
     trigger_price_dict = {}
     trigger_action_dict = {}
-    bark_obj = notify.bark()
-    try:
-        while(True):
-            time.sleep(int(get_global_config('realtime_interval')))
-            error_cnt = 0
 
-            # Check current session
+    while(True):
+        time.sleep(int(get_global_config('realtime_interval')))
+        error_cnt = 0
+
+        # Check current session
+        try:
             now_seesion, surplus_min = get_current_session_and_remaining_time('Post')   # Track till Post session end
             if now_seesion == 'Night' or surplus_min < 30:
                 log.get(log_name).info('Current Session: %s, [%d] minutes left, stop short trade monitor...'%(now_seesion, surplus_min))
                 break
             else:
                 log.get(log_name).debug('Current Session: %s, [%d] minutes left, continue short trade monitor...'%(now_seesion, surplus_min))
+        except Exception as e:
+            log.get(log_name).error('Exception captured in get_current_session_and_remaining_time: %s'%(str(e)))
+            time.sleep(10)
+            continue
 
-            content = ''
-            for target in trade_list:
-                stategy_handle = get_stategy_handle(target, 'short')
 
-                # Get and update probability
-                #start_time = time.time()
+        content = ''
+        for target in trade_list:
+            stategy_handle = get_stategy_handle(target, 'short')
+
+            # Get and update probability
+            #start_time = time.time()
+            try:
                 df = get_realtime_filter_df(target, int(1 * 60))     # Must large then window size
-                if len(df) == 0:
-                    log.get(log_name).error('%s Nothing in df'%(target))
-                    error_cnt += 1
-                    continue
-                #log.get(log_name).debug('get_realtime_filter_df elapsed_time: %.3f'%(time.time() - start_time))    # Read database cost time
-                trough_prob, peak_prob = stategy_handle.probability(df, dog_id=target)
-                trough_prob_list = prob_dict.get(target, {}).get('trough', init_prob_list())
-                peak_prob_list = prob_dict.get(target, {}).get('peak', init_prob_list())
-                append_dict_list(prob_dict, target, trough_prob, key_sub='trough')
-                append_dict_list(prob_dict, target, peak_prob, key_sub='peak')
-                if trough_prob >= bollinger_limit and peak_prob >= bollinger_limit:
-                    log.get(log_name).error('%s: Probability Error both > %.2f [%.2f%% , %.2f%%]'%(target, bollinger_limit, trough_prob, peak_prob))
-                    error_cnt += 1
-                    continue
+            except Exception as e:
+                log.get(log_name).error('Exception captured in get_realtime_filter_df[%s]: %s'%(target, str(e)))
+                time.sleep(10)
+                continue
+            if len(df) == 0:
+                log.get(log_name).error('%s Nothing in df'%(target))
+                error_cnt += 1
+                continue
+            #log.get(log_name).debug('get_realtime_filter_df elapsed_time: %.3f'%(time.time() - start_time))    # Read database cost time
+            trough_prob, peak_prob = stategy_handle.probability(df, dog_id=target)
+            trough_prob_list = prob_dict.get(target, {}).get('trough', init_prob_list())
+            peak_prob_list = prob_dict.get(target, {}).get('peak', init_prob_list())
+            append_dict_list(prob_dict, target, trough_prob, key_sub='trough')
+            append_dict_list(prob_dict, target, peak_prob, key_sub='peak')
+            if trough_prob >= bollinger_limit and peak_prob >= bollinger_limit:
+                log.get(log_name).error('%s: Probability Error both > %.2f [%.2f%% , %.2f%%]'%(target, bollinger_limit, trough_prob, peak_prob))
+                error_cnt += 1
+                continue
 
-                # Get continue action and increase avg_cnt as pyramid
-                buy_continue, sell_continue = get_continue_cnt(trigger_action_dict.get(target, []))
-                buy_avg_cnt = buy_continue * avg_cnt
-                sell_avg_cnt = sell_continue * avg_cnt
-                action_type = 'sell' if all(val > bollinger_limit for val in peak_prob_list[-sell_avg_cnt:]) else \
-                            'buy' if all(val > bollinger_limit for val in trough_prob_list[-buy_avg_cnt:]) else ''
+            # Get continue action and increase avg_cnt as pyramid
+            buy_continue, sell_continue = get_continue_cnt(trigger_action_dict.get(target, []))
+            buy_avg_cnt = buy_continue * avg_cnt
+            sell_avg_cnt = sell_continue * avg_cnt
+            action_type = 'sell' if all(val > bollinger_limit for val in peak_prob_list[-sell_avg_cnt:]) else \
+                        'buy' if all(val > bollinger_limit for val in trough_prob_list[-buy_avg_cnt:]) else ''
 
-                # Get price of now
-                #start_time = time.time()
+            # Get price of now
+            #start_time = time.time()
+            try:
                 now_price = get_dog_last_price(target)
-                #log.get(log_name).debug('trigger_price_dict.get elapsed_time: %.3f'%(time.time() - start_time))    # Read database cost time
-                log.get(log_name).info('[%s]:%.2f trough[%.2f], peak[%.2f], action[%s]'%(target, now_price, trough_prob, peak_prob, action_type))
-                last = trigger_price_dict.get(target, init_prob_list())[-1]     # using init_prob_list for init only, but store price data in fact
+            except Exception as e:
+                log.get(log_name).error('Exception captured in get_dog_last_price[%s]: %s'%(target, str(e)))
+                time.sleep(10)
+                continue
+            #log.get(log_name).debug('trigger_price_dict.get elapsed_time: %.3f'%(time.time() - start_time))    # Read database cost time
+            log.get(log_name).info('[%s]:%.2f trough[%.2f], peak[%.2f], action[%s]'%(target, now_price, trough_prob, peak_prob, action_type))
+            last = trigger_price_dict.get(target, init_prob_list())[-1]     # using init_prob_list for init only, but store price data in fact
 
-                # Get operation shares
+            # Get operation shares
+            share = 0
+            price_float_th = float(get_global_config('price_float_th'))     # Reset to default every loop
+            if action_type == 'sell':
+                price_float_th *= sell_continue     # Ex: default_th=1.5%, Continue 3 times, then thrid time notify need have 4.5% deff
                 share = 0
-                price_float_th = float(get_global_config('price_float_th'))     # Reset to default every loop
-                if action_type == 'sell':
-                    price_float_th *= sell_continue     # Ex: default_th=1.5%, Continue 3 times, then thrid time notify need have 4.5% deff
-                    share = 0
-                    for index in trade_order_dict.get(target, []):
-                        if index['status'] == 'New':
-                            share += index['shares']
-                    clear_dict_list(trade_order_dict, target)
-                    if share == 0:
-                        log.get(log_name).debug('[%s]Nothing to Sell this time...'%(target))
-                        #continue
-                elif action_type == 'buy':
-                    price_float_th *= buy_continue
-                    share = opt_cash_limit // now_price
-                    if share == 0:
-                        log.get(log_name).debug('[%s]No Cash to Buy this time...'%(target))
-                        #continue
+                for index in trade_order_dict.get(target, []):
+                    if index['status'] == 'New':
+                        share += index['shares']
+                clear_dict_list(trade_order_dict, target)
+                if share == 0:
+                    log.get(log_name).debug('[%s]Nothing to Sell this time...'%(target))
+                    #continue
+            elif action_type == 'buy':
+                price_float_th *= buy_continue
+                share = opt_cash_limit // now_price
+                if share == 0:
+                    log.get(log_name).debug('[%s]No Cash to Buy this time...'%(target))
+                    #continue
 
-                # Start submit order and update data and notify to phone
-                if action_type != '':
-                    #log.get(log_name).debug('[%s] last[%.2f] now_price[%.2f]'%(target, last, now_price))
-                    price_diff = ((now_price - last) / last) if (action_type == 'sell') else ((last - now_price) / last)
-                    if last > 0.01 and price_diff < price_float_th:
-                        log.get(log_name).debug('[%s]%s, too less diff last[%.2f], Now[%.2f] RequireDiff[%.2f%%]'%(target, 
-                            action_type, last, now_price, price_float_th * 100))
-                        continue
-                    append_dict_list(trigger_price_dict, target, now_price)
-                    append_dict_list(trigger_action_dict, target, action_type)
-                    recv_dict = None#submit_order(dog_id, action_type, now_price, share)
-                    content += '[%s] %s [%d] in %.2f\n'%(target, action_type, share, now_price)
-                    log.get(log_name).info('[%s] %s [%d] in %.2f'%(target, action_type, share, now_price) + ', ret: %s'%(str(recv_dict)))
-                    if action_type == 'buy':
-                        append_dict_list(trade_order_dict, target, {
-                            'order_id': str(time.time()),
-                            'price':now_price,
-                            'shares':share,
-                            'status':'New',
-                        })
-            if error_cnt == len(trade_list):
-                log.get(log_name).error('Error occurred in %s, exit short trade...'%(str(trade_list)))
-                break
-            if content != '':
-                #log.get(log_name).info(content + ', ret: %s'%(str(recv_dict)))
-                bark_obj.send_title_content('Short Trade-%s'%(get_user_type('-')), content)
-    except Exception as e:
-        log.get(log_name).error('Exception captured in short_term_trade while(True): %s'%(str(e)))
+            # Start submit order and update data and notify to phone
+            if action_type != '':
+                #log.get(log_name).debug('[%s] last[%.2f] now_price[%.2f]'%(target, last, now_price))
+                price_diff = ((now_price - last) / last) if (action_type == 'sell') else ((last - now_price) / last)
+                if last > 0.01 and price_diff < price_float_th:
+                    log.get(log_name).debug('[%s]%s, too less diff last[%.2f], Now[%.2f] RequireDiff[%.2f%%]'%(target, 
+                        action_type, last, now_price, price_float_th * 100))
+                    continue
+                append_dict_list(trigger_price_dict, target, now_price)
+                append_dict_list(trigger_action_dict, target, action_type)
+                recv_dict = None#submit_order(dog_id, action_type, now_price, share)
+                content += '[%s] %s [%d] in %.2f\n'%(target, action_type, share, now_price)
+                log.get(log_name).info('[%s] %s [%d] in %.2f'%(target, action_type, share, now_price) + ', ret: %s'%(str(recv_dict)))
+                if action_type == 'buy':
+                    append_dict_list(trade_order_dict, target, {
+                        'order_id': str(time.time()),
+                        'price':now_price,
+                        'shares':share,
+                        'status':'New',
+                    })
+        if error_cnt == len(trade_list):
+            log.get(log_name).error('Error occurred in %s, exit short trade...'%(str(trade_list)))
+            break
+        if content != '':
+            #log.get(log_name).info(content + ', ret: %s'%(str(recv_dict)))
+            try:
+                notify.bark().send_title_content('Short Trade-%s'%(get_user_type('-')), content)
+            except Exception as e:
+                log.get(log_name).error('Exception captured in notify.bark().send_title_content[%s]: %s'%(content, str(e)))
+                time.sleep(10)
+                continue
 
 def main(args):
     log.init('%s/../log'%(py_dir), log_name, log_mode='w', log_level='debug', console_enable=True)
