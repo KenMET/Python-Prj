@@ -41,11 +41,11 @@ log_name = '%s_%s'%(py_name, get_user_type('_'))
 
 
 def query_dog_last(dog_id):
-    recv_dict = get_dog_realtime_cnt(dog_id, 1)    # query last data
-    if len(recv_dict['ret']) == 0:
-        log.get(log_name).error('[%s]get_dog_realtime_cnt recv_dict null: %s, please check realtime service'%(dog_id, str(recv_dict)))
+    temp_list = get_dog_realtime_cnt(dog_id, 1)    # query last data
+    if len(temp_list) != 0:
+        log.get(log_name).error('[%s]get_dog_realtime_cnt temp_list null: %s, please check realtime service'%(dog_id, str(temp_list)))
         return False, 0, None
-    last_dict = recv_dict['ret'][0]
+    last_dict = temp_list[-1]
     last_price = float(last_dict['Price'])
     last_datetime = last_dict['DogTime'].split('-')[1]
     return True, last_price, last_datetime
