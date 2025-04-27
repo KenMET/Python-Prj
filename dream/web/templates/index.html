@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animal Station</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #333;
+            font-size: 2.5em;
+        }
+        .tabs {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+        }
+        .tab {
+            padding: 10px 20px;
+            margin: 0 10px;
+            cursor: pointer;
+            background-color: #eee;
+            border-radius: 5px 5px 0 0;
+        }
+        .tab.active {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .tab-content {
+            display: none;
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .dog-history-container {
+            display: flex;
+            gap: 20px;
+        }
+        .chart-container {
+            flex: 3;
+            height: 500px;
+        }
+        .selection-container {
+            flex: 1;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+        select {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        .no-data {
+            text-align: center;
+            padding: 50px;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Animal Station</h1>
+    </div>
+    
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('dog-history')">Dog History</div>
+        <div class="tab" onclick="switchTab('dog-now')">Dog Now</div>
+        <div class="tab" onclick="switchTab('backtest')">Backtest</div>
+        <div class="tab" onclick="switchTab('config')">Config</div>
+    </div>
+    
+    <div id="dog-history" class="tab-content active">
+        <div class="dog-history-container">
+            <div class="chart-container">
+                <canvas id="dogChart"></canvas>
+                <div id="noDataMessage" class="no-data">Please select a dog from the right panel to view data</div>
+            </div>
+            <div class="selection-container">
+                <h3>Select Dog</h3>
+                <select id="dogSelect" onchange="loadDogData()">
+                    <option value="">-- Select a Dog --</option>
+                    <!-- Options will be populated by JavaScript -->
+                </select>
+            </div>
+        </div>
+    </div>
+    
+    <div id="dog-now" class="tab-content">
+        <p>Dog Now content will go here</p>
+    </div>
+    
+    <div id="backtest" class="tab-content">
+        <p>Backtest content will go here</p>
+    </div>
+    
+    <div id="config" class="tab-content">
+        <p>Config content will go here</p>
+    </div>
+
+    <script>
+        // Tab switching functionality
+        function switchTab(tabId) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Deactivate all tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Activate selected tab and content
+            document.getElementById(tabId).classList.add('active');
+            event.currentTarget.classList.add('active');
+        }
+        
+        // Global chart variable
+        let dogChart = null;
+        
+        // Function to load dog names (would be called from your Python backend)
+        function loadDogNames() {
+            fetch('/api/get_dog_names')
+                .then(response => response.json())
+                .then(names => {
+                    const select = document.getElementById('dogSelect');
+                    names.forEach(name => {
+                        const option = document.createElement('option');
+                        option.value = name;
+                        option.textContent = name;
+                        select.appendChild(option);
+                    });
+                });
+        }
+        
+        // Function to load dog data when selection changes
+        function loadDogData() {
+            const selectedDog = document.getElementById('dogSelect').value;
+            
+            if (!selectedDog) {
+                // No dog selected - clear chart
+                if (dogChart) {
+                    dogChart.destroy();
+                    dogChart = null;
+                }
+                document.getElementById('noDataMessage').style.display = 'block';
+                return;
+            }
+            
+            // In a real implementation, you would call your Python API here
+            // For now, we'll use the sample data you provided
+            fetchDogDataFromBackend(selectedDog);
+        }
+        
+        // This would be replaced with actual API call to your Python backend
+        function fetchDogDataFromBackend(dogName) {
+            fetch(`/api/get_dog_data?name=${dogName}`)
+                .then(response => response.json())
+                .then(data => updateChartWithData(data));
+        }
+        
+        // Function to update the chart with data
+        function updateChartWithData(data) {
+            document.getElementById('noDataMessage').style.display = 'none';
+            
+            // Process data for chart
+            const labels = data.map(item => {
+                // Extract the date part after the hyphen in DogTime
+                const dogTimeParts = item.DogTime.split('-');
+                return dogTimeParts.length > 1 ? dogTimeParts[1] : item.DogTime;
+            });
+            
+            const prices = data.map(item => item.Price);
+            
+            const ctx = document.getElementById('dogChart').getContext('2d');
+            
+            // Destroy previous chart if it exists
+            if (dogChart) {
+                dogChart.destroy();
+            }
+            
+            // Create new chart
+            dogChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Price',
+                        data: prices,
+                        borderColor: 'rgb(75, 192, 192)',
+                        tension: 0.1,
+                        fill: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: 'Price'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Time'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', function() {
+            // In a real implementation, you would call your Python API to get the initial dog names
+            // For demonstration, we'll use some sample names
+            const sampleDogNames = ['NVDA', 'AAPL', 'MSFT', 'AMZN', 'GOOGL'];
+            loadDogNames(sampleDogNames);
+        });
+    </script>
+</body>
+</html>
