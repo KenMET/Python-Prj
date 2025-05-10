@@ -5,6 +5,7 @@ import os
 import sys
 import argparse
 import datetime
+import subprocess
 import pandas as pd
 
 # Customsized lib
@@ -134,10 +135,27 @@ def sanity_longport_api():
             quote_resp = quote_ctx.static_info(["NVDA.US"])
         except Exception as e:
             output_content += '[%s]LongportAPI Exception: %s\n'%(user_type, str(e))
-            log.get(log_name).error('Exception longport_api in [%s]: %s'%(user_type, str(e)))
+            log.get().error('Exception longport_api in [%s]: %s'%(user_type, str(e)))
     if len(output_content) != 0:
         return False, output_content
     return True, ''
+
+def sanity_exception():
+    log_dir = os.path.join(py_dir, "../log")
+    result = subprocess.run(
+            ['grep', '-rl', 'Exception', log_dir],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+    if result.returncode == 0:
+        return False, "Exception found in [%s]"%(result.stdout.splitlines())
+    elif result.returncode == 1:
+        return True, ''
+    else:
+        log.get().error('Exception sanity_exception in [%s]: %s'%(str(result.stderr)))
+        return False, 'Exception sanity_exception in [%s]: %s'%(str(result.stderr))
+
 
 def main(args):
     log.init('%s/../log'%(py_dir), py_name, log_mode='w', log_level='info', console_enable=True)
@@ -168,6 +186,9 @@ def main(args):
     if (not flag):
         bark_content += (msg + '\n')
     flag, msg = sanity_longport_api()
+    if (not flag):
+        bark_content += (msg + '\n')
+    flag, msg = sanity_exception()
     if (not flag):
         bark_content += (msg + '\n')
 
