@@ -185,15 +185,15 @@ def main(args):
             if (not flag):
                 bark_content += (msg + '\n')
 
-    #flag, msg = sanity_realtime_param()
-    #if (not flag):
-    #    bark_content += (msg + '\n')
-    #flag, msg  = sanity_realtime_dog()
-    #if (not flag):
-    #    bark_content += (msg + '\n')
-    #flag, msg = sanity_longport_api()
-    #if (not flag):
-    #    bark_content += (msg + '\n')
+    flag, msg = sanity_realtime_param()
+    if (not flag):
+        bark_content += (msg + '\n')
+    flag, msg  = sanity_realtime_dog()
+    if (not flag):
+        bark_content += (msg + '\n')
+    flag, msg = sanity_longport_api()
+    if (not flag):
+        bark_content += (msg + '\n')
     flag, msg = sanity_exception()
     if (not flag):
         bark_content += (msg + '\n')
