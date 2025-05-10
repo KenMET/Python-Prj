@@ -11,6 +11,7 @@ import pandas as pd
 py_dir = os.path.dirname(os.path.realpath(__file__))
 py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
 sys.path.append(r'%s/'%(py_dir))
+from longport.openapi import Config, TradeContext, QuoteContext
 sys.path.append(r'%s/../common'%(py_dir))
 from other import is_dog_option
 from config import get_global_config
@@ -18,13 +19,14 @@ from database import get_market_by_range, get_registered_dog, del_registered_dog
 from database import get_dog_realtime_cnt, del_dog_realtime
 sys.path.append(r'%s/../../mysql'%(py_dir))
 import db_dream_dog as dbdd
+import db_dream_secret as dbds
 sys.path.append(r'%s/../../notification'%(py_dir))
 import notification as notify
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
 import log
 
 def sanity_info(table_name):
-    return True
+    return True, ''
 
 def sanity_market(table_name):
     db = dbdd.db('dream_dog')
@@ -33,7 +35,7 @@ def sanity_market(table_name):
     if (temp_obj == None):
         log.get().info('Market Sanity None:[%s]'%(dog_id))
         db.closeSession()
-        return False
+        return False, 'Market Sanity None:[%s]'%(dog_id)
     temp_dict = db.get_dict_from_obj(temp_obj)
     temp_date = temp_dict['Date']
 
@@ -42,12 +44,12 @@ def sanity_market(table_name):
     if some_days_ago <= temp_date <= today:
         #log.get().info('Market Sanity Success: [%s]'%(dog_id))
         db.closeSession()
-        return True
+        return True, ''
     else:
         log.get().info('Market Sanity Failed:[%s] (%s < %s < %s)'%(dog_id, str(some_days_ago), str(temp_date), str(today)))
         #db.dropTable(table_name)
         db.closeSession()
-        return False
+        return False, 'Market Sanity Failed:[%s] (%s < %s < %s)'%(dog_id, str(some_days_ago), str(temp_date), str(today))
 
 def sanity_adjustment_market(table_name):
     dog_id = table_name[table_name.rfind('_')+1:]
@@ -55,7 +57,7 @@ def sanity_adjustment_market(table_name):
     start_date = (datetime.datetime.today() - datetime.timedelta(days=20)).date()
     df = get_market_by_range(dog_id, start_date, end_date)
     if (len(df) == 0):
-        return False, None
+        return False, 'Market range empty: %s'%(dog_id)
     df['Close_diff_pct'] = df['Close'].pct_change() * 100
     # diff over 50%
     # for example: 1 share, price $100
@@ -63,13 +65,15 @@ def sanity_adjustment_market(table_name):
     # 2 shares -> 1 share (combine), stock price should be double. $100 -> $200, then increase 100%
     # So we take 50% as min diff.
     result = df[df['Close_diff_pct'].abs() > 50]
-    output = []
+    output_content = ''
     for i in result.index:
         prev_date = pd.to_datetime(df.iloc[i - 1]['Date']).date()
         prev_close = df.iloc[i - 1]['Close']
         curr_close = df.iloc[i]['Close']
-        return False, {'date':prev_date, 'pre':prev_close, 'cur':curr_close}
-    return True, None
+        output_content += '[%s] Adjusted in %s [%.2f->%.2f]\n'%(dog_id, prev_date, prev_close, curr_close)
+    if len(output_content) != 0:
+        return False, output_content
+    return True, ''
 
 def sanity_realtime_dog():
     registered_list = [n for n in get_registered_dog()]
@@ -87,7 +91,7 @@ def sanity_realtime_dog():
             if now > expierd_time:
                 log.get().info('[%s] Expierd, remove from realtime list'%(dog_time))
                 del_dog_realtime(dog_time)
-    return True
+    return True, ''
 
 def sanity_realtime_param():
     temp_dict = get_registered_dog()
@@ -105,54 +109,74 @@ def sanity_realtime_param():
             temp_list = get_dog_realtime_cnt(dog_id)
             for item in temp_list:
                 del_dog_realtime(item.get('DogTime', 'XXX-19700101123456'))
-    return True
+    return True, ''
+
+def sanity_longport_api():
+    db = dbds.db('dream_user')
+    if (not db.is_table_exist()):
+        #log.get().info('Quantitative table not exist, new a table...')
+        db.create_secret_table()
+    res = db.query_all_secret()
+    scret_list = [db.get_dict_from_obj(i) for i in res]
+    db.closeSession()
+
+    output_content = ''
+    for index in scret_list:
+        user_type = index['Type']
+        app_key_tmp = index['App_Key']
+        app_secret_tmp = index['App_Secret']
+        access_token_tmp = index['Access_Token']
+        config = Config(app_key = app_key_tmp, app_secret = app_secret_tmp, access_token = access_token_tmp)
+        try:
+            trade_ctx = TradeContext(config)
+            quote_ctx = QuoteContext(config)
+            trade_resp = trade_ctx.account_balance()
+            quote_resp = quote_ctx.static_info(["NVDA.US"])
+        except Exception as e:
+            output_content += '[%s]LongportAPI Exception: %s\n'%(user_type, str(e))
+            log.get(log_name).error('Exception longport_api in [%s]: %s'%(user_type, str(e)))
+    if len(output_content) != 0:
+        return False, output_content
+    return True, ''
 
 def main(args):
     log.init('%s/../log'%(py_dir), py_name, log_mode='w', log_level='info', console_enable=True)
     log.get().info('Logger Creat Success...')
     bark_obj = notify.bark()
-
-    fail_list = []
-    adjusted_dict = {}
+    bark_content = ''
 
     db = dbdd.db('dream_dog')
     table_list = db.queryTable()
     db.closeSession()
     for index in table_list:
         if index.find('info') > 0:
-            flag = sanity_info(index)
+            flag, msg = sanity_info(index)
+            if not flag:
+                bark_content += (msg + '\n')
         elif index.find('market') > 0:
-            flag = sanity_market(index)
+            flag, msg = sanity_market(index)
             if (not flag):
-                fail_list.append(index)
-            flag, adjust_detail = sanity_adjustment_market(index)
+                bark_content += (msg + '\n')
+            flag, msg = sanity_adjustment_market(index)
             if (not flag):
-                adjusted_dict.update({index:adjust_detail})
+                bark_content += (msg + '\n')
 
-    flag = sanity_realtime_param()
-    flag = sanity_realtime_dog()
+    flag, msg = sanity_realtime_param()
+    if (not flag):
+        bark_content += (msg + '\n')
+    flag, msg  = sanity_realtime_dog()
+    if (not flag):
+        bark_content += (msg + '\n')
+    flag, msg = sanity_longport_api()
+    if (not flag):
+        bark_content += (msg + '\n')
 
-    if len(fail_list) != 0:
-        log.get().info('Failed list: %s'%(fail_list))
-        flag = bark_obj.send_title_content('Market Sanity', 'Failed list: %s'%(fail_list))
-    elif len(adjusted_dict) != 0:
-        content = ''
-        for adjust_index in adjusted_dict:
-            dog_id = adjust_index
-            adjust_detail = adjusted_dict[adjust_index]
-            if adjust_detail == None:
-                log.get().info('Market Adjustment Sanity None:[%s]'%(dog_id))
-                content += 'Market Adjustment Sanity None:[%s]\n'%(dog_id)
-            else:
-                prev_date = adjust_detail['date']
-                prev_close = adjust_detail['pre']
-                curr_close = adjust_detail['cur']
-                log.get().info('[%s] Adjusted in %s [%.2f->%.2f]'%(dog_id, prev_date, prev_close, curr_close))
-                content += '[%s] Adjusted in %s [%.2f->%.2f]\n'%(dog_id, prev_date, prev_close, curr_close)
-        flag = bark_obj.send_title_content('Market Sanity', '%s'%(content))
-    else:
+    if len(bark_content) == 0:
         log.get().info('All market DB works normal')
         flag = bark_obj.send_title_content('Market Sanity', 'All market DB works normal')
+    else:
+        log.get().info('Sanity Failed: %s'%(bark_content))
+        flag = bark_obj.send_title_content('Market Sanity', bark_content)
     log.get().info('Bark Notification Result[%s]'%(str(flag)))
 
 if __name__ == '__main__':

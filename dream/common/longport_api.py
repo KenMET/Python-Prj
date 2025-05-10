@@ -28,6 +28,7 @@ def quantitative_init():
     os.environ['LONGPORT_APP_KEY'] = res[0].App_Key
     os.environ['LONGPORT_APP_SECRET'] = res[0].App_Secret
     os.environ['LONGPORT_ACCESS_TOKEN'] = res[0].Access_Token
+    db.closeSession()
 
 def get_trade_context():
     trade_ctx = TradeContext(Config.from_env())
