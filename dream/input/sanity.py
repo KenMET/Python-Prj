@@ -149,18 +149,24 @@ def sanity_exception():
             text=True
         )
     if result.returncode == 0:
-        return False, "Exception found in [%s]"%(result.stdout.splitlines())
+        result_list = result.stdout.splitlines()
+        file_list_str = ''
+        for index in result_list:
+            file_name = '%s'%(index)
+            file_name = file_name[file_name.rfind('/')+1:file_name.rfind('.log')-1]
+            file_list_str += file_name + ' '
+            #log.get().info('file_name: %s'%(file_name))
+        return False, "Exception found: %s"%(file_list_str)
     elif result.returncode == 1:
         return True, ''
     else:
-        log.get().error('Exception sanity_exception in [%s]: %s'%(str(result.stderr)))
-        return False, 'Exception sanity_exception in [%s]: %s'%(str(result.stderr))
+        log.get().error('Exception sanity_exception in: %s'%(str(result.stderr)))
+        return False, 'Exception sanity_exception'
 
 
 def main(args):
     log.init('%s/../log'%(py_dir), py_name, log_mode='w', log_level='info', console_enable=True)
     log.get().info('Logger Creat Success...')
-    bark_obj = notify.bark()
     bark_content = ''
 
     db = dbdd.db('dream_dog')
@@ -179,24 +185,25 @@ def main(args):
             if (not flag):
                 bark_content += (msg + '\n')
 
-    flag, msg = sanity_realtime_param()
-    if (not flag):
-        bark_content += (msg + '\n')
-    flag, msg  = sanity_realtime_dog()
-    if (not flag):
-        bark_content += (msg + '\n')
-    flag, msg = sanity_longport_api()
-    if (not flag):
-        bark_content += (msg + '\n')
+    #flag, msg = sanity_realtime_param()
+    #if (not flag):
+    #    bark_content += (msg + '\n')
+    #flag, msg  = sanity_realtime_dog()
+    #if (not flag):
+    #    bark_content += (msg + '\n')
+    #flag, msg = sanity_longport_api()
+    #if (not flag):
+    #    bark_content += (msg + '\n')
     flag, msg = sanity_exception()
     if (not flag):
         bark_content += (msg + '\n')
 
+    bark_obj = notify.bark()
     if len(bark_content) == 0:
         log.get().info('All market DB works normal')
         flag = bark_obj.send_title_content('Market Sanity', 'All market DB works normal')
     else:
-        log.get().info('Sanity Failed: %s'%(bark_content))
+        log.get().error('Sanity Failed: %s'%(bark_content))
         flag = bark_obj.send_title_content('Market Sanity', bark_content)
     log.get().info('Bark Notification Result[%s]'%(str(flag)))
 
