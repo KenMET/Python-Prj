@@ -153,9 +153,9 @@ def sanity_exception():
         file_list_str = ''
         for index in result_list:
             file_name = '%s'%(index)
-            file_name = file_name[file_name.rfind('/')+1:file_name.rfind('.log')-1]
+            file_name = file_name[file_name.rfind('/')+1:file_name.rfind('.log')]
             file_list_str += file_name + ' '
-            #log.get().info('file_name: %s'%(file_name))
+            log.get().info('Exception found: %s'%(index))
         return False, "Exception found: %s"%(file_list_str)
     elif result.returncode == 1:
         return True, ''
