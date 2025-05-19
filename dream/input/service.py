@@ -83,19 +83,19 @@ def market_monitor(lock):
             timestamp_now = datetime.datetime.now().time()
 
             log.get(log_name).info('Market monitor, Quote dog from %s'%(str(dog_list)))
+            resp_dog = []
+            resp_option = []
             try:
                 if len(dog_list) > 0:
                     resp_dog = ctx.quote(["%s.US"%(n) for n in dog_list])
             except Exception as e:
                 log.get(log_name).error('Exception captured in market_monitor ctx.quote: %s'%(str(e)))
-                resp_dog = []
             log.get(log_name).info('Market monitor, Quote option from %s'%(str(option_list)))
             try:
                 if len(option_list) > 0:
                     resp_option = ctx.option_quote(["%s.US"%(n) for n in option_list])
             except Exception as e:
                 log.get(log_name).error('Exception captured in market_monitor ctx.option_quote: %s'%(str(e)))
-                resp_option = []
             resp = resp_dog + resp_option
             #log.get(log_name).debug(resp)
 
