@@ -48,14 +48,14 @@ def get_dog_cn_daily_hist(dog_id, **kwargs):
         df.rename(columns={'最低': 'Low', '成交额': 'Amount'}, inplace=True) # Replace title
         return df
     except Exception as e:
-        log.get().info('[%s]Exception level-1, try opt-2...', dog_id)
+        log.get().info('[%s] Daily hist fail, falling back to opt-2...', dog_id)
         try:
             df = ak.stock_zh_a_hist_tx(symbol=get_market(dog_id)+dog_id_filter, adjust="qfq", **kwargs)
             df.columns = df.columns.str.title()
             df['Amount'] = ((df['Open'] + df['Close'] + df['High'] + df['Low']) / 4) * df['Amount'] * 100
             return df
         except Exception as e:
-            log.get().info('[%s]Exception level-2, try opt-3...', dog_id)
+            log.get().info('[%s] Daily hist fail on opt-2 also, falling back to opt-3...', dog_id)
             try:
                 df = ak.stock_zh_a_daily(symbol=get_market(dog_id)+dog_id_filter, adjust="qfq", **kwargs)
                 df.drop(columns=['volume', 'outstanding_share', 'turnover'], inplace=True)
