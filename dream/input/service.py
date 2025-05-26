@@ -19,7 +19,7 @@ from config import get_global_config
 from database import create_if_realtime_inexist, update_registered_time, get_registered_dog
 from database import get_dog_realtime_min, get_dog_realtime_cnt
 from other import get_socket_path, get_dict_from_socket, get_trade_session, is_dog_option
-from longport_api import quantitative_init, get_quote_context
+from longport_api import quantitative_init, quote
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
 import log
 log_name = 'realtime_%s'%(py_name)
@@ -62,7 +62,6 @@ def handle_client(client_socket, client_address, lock):
 def market_monitor(lock):
     db = None
     try:
-        ctx = get_quote_context()
         while(True):
             loop_start_time = datetime.datetime.now()
             log.get(log_name).info('Market monitor, new looping')
@@ -82,25 +81,16 @@ def market_monitor(lock):
 
             timestamp_now = datetime.datetime.now().time()
 
-            log.get(log_name).info('Market monitor, Quote dog from %s'%(str(dog_list)))
-            resp_dog = []
-            resp_option = []
+            log.get(log_name).info('Market monitor, Quote dog&option from %s'%(str(dog_list+option_list)))
+            resp = []
             try:
-                if len(dog_list) > 0:
-                    resp_dog = ctx.quote(["%s.US"%(n) for n in dog_list])
+                resp = quote(dog_list, option_list)
             except Exception as e:
-                log.get(log_name).error('Exception captured in market_monitor ctx.quote: %s'%(str(e)))
-            log.get(log_name).info('Market monitor, Quote option from %s'%(str(option_list)))
-            try:
-                if len(option_list) > 0:
-                    resp_option = ctx.option_quote(["%s.US"%(n) for n in option_list])
-            except Exception as e:
-                log.get(log_name).error('Exception captured in market_monitor ctx.option_quote: %s'%(str(e)))
-            resp = resp_dog + resp_option
+                log.get(log_name).error('Exception captured in market_monitor quote: %s'%(str(e)))
             #log.get(log_name).debug(resp)
 
             for index in resp:
-                log.get(log_name).info('Market monitor, Test: %s'%(str(index)))
+                log.get(log_name).debug('Market monitor, Test: %s'%(str(index)))
                 dog_code = str(index.symbol).split('.')[0]
                 session_obj = index     # Default to use normal info
                 if trade_session['Pre']['Start'] <= timestamp_now < trade_session['Pre']['End']:
@@ -119,6 +109,11 @@ def market_monitor(lock):
                     log.get(log_name).error('[%s]Datetime error: %s trade_session:%s'%(dog_code, str(timestamp_now), str(trade_session)))
                     break
                 timestamp = session_obj.timestamp.strftime('%Y%m%d%H%M%S')
+                time_diff = datetime.datetime.now() - datetime.datetime.strptime(timestamp, '%Y%m%d%H%M%S')
+                if time_diff > datetime.timedelta(hours=1):
+                    log.get(log_name).info('Market monitor, Maybe not a trade day... %s'%(timestamp))
+                    trading_duration = 'Untradeable'
+                    break
                 dog_time = '%s-%s'%(dog_code, timestamp)
                 temp_dict = {
                     'DogTime': dog_time,
@@ -134,11 +129,23 @@ def market_monitor(lock):
                 if not db.update_sharing_by_dogtime(dog_time, temp_dict):
                     log.get(log_name).error('[%s]Realtime update failed: %s'%(dog_code, str(temp_dict)))
                 db.closeSession()
-                log.get(log_name).debug('[%s][%s]:%s'%(trading_duration, dog_time, str(temp_dict)))
+                log.get(log_name).info('[%s][%s]:%s'%(trading_duration, dog_time, str(temp_dict)))
             
             #lock.release()
-            duration_time = (datetime.datetime.now() - loop_start_time).total_seconds()
-            time.sleep(int(get_global_config('realtime_interval')) - duration_time)
+            if trading_duration == 'Untradeable' or trading_duration == 'Night':
+                now = datetime.datetime.now()
+                today_16 = now.replace(hour=16, minute=0, second=0, microsecond=0)
+                if now < today_16:
+                    time_left = today_16 - now
+                else:
+                    tomorrow_16 = today_16 + datetime.timedelta(days=1)
+                    time_left = tomorrow_16 - now
+                time_left_sec = int(time_left.total_seconds()) - (60 * 10)  # Reserve 10 minutes
+                log.get(log_name).info('[%s] Start sleep %d seconds...'%(trading_duration, time_left_sec))
+                time.sleep(time_left_sec)
+            else:
+                duration_time = (datetime.datetime.now() - loop_start_time).total_seconds()
+                time.sleep(int(get_global_config('realtime_interval')) - duration_time)
     except Exception as e:
         if db != None:
             db.closeSession()

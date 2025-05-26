@@ -4,6 +4,7 @@
 import os
 import sys
 import datetime
+from retrying import retry
 
 # Customsized lib
 py_dir = os.path.dirname(os.path.realpath(__file__))
@@ -42,6 +43,17 @@ def get_history(ctx, id, **kwargs):
     resp = ctx.history_candlesticks_by_date(id, Period.Day,
         AdjustType.ForwardAdjust, **kwargs)
     return resp
+
+@retry(stop_max_attempt_number=3, wait_fixed=5000)
+def quote(quote_list, quote_option_list):
+    resp_info = []
+    resp_option_info = []
+    ctx = get_quote_context()
+    if len(quote_list) > 0:
+        resp_info = ctx.quote(["%s.US"%(n) for n in quote_list])
+    if len(quote_option_list) > 0:
+        resp_option_info = ctx.option_quote(["%s.US"%(n) for n in quote_option_list])
+    return resp_info + resp_option_info
 
 # Supportted: US, HK, CN, SG
 def get_trading_session(market):
