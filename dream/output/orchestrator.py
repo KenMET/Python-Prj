@@ -32,7 +32,7 @@ from database import create_if_order_inexist, get_house_detail, get_holding, get
 from database import get_last_expectation, get_dog_realtime_min, get_dog_realtime_cnt, get_dog_last_price
 sys.path.append(r'%s/../inference'%(py_dir))
 from expectation import get_expect
-from strategy import get_stategy_handle
+from strategy import get_strategy_handle
 sys.path.append(r'%s/../../notification'%(py_dir))
 import notification as notify
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
@@ -409,7 +409,7 @@ def short_term_trade(house_dict):
 
         content = ''
         for target in trade_list:
-            stategy_handle = get_stategy_handle(target, 'short')
+            stategy_handle = get_strategy_handle(target, 'short')
 
             # Get and update probability
             #start_time = time.time()

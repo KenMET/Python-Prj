@@ -11,7 +11,7 @@ import datetime
 py_dir = os.path.dirname(os.path.realpath(__file__))
 py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
 sys.path.append(r'%s/'%(py_dir))
-from strategy import get_stategy_handle
+from strategy import get_strategy_handle
 sys.path.append(r'%s/../common'%(py_dir))
 from config import get_notify_list, get_global_config
 from database import create_if_expectation_inexist, update_expectation, get_dog_last_price
@@ -37,7 +37,7 @@ def merge_holding(quent_type, user_name, notify_list):
     return notify_list
 
 def get_expect(dog_code):
-    stategy_handle = get_stategy_handle(dog_code, 'long')
+    stategy_handle = get_strategy_handle(dog_code, 'long')
     if stategy_handle == None:
         #log.get().error('stategy_handle Null')
         return 0.2, 0.2

@@ -101,7 +101,12 @@ def get_fullcode(market, dog_id):
         return dog_id 
     elif len(res) != 1:
         tmp_list = [i.Code for i in res]
-        dog_full_code = [item for item in tmp_list if item.endswith('.' + dog_id)][0]
+        dog_full_code_list = [item for item in tmp_list if item.endswith('.' + dog_id)]
+        if len(dog_full_code_list) > 0:
+            dog_full_code = dog_full_code_list[0]
+        else:
+            db.closeSession()
+            return dog_id
     else:
         dog_full_code = res[0].Code
         if not dog_full_code.endswith('.' + dog_id):
@@ -119,7 +124,12 @@ def get_dogname(market, dog_id):
         return dog_id 
     elif len(res) != 1:
         tmp_list = [i.Name for i in res]
-        dog_name = [item for item in tmp_list if item.endswith('.' + dog_id)][0]
+        dog_name_list = [item for item in tmp_list if item.endswith('.' + dog_id)]
+        if len(dog_name_list) > 0:
+            dog_name = dog_name_list[0]
+        else:
+            db.closeSession()
+            return dog_id
     else:
         dog_name = res[0].Name
     db.closeSession()

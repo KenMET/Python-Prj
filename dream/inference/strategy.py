@@ -22,10 +22,10 @@ sys.path.append(r'%s/../../common_api/log'%(py_dir))
 import log
 
 
-def get_stategy_handle(target, trade_type):
+def get_strategy_handle(target, trade_type):
     strategy_dict = get_strategy(target)
     strategy_type = strategy_dict[trade_type]['class']
-    #log.get('backtest').info('get_stategy_handle:%s %s %s'%(target, strategy_type, str(strategy_dict)))
+    #log.get('backtest').info('get_strategy_handle:%s %s %s'%(target, strategy_type, str(strategy_dict)))
     if strategy_type == 'mean_reversion':
         short = int(strategy_dict[trade_type]['detail']['short_window'])
         long = int(strategy_dict[trade_type]['detail']['long_window'])
@@ -90,29 +90,26 @@ class basic:
         df['Signal'] = 0
 
         # Enable thresholds and trade_interval, otherwise it is easy to generate too much transactions
-        for i in range(len(df)):
-            short_ma = df['Short_MA'].iloc[i]
-            long_ma = df['Long_MA'].iloc[i]
+        for idx, row in df.iterrows():
+            short_ma = row['Short_MA']
+            long_ma = row['Long_MA']
 
             # if trade_interval has expired since the last operation
-            if i - self.last_signal_day >= self.trade_interval:
+            if idx - self.last_signal_day >= self.trade_interval:
                 # If the short window_avg is higher than long window_avg
                 # and the gap is greater than the threshold
                 # Means that the short increase is large, and consider selling
                 if (short_ma - long_ma)/short_ma > self.th:
-                    df.loc[i, 'Signal'] = -1
-                    self.last_signal_day = i
+                    df.loc[idx, 'Signal'] = -1
+                    self.last_signal_day = idx
 
                 # Contrary to above, short window_avg is lower than long window_avg
                 elif (long_ma - short_ma)/long_ma > self.th:
-                    df.loc[i, 'Signal'] = 1
-                    self.last_signal_day = i
-            else:
-                df.loc[i, 'Signal'] = 0  # No signal is generated during trade_interval
+                    df.loc[idx, 'Signal'] = 1
+                    self.last_signal_day = idx
 
         # Generates an actual buy/sell trading signal, preventing a signal from being repeated over a period of time
-        df['Position'] = df['Signal'].diff()
-
+        df['Position'] = df['Signal'].diff()    # Still need it???? to be delete...
         return df
 
     
@@ -126,11 +123,9 @@ class basic:
     #                 sum(short_df) * long_window_size - threshold * short_window_size * sum(long_df)
     # expect = x = -------------------------------------------------------------------------------------
     #                   threshold * short_window_size - long_window_size
-    def probability(self, df, dog_id=None):
-        df = self.mean_reversion(df)
-        last_index = len(df) - 1
-        if last_index - self.last_signal_day < self.trade_interval:
-            return 0.1, 0.1  # 仍在冷却期内
+    def probability(self, df, reload_reversion=True, dog_id=None):
+        if reload_reversion:
+            df = self.mean_reversion(df)
 
         price_column_name = ''
         if 'Price' in df.columns:
@@ -145,22 +140,24 @@ class basic:
             last = df[price_column_name].tail(1).item()
         else:
             last = get_dog_last_price(dog_id)
-        log.get('backtest').info('last:%.2f'%(last))
+        #log.get('backtest').info('last:%.2f'%(last))
         #log.get('backtest').info('threshold:%.2f'%(self.th))
 
         threshold = (1 - self.th)
         expect_buy = sum(short_df) * self.long - threshold * self.short * sum(long_df)
         expect_buy /= threshold * self.short - self.long
-        log.get('backtest').info('expect_buy:[0, %.2f]'%(expect_buy))
+        #log.get('backtest').info('expect_buy:[0, %.2f]'%(expect_buy))
         
         threshold = (1 + self.th)
         expect_sell = sum(short_df) * self.long - threshold * self.short * sum(long_df)
         expect_sell /= threshold * self.short - self.long
-        log.get('backtest').info('expect_sell: [%.2f, +∞]'%(expect_sell))
+        #log.get('backtest').info('expect_sell: [%.2f, +∞]'%(expect_sell))
 
         steepness = float(get_global_config('price_steepness'))
-        trough_probability = 100 * max(0.0, min(1.0, math.exp(-steepness * (last - expect_buy))))
-        peak_probability =100 * max(0.0, min(1.0, math.exp(-steepness * (expect_sell - last))))
+        #log.get().info('steepness[%.2f], last[%.2f], expect_buy[%.2f], expect_sell[%.2f]'%(steepness, last, expect_buy, expect_sell))
+        trough_probability = 100 * max(0.0, min(1.0, math.exp(max(-700, min(700, (-steepness * (last - expect_buy)))))))
+        peak_probability =100 * max(0.0, min(1.0, math.exp(max(-700, min(700, (-steepness * (expect_sell - last)))))))
+        # -700 to 700 near float corner case
 
         return float(trough_probability), float(peak_probability)
 

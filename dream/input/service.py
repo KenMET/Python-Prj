@@ -141,8 +141,9 @@ def market_monitor(lock):
                     tomorrow_16 = today_16 + datetime.timedelta(days=1)
                     time_left = tomorrow_16 - now
                 time_left_sec = int(time_left.total_seconds()) - (60 * 10)  # Reserve 10 minutes
-                log.get(log_name).info('[%s] Start sleep %d seconds...'%(trading_duration, time_left_sec))
-                time.sleep(time_left_sec)
+                if time_left_sec > 0:
+                    log.get(log_name).info('[%s] Start sleep %d seconds...'%(trading_duration, time_left_sec))
+                    time.sleep(time_left_sec)
             else:
                 duration_time = (datetime.datetime.now() - loop_start_time).total_seconds()
                 time.sleep(int(get_global_config('realtime_interval')) - duration_time)
