@@ -26,93 +26,80 @@ def get_strategy_handle(target, trade_type):
     strategy_dict = get_strategy(target)
     strategy_type = strategy_dict[trade_type]['class']
     #log.get('backtest').info('get_strategy_handle:%s %s %s'%(target, strategy_type, str(strategy_dict)))
+    stategy_handle = None
     if strategy_type == 'mean_reversion':
-        short = int(strategy_dict[trade_type]['detail']['short_window'])
-        long = int(strategy_dict[trade_type]['detail']['long_window'])
-        th = float(strategy_dict[trade_type]['detail']['threshold'])
-        trade_interval = int(strategy_dict[trade_type]['detail']['cool_down_period'])
-        stategy_handle = basic(short, long, th, trade_interval)
+        stategy_handle = mean_reversion({
+            'short': int(strategy_dict[trade_type]['detail']['short_window']),
+            'window_size': int(strategy_dict[trade_type]['detail']['window_size']),
+            'th': float(strategy_dict[trade_type]['detail']['threshold']),
+            'trade_interval': int(strategy_dict[trade_type]['detail']['cool_down_period']),
+        })
     elif strategy_type == 'bollinger':
-        window_size = int(strategy_dict[trade_type]['detail']['window_size'])
-        k_val = float(strategy_dict[trade_type]['detail']['k_val'])
-        probability_limit = float(strategy_dict[trade_type]['detail']['probability_limit'])
-        stategy_handle = bollinger(window_size, k_val, probability_limit)
+        stategy_handle = bollinger({
+            'window_size': int(strategy_dict[trade_type]['detail']['window_size']),
+            'k_val': float(strategy_dict[trade_type]['detail']['k_val']),
+            'probability_limit': float(strategy_dict[trade_type]['detail']['probability_limit']),
+        })
     elif strategy_type == 'xxx':   # to be update
         pass
     return stategy_handle
 
-def generate_basic_strategy_list():
-    short_range = range(2, 10+1)
-    long_range = range(15, 40+1)
-    th_range = range(1, 40+1)  # persentage / 10 (0.1% - 4%)
-    interval_range = range(1, 10+1)
-    temp_list = []
-    for a in th_range:
-        for b in long_range:
-            for c in short_range:
-                for d in interval_range:
-                    temp_dict = {
-                        'th' : float(a)/10,
-                        'short' : int(c),
-                        'long' : int(b),
-                        'trade_interval' : int(d),
-                    }
-                    temp_list.append(temp_dict)
-    return temp_list
+def generate_strategy_list(strategy_type):
+    if strategy_type == 'mean_reversion':
+        short_range = range(2, 10+1)
+        window_size_range = range(15, 40+1)
+        th_range = range(1, 40+1)  # persentage / 10 (0.1% - 4%) step: 0.1%
+        interval_range = range(1, 10+1)
+        temp_list = []
+        for a in th_range:
+            for b in window_size_range:
+                for c in short_range:
+                    for d in interval_range:
+                        temp_dict = {
+                            'th' : float(a)/10,
+                            'short' : int(c),
+                            'window_size' : int(b),
+                            'trade_interval' : int(d),
+                        }
+                        temp_list.append(mean_reversion(temp_dict))
+        return temp_list
+    elif strategy_type == 'bollinger':
+        window_size_range = range(10, 80+1)
+        probability_limit_range = range(65, 95+1)
+        k_val_range = range(10, 70+1)  # persentage / 10 (1.0% - 7.0%) step: 0.1%
+        interval_range = range(1, 10+1)
+        temp_list = []
+        for a in k_val_range:
+            for b in window_size_range:
+                for c in interval_range:
+                    for d in probability_limit_range:
+                        temp_dict = {
+                            'k_val' : float(a)/10,
+                            'probability_limit' : float(d),
+                            'window_size' : int(b),
+                            'trade_interval' : int(c),
+                        }
+                        temp_list.append(bollinger(temp_dict))
+        return temp_list
+    return []
 
 '''
 ************************************  Rule  ************************************
 1. Each strategy class, init to input parameters
-    Such as "basic": short, long, th, trade_interval
+    Such as "mean_reversion": short, window_size, th, trade_interval
 2. Each strategy calculation factor's I/O data type
     input: DataFrame
     output: DataFrame with Signal column(Buy=1, Sell=-1, Hold=0)
 ********************************************************************************
 '''
 
-class basic:
-    def __init__(self, short, long, th, trade_interval):
-        self.short = short
-        self.long = long
-        self.th = th/100
-        self.trade_interval = trade_interval
-        self.last_signal_day = -trade_interval  # Start from the first day
+class mean_reversion:
+    def __init__(self, config_dict):
+        self.short = config_dict.get('short', 1)
+        self.window_size = config_dict.get('window_size', 2)
+        self.th = config_dict.get('th', 1.0) / 100
+        self.trade_interval = config_dict.get('trade_interval', 1)
 
-    def mean_reversion(self, df):
-        # Calculate the window average
-        df['Short_MA'] = df['Close'].rolling(window=self.short, min_periods=1).mean()
-        df['Long_MA'] = df['Close'].rolling(window=self.long, min_periods=1).mean()
-
-        df['Short_MA'] = pd.to_numeric(df['Short_MA'], errors='coerce')
-        df['Long_MA'] = pd.to_numeric(df['Long_MA'], errors='coerce')
-
-        # Init Trade signal column
-        df['Signal'] = 0
-
-        # Enable thresholds and trade_interval, otherwise it is easy to generate too much transactions
-        for idx, row in df.iterrows():
-            short_ma = row['Short_MA']
-            long_ma = row['Long_MA']
-
-            # if trade_interval has expired since the last operation
-            if idx - self.last_signal_day >= self.trade_interval:
-                # If the short window_avg is higher than long window_avg
-                # and the gap is greater than the threshold
-                # Means that the short increase is large, and consider selling
-                if (short_ma - long_ma)/short_ma > self.th:
-                    df.loc[idx, 'Signal'] = -1
-                    self.last_signal_day = idx
-
-                # Contrary to above, short window_avg is lower than long window_avg
-                elif (long_ma - short_ma)/long_ma > self.th:
-                    df.loc[idx, 'Signal'] = 1
-                    self.last_signal_day = idx
-
-        # Generates an actual buy/sell trading signal, preventing a signal from being repeated over a period of time
-        df['Position'] = df['Signal'].diff()    # Still need it???? to be delete...
-        return df
-
-    
     # Set       threshold = (1 + th)   or   (1 - th)
     # Set       short_df = [219.16 , 219.57]            short_window_size = 3
     # Set       long_df  = [217.8, 219.16 , 219.57]     long_window_size  = 4
@@ -123,79 +110,97 @@ class basic:
     #                 sum(short_df) * long_window_size - threshold * short_window_size * sum(long_df)
     # expect = x = -------------------------------------------------------------------------------------
     #                   threshold * short_window_size - long_window_size
-    def probability(self, df, reload_reversion=True, dog_id=None):
-        if reload_reversion:
-            df = self.mean_reversion(df)
+    def probability(self, df, dog_id=None):
+        last_signal_day = -self.trade_interval  # Start from the first day
+        price_column_name = next((col for col in df.columns if col in ['Price', 'Close']), '')
+        if price_column_name == '':
+            return 0.1, 0.1
+        # Calculate the window average
+        df['Short_MA'] = df[price_column_name].rolling(window=self.short, min_periods=1).mean()
+        df['Long_MA'] = df[price_column_name].rolling(window=self.window_size, min_periods=1).mean()
+        df['Short_MA'] = pd.to_numeric(df['Short_MA'], errors='coerce')
+        df['Long_MA'] = pd.to_numeric(df['Long_MA'], errors='coerce')
 
-        price_column_name = ''
-        if 'Price' in df.columns:
-            price_column_name = 'Price'
-        elif 'Close' in df.columns:
-            price_column_name = 'Close'
-        else:
-            return 0.1, 0.2
+        df['Signal'] = 0
+        for idx, row in df.iterrows():
+            short_ma = row['Short_MA']
+            long_ma = row['Long_MA']
+
+            # if trade_interval has expired since the last operation
+            if idx - last_signal_day >= self.trade_interval:
+                # If the short window_avg is higher than window_size window_avg and the gap is greater than the threshold
+                # Means that the short increase is large, and consider selling
+                if (short_ma - long_ma)/short_ma > self.th:
+                    df.loc[idx, 'Signal'] = -1
+                    last_signal_day = idx
+
+                # Contrary to above, short window_avg is lower than window_size window_avg
+                elif (long_ma - short_ma)/long_ma > self.th:
+                    df.loc[idx, 'Signal'] = 1
+                    last_signal_day = idx
+
         short_df = df[price_column_name].tail(self.short - 1)
-        long_df = df[price_column_name].tail(self.long - 1)
+        long_df = df[price_column_name].tail(self.window_size - 1)
         if dog_id == None:
             last = df[price_column_name].tail(1).item()
         else:
             last = get_dog_last_price(dog_id)
-        #log.get('backtest').info('last:%.2f'%(last))
-        #log.get('backtest').info('threshold:%.2f'%(self.th))
 
         threshold = (1 - self.th)
-        expect_buy = sum(short_df) * self.long - threshold * self.short * sum(long_df)
-        expect_buy /= threshold * self.short - self.long
-        #log.get('backtest').info('expect_buy:[0, %.2f]'%(expect_buy))
+        expect_buy = sum(short_df) * self.window_size - threshold * self.short * sum(long_df)
+        expect_buy /= threshold * self.short - self.window_size
         
         threshold = (1 + self.th)
-        expect_sell = sum(short_df) * self.long - threshold * self.short * sum(long_df)
-        expect_sell /= threshold * self.short - self.long
-        #log.get('backtest').info('expect_sell: [%.2f, +∞]'%(expect_sell))
+        expect_sell = sum(short_df) * self.window_size - threshold * self.short * sum(long_df)
+        expect_sell /= threshold * self.short - self.window_size
 
         steepness = float(get_global_config('price_steepness'))
-        #log.get().info('steepness[%.2f], last[%.2f], expect_buy[%.2f], expect_sell[%.2f]'%(steepness, last, expect_buy, expect_sell))
+        # -700 to 700 near float corner case
         trough_probability = 100 * max(0.0, min(1.0, math.exp(max(-700, min(700, (-steepness * (last - expect_buy)))))))
         peak_probability =100 * max(0.0, min(1.0, math.exp(max(-700, min(700, (-steepness * (expect_sell - last)))))))
-        # -700 to 700 near float corner case
 
         return float(trough_probability), float(peak_probability)
 
 class bollinger:
-    def __init__(self, window_size, k_val, probability_limit):
-        self.window_size = window_size
-        self.k_val = k_val
-        self.probability_limit = probability_limit
-        self.bollinger_list = []
+    def __init__(self, config_dict):
+        self.window_size = config_dict.get('window_size', 10)
+        self.k_val = config_dict.get('k_val', 1.0)
+        self.probability_limit = config_dict.get('probability_limit', 90)
+        self.trade_interval = config_dict.get('trade_interval', 1)
 
     def probability(self, df, dog_id=None):
-        price_column_name = ''
-        if 'Price' in df.columns:
-            price_column_name = 'Price'
-        elif 'Close' in df.columns:
-            price_column_name = 'Close'
-        else:
+        price_column_name = next((col for col in df.columns if col in ['Price', 'Close']), '')
+        if price_column_name == '':
             return 0.1, 0.1
-        rolling_mean = df[price_column_name].rolling(self.window_size).mean()
-        rolling_std = df[price_column_name].rolling(self.window_size).std()
-        upper_band = rolling_mean + self.k_val * rolling_std
-        lower_band = rolling_mean - self.k_val * rolling_std
+        df['Mean'] = df[price_column_name].rolling(self.window_size).mean()
+        df['Std'] = df[price_column_name].rolling(self.window_size).std()
+        df['Upper_Band'] = df['Mean'] + self.k_val * df['Std']
+        df['Lower_Band'] = df['Mean'] - self.k_val * df['Std']
 
-        current_price = df[price_column_name].iloc[-1]
-        dist_upper = (upper_band.iloc[-1] - current_price) / (2 * self.k_val * rolling_std.iloc[-1])
-        dist_lower = (current_price - lower_band.iloc[-1]) / (2 * self.k_val * rolling_std.iloc[-1])
+        df['Peak'] = np.maximum(0, 100 * (1 - ((df['Upper_Band'] - df[price_column_name]) / (2 * self.k_val * df['Std']))))
+        df['Trough'] = np.maximum(0, 100 * (1 - ((df[price_column_name] - df['Lower_Band']) / (2 * self.k_val * df['Std']))))
 
-        self.bollinger_list.append({
-            "peak": max(0, 100 * (1 - dist_upper)),
-            "trough": max(0, 100 * (1 - dist_lower))
-        })
+        bollinger_avg_cnt = int(get_global_config('bollinger_avg_cnt'))
+        bollinger_avg_cnt = 1 if (bollinger_avg_cnt == 0) else bollinger_avg_cnt
+        df['Peak_Mean'] = df['Peak'].rolling(bollinger_avg_cnt).mean()
+        df['Trough_Mean'] = df['Trough'].rolling(bollinger_avg_cnt).mean()
 
-        if len(self.bollinger_list) < 2:
-            return float(self.bollinger_list[-1]["trough"]), float(self.bollinger_list[-1]["peak"])
+        df['Signal'] = 0
+        limit = float(get_global_config('bollinger_limit'))
+        last_signal_day = -self.trade_interval
 
-        last_trough_probability = [round(float(i.get("trough", 0.0)), 2) for i in self.bollinger_list[-2:]]
-        avg_trough_probability = (last_trough_probability[0] + last_trough_probability[1]) / 2
-        last_peak_probability = [round(float(i.get("peak", 0.0)), 2) for i in self.bollinger_list[-2:]]
-        avg_peak_probability = (last_peak_probability[0] + last_peak_probability[1]) / 2
+        for idx, row in df.iterrows():
+            peak_mean = row['Peak_Mean']
+            trough_mean = row['Trough_Mean']
 
-        return float(avg_trough_probability), float(avg_peak_probability)
+            # if trade_interval has expired since the last operation
+            if idx - last_signal_day >= self.trade_interval:
+                if peak_mean > limit and trough_mean < limit:
+                    df.loc[idx, 'Signal'] = -1
+                    last_signal_day = idx
+
+                if peak_mean < limit and trough_mean > limit:
+                    df.loc[idx, 'Signal'] = 1
+                    last_signal_day = idx
+
+        return float(df['Trough_Mean'].tail(1).item()), float(df['Peak_Mean'].tail(1).item())

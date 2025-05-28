@@ -60,7 +60,7 @@ def get_strategy(id):
 
     # Default short/long-term trade strategy
     strategy_dict = {}
-    strategy_dict.update({'long':{'class':'bollinger', 'detail':cfg.get('bollinger', {}).get('config_0', {})}})
+    strategy_dict.update({'long':{'class':'mean_reversion', 'detail':cfg.get('mean_reversion', {}).get('config_0', {})}})
     strategy_dict.update({'short':{'class':'bollinger', 'detail':cfg.get('bollinger', {}).get('config_0', {})}})
 
     strategy_type = ''
