@@ -112,7 +112,8 @@ class mean_reversion:
     #                   threshold * short_window_size - long_window_size
     def probability(self, df, dog_id=None):
         last_signal_day = -self.trade_interval  # Start from the first day
-        price_column_name = next((col for col in df.columns if col in ['Price', 'Close']), '')
+        price_column_name = 'Price' if 'Price' in df.columns else \
+            'Close' if 'Close' in df.columns else ''
         if price_column_name == '':
             return 0.1, 0.1
         # Calculate the window average
@@ -168,8 +169,9 @@ class bollinger:
         self.probability_limit = config_dict.get('probability_limit', 90)
         self.trade_interval = config_dict.get('trade_interval', 1)
 
-    def probability(self, df, dog_id=None):
-        price_column_name = next((col for col in df.columns if col in ['Price', 'Close']), '')
+    def probability(self, df, dog_id=None, mean=True):
+        price_column_name = 'Price' if 'Price' in df.columns else \
+            'Close' if 'Close' in df.columns else ''
         if price_column_name == '':
             return 0.1, 0.1
         df['Mean'] = df[price_column_name].rolling(self.window_size).mean()
@@ -182,25 +184,35 @@ class bollinger:
 
         bollinger_avg_cnt = int(get_global_config('bollinger_avg_cnt'))
         bollinger_avg_cnt = 1 if (bollinger_avg_cnt == 0) else bollinger_avg_cnt
-        df['Peak_Mean'] = df['Peak'].rolling(bollinger_avg_cnt).mean()
-        df['Trough_Mean'] = df['Trough'].rolling(bollinger_avg_cnt).mean()
+        if mean:
+            df['Peak_Mean'] = df['Peak'].rolling(bollinger_avg_cnt).mean()
+            df['Trough_Mean'] = df['Trough'].rolling(bollinger_avg_cnt).mean()
 
         df['Signal'] = 0
         limit = float(get_global_config('bollinger_limit'))
         last_signal_day = -self.trade_interval
 
         for idx, row in df.iterrows():
-            peak_mean = row['Peak_Mean']
-            trough_mean = row['Trough_Mean']
+            if mean:
+                peak_mean = row['Peak_Mean']
+                trough_mean = row['Trough_Mean']
 
             # if trade_interval has expired since the last operation
             if idx - last_signal_day >= self.trade_interval:
-                if peak_mean > limit and trough_mean < limit:
+                if mean:
+                    peak_triggered = (peak_mean > limit and trough_mean < limit)
+                    trough_triggered = (peak_mean < limit and trough_mean > limit)
+                else:
+                    peak_triggered = df['Peak'].tail(bollinger_avg_cnt).gt(limit).all()
+                    trough_triggered = df['Trough'].tail(bollinger_avg_cnt).gt(limit).all()
+
+                if peak_triggered and not trough_triggered:
                     df.loc[idx, 'Signal'] = -1
                     last_signal_day = idx
-
-                if peak_mean < limit and trough_mean > limit:
+                if not peak_triggered and trough_triggered:
                     df.loc[idx, 'Signal'] = 1
                     last_signal_day = idx
-
-        return float(df['Trough_Mean'].tail(1).item()), float(df['Peak_Mean'].tail(1).item())
+        if mean:
+            return float(df['Trough_Mean'].tail(1).item()), float(df['Peak_Mean'].tail(1).item())
+        else:
+            return float(df['Trough'].tail(1).item()), float(df['Peak'].tail(1).item())

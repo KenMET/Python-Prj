@@ -1,11 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <contents>
     <long_strategy>
-        <AAPL><type>bollinger</type><item>config_0</item></AAPL>
         <NVDA><type>mean_reversion</type><item>config_1</item></NVDA>
         <TSLA><type>mean_reversion</type><item>config_2</item></TSLA>
         <MSFT><type>mean_reversion</type><item>config_3</item></MSFT>
-        <GOLD><type>mean_reversion</type><item>config_4</item></GOLD>
         <YANG><type>mean_reversion</type><item>config_5</item></YANG>
     </long_strategy>
 

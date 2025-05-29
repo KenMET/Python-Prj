@@ -244,7 +244,7 @@ def main(args):
     else:
         target_list.append(args.target)
     log.get().info('Start backtest for %s'%(str(target_list)))
-    cb(target_list, start_date, end_date)
+    cb(target_list, start_date, end_date, args.strategy)
 
 if __name__ == '__main__':
     # Create ArgumentParser Object

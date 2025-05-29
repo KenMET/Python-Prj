@@ -73,14 +73,19 @@ def get_expect_all():
 
     return notify_dict
 
-def trade(house_dict, dog_opt, dog_id):
+def long_term_trade(house_dict, dog_opt, dog_id):
     def get_holding_by_dog_id(holding_dict, dog_id):
         for index in holding_dict:
-            if index.get('Code', '') == dog_id:
+            if index.get('Code', '').find(dog_id+'.') >= 0:
                 return index
         return {}
     try:
-        content = ''
+        recv_dict = register_dog(dog_id)
+        log.get(log_name).info('[long_term_trade]register realtime for: %s %s'%(dog_id, str(recv_dict)))
+    except Exception as e:
+        log.get(log_name).error('Exception captured in long_term_trade register_dog: %s'%(str(e)))
+    try:
+        
         available_cash = float(house_dict['AvailableCash'])
         log.get(log_name).info('available_cash: %.3f'%(available_cash))
         holding = get_holding_by_dog_id(json.loads(house_dict['Holding'].replace("'",'"')), dog_id)
@@ -88,23 +93,31 @@ def trade(house_dict, dog_opt, dog_id):
         if len(holding) == 0:
             holding.update({'Quantity':0})
 
-        order_dest = get_user_type('-')
+        user, q_type= get_user_type()
+        order_dest = user + '-' + q_type
         create_if_order_inexist(order_dest).closeSession()  # No need db further.
 
         trough_prob = float(dog_opt.get('trough', -1.0))
         peak_prob = float(dog_opt.get('peak', -1.0))
         last_price = float(dog_opt.get('last_price', -1.0))
         if last_price < 0.0 or trough_prob < 0.0 or peak_prob < 0.0:
-            log.get(log_name).error('Format error in dog_opt: %s'%(str(dog_opt)))
+            content = 'Format error in dog_opt: %s\n'%(str(dog_opt))
+            log.get(log_name).error(content.replace('\n', ''))
+            return content
 
+        last_price = get_dog_last_price(dog_id)     # update last price
         steepness = float(get_global_config('price_steepness'))
         bollinger_limit = float(get_global_config('bollinger_limit'))
         buy_price = last_price if (trough_prob > 99.0) else (last_price + math.log(trough_prob/100)/steepness)
         buy_price = (-1.0) if (trough_prob < bollinger_limit) else buy_price
         sell_price = last_price if (peak_prob > 99.0) else (last_price - math.log(peak_prob/100)/steepness)
         sell_price = (-1.0) if (peak_prob < bollinger_limit) else sell_price
+        #log.get(log_name).info('[%s]trough_: %.2f%% peak:%.2f%% last_price:%.2f [%.2f, %.2f]'%(
+        #    dog_id, trough_prob, peak_prob, last_price, buy_price, sell_price))
         avg_score = dog_opt.get('avg_score', 0)
         curr_share = holding.get('Quantity', 0)
+        content = 'Monitoring today'
+        submit_dict = {}
         if buy_price > 0 and available_cash > 0:
             share = get_next_inject(curr_share, float(get_global_config('next_inject_factor')))
             if (share * buy_price) > available_cash:
@@ -116,14 +129,12 @@ def trade(house_dict, dog_opt, dog_id):
                 else:
                     share = all_in_share
             if share != 0:
-                recv_dict = None#submit_order(dog_id, 'buy', buy_price, share)
-                content += '[%s] Buy %d shares in %.2f\n'%(dog_id, share, buy_price)
-                log.get(log_name).info(content.replace('\n','') + ', ret: %s'%(str(recv_dict)))
-
-        if sell_price > 0:
+                submit_dict.update({'opt_direction':'buy', 'opt_price':buy_price, 'opt_share':share})
+        elif sell_price > 0:
             share = get_last_inject(curr_share, float(get_global_config('next_inject_factor')))
             if share <= 0:
-                log.get(log_name).info('[%s] Nothing to Sell due to share == %d......'%(dog_id, share))
+                content = '[%s] Nothing to Sell[%d]\n'%(dog_id, share)
+                log.get(log_name).info(content.replace('\n',''))
             else:
                 filled_order_list = get_filled_order_from_longport(dog_id, 'Buy')
                 cost_price, fee = get_cost_price_fee(filled_order_list, share)
@@ -132,27 +143,37 @@ def trade(house_dict, dog_opt, dog_id):
                 if not flag:
                     log.get(log_name).error('Query last dog[%s] price failed...'%(dog_id))
                 else:
-                    diff = ((last_price - cost_price) / cost_price) * 100
+                    diff = ((last_price - cost_price) / abs(cost_price)) * 100
                     log.get(log_name).info('[%s][%s] LastPrice[%.2f] CostPrice[%.2f] Diff[%.2f%%]'%(dog_id, last_datetime, last_price, cost_price, diff))
-
                     if diff >= float(get_user_config(user, 'dog', 'profit_percent')):     # Sell now 
-                        recv_dict = None#submit_order(dog_id, 'sell', last_price, share)
-                        content += '[%s] Sell now %d shares in %.2f\n'%(dog_id, share, last_price)
-                        log.get(log_name).info(content.replace('\n','') + ', ret: %s'%(str(recv_dict)))
+                        submit_dict.update({'opt_direction':'sell', 'opt_price':last_price, 'opt_share':share})
                     elif diff >= float(get_user_config(user, 'dog', 'min_percent')):
                         diff_lower = ((sell_price - cost_price) / cost_price) * 100
                         if diff_lower >= float(get_user_config(user, 'option', 'min_percent')):     # Set target price and wait order done
-                            recv_dict = None#submit_order(dog_id, 'sell', sell_price, share)
-                            content += '[%s] Sell set %d shares in %.2f\n'%(dog_id, share, sell_price)
-                            log.get(log_name).info(content.replace('\n','') + ', ret: %s'%(str(recv_dict)))
-        if content == '':
-            content += 'Nothing to do today'
-        try:
-            notify.bark().send_title_content('Long-Orchestrator-%s'%(get_user_type('-')), content)
-        except Exception as e:
-            log.get(log_name).error('Exception captured in Long-Orchestrator bark[%s]: %s'%(content, str(e)))
+                            submit_dict.update({'opt_direction':'sell', 'opt_price':sell_price, 'opt_share':share})
+
+        retry_time = 2
+        while (retry_time > 0):
+            try:
+                if len(submit_dict) != 0:
+                    opt_direction = submit_dict.get('opt_direction')
+                    opt_price = submit_dict.get('opt_price')
+                    opt_share = submit_dict.get('opt_share')
+                    recv_dict = submit_order(dog_id, opt_direction, opt_price, opt_share)
+                    content = '[%s] %s set %d shares in %.2f, last:%.2f\n'%(dog_id, opt_direction, opt_share, opt_price, last_price)
+                    log.get(log_name).info(content.replace('\n','') + ', ret: %s'%(str(recv_dict)))
+                break
+            except Exception as e:
+                retry_time -= 1
+                log.get(log_name).error('Exception captured in trade submit_order: %s, retry:%d'%(str(e), retry_time))
+                time.sleep(10)
+        if retry_time == 0:
+            content = 'Exception captured in trade submit_order: %s\n'%(str(e))
+        return content
     except Exception as e:
-        log.get(log_name).error('Exception captured in trade: %s'%(str(e)))
+        content = 'Exception captured in trade: %s\n'%(str(e))
+        log.get(log_name).error(content.replace('\n',''))
+        return content
 
 # Skip when order already done (Filled)
 # in last few min, check if the price meet the min_earn, if match, sell in current price.
@@ -199,7 +220,7 @@ def monitor_loop(order_id, dog_id, side, price, quantity):
         flag, last_price, last_datetime = query_dog_last(dog_id)
         if not flag:
             return False
-        diff = (abs(last_price - price) / price) * 100
+        diff = (abs(last_price - price) / abs(price)) * 100
         log.get(log_name).info('[%s][%s] LastPrice[%.2f] ExpectPrice[%.2f] Diff[%.2f%%]'%(dog_id, last_datetime, last_price, price, diff))
 
         now_seesion, surplus_min = get_current_session_and_remaining_time('Normal')   # Track till Normal session end
@@ -209,6 +230,7 @@ def monitor_loop(order_id, dog_id, side, price, quantity):
         else:
             log.get(log_name).debug('[%s][%s]Current Session: %s, continue...'%(dog_id, order_id, now_seesion))
 
+        modify_dict = {}
         if side == 'Sell':
             # Formular: 
             #   earning_diff = ((last_price - cost_price) * quantity - (fee*2)) / (cost_price * quantity), to make earning_diff > expected_percent
@@ -220,21 +242,13 @@ def monitor_loop(order_id, dog_id, side, price, quantity):
             earning_diff = (earning / (cost_price * quantity * multiple_factor)) * 100
             if earning_diff >= profit_diff:
                 log.get(log_name).info('[%s]Modify sell order now: [%s][%.2f][%d]'%(dog_id, order_id, last_price, quantity))
-                # recv_dict = modify_order(order_id, last_price, quantity)
                 content = '[%s] Sell %d[%.2f] Profit-Earn[%.2f]'%(dog_id, quantity, last_price, earning)
-                try:
-                    notify.bark().send_title_content('Profit-Earn', content)
-                except Exception as e:
-                    log.get(log_name).error('Exception captured in Profit-Earn bark[%s]: %s'%(content, str(e)))
+                modify_dict.update({'opt_direction':'sell', 'opt_order_id':order_id, 'opt_price':last_price, 'opt_quantity':quantity})
             elif earning_diff >= min_diff:
                 if surplus_min < 10:
                     log.get(log_name).info('[%s]Modify sell order due to near close: [%s][%.2f][%d]'%(dog_id, order_id, last_price, quantity))
-                    # recv_dict = modify_order(order_id, last_price, quantity)
+                    modify_dict.update({'opt_direction':'sell', 'opt_order_id':order_id, 'opt_price':last_price, 'opt_quantity':quantity})
                     content = '[%s] Sell %d[%.2f] Min-Earn[%.2f]'%(dog_id, quantity, last_price, earning)
-                    try:
-                        notify.bark().send_title_content('Min-Earn', content)
-                    except Exception as e:
-                        log.get(log_name).error('Exception captured in Min-Earn bark[%s]: %s'%(content, str(e)))
                 else:
                     log.get(log_name).debug('[%s][%s] earning[%.2f][%.2f%%], keep monitor'%(dog_id, order_id, earning, earning_diff))
             else:
@@ -244,18 +258,38 @@ def monitor_loop(order_id, dog_id, side, price, quantity):
             if surplus_min < 10:    # 10 min, near close market, change the price.
                 if is_dog_option(dog_id):       # Enable option trade for test only, to be verify on dog trade.
                     log.get(log_name).info('Modify buy order: [%s][%.2f][%d]'%(order_id, last_price, quantity))
-                    # recv_dict = modify_order(order_id, last_price, quantity)
+                    modify_dict.update({'opt_direction':'buy', 'opt_order_id':order_id, 'opt_price':last_price, 'opt_quantity':quantity})
                     content = '[%s] Buy %d[%.2f] Expect:%.2f'%(dog_id, quantity, last_price, price)
-                    try:
-                        notify.bark().send_title_content('Buy-Test', content)
-                    except Exception as e:
-                        log.get(log_name).error('Exception captured in Buy-Test bark[%s]: %s'%(content, str(e)))
+
+        retry_time = 2
+        while (retry_time > 0):
+            try:
+                if len(modify_dict) != 0:
+                    opt_direction = modify_dict.get('opt_direction')
+                    opt_order_id = modify_dict.get('opt_order_id')
+                    opt_price = modify_dict.get('opt_price')
+                    opt_quantity = modify_dict.get('opt_quantity')
+                    recv_dict = modify_order(opt_order_id, opt_price, opt_quantity)
+                    content = '[%s][%s] %s modify to %.2f\n'%(dog_id, opt_order_id, opt_direction, opt_price)
+                    log.get(log_name).info(content.replace('\n','') + ', ret: %s'%(str(recv_dict)))
+                break
+            except Exception as e:
+                retry_time -= 1
+                log.get(log_name).error('Exception captured in trade submit_order: %s, retry:%d'%(str(e), retry_time))
+                time.sleep(10)
+        if retry_time == 0:
+            content = 'Exception captured in trade modify_order: %s\n'%(str(e))
+            try:
+                notify.bark().send_title_content('Order-Monitor', content)
+            except Exception as e:
+                log.get(log_name).error('Exception captured in order_monitor bark[%s]: %s'%(content, str(e)))
+
 
 def order_monitor(order_id, dog_id, price, quantity, side):
     log.get(log_name).info('Start monitor for [%s][%s][%.2f][%s][%d]'%(order_id, dog_id, price, side, quantity))
     try:
         recv_dict = register_dog(dog_id)
-        log.get(log_name).info('register realtime for: %s %s'%(dog_id, str(recv_dict)))
+        log.get(log_name).info('[order_monitor]register realtime for: %s %s'%(dog_id, str(recv_dict)))
     except Exception as e:
         log.get(log_name).error('Exception captured in order_monitor register_dog: %s'%(str(e)))
     monitor_loop(order_id, dog_id, side, price, quantity)
@@ -371,7 +405,7 @@ def short_term_trade(house_dict):
     try:
         for index in trade_list:
             recv_dict = register_dog(index)
-            log.get(log_name).info('register realtime for: %s %s'%(index, str(recv_dict)))
+            log.get(log_name).info('[short_term_trade]register realtime for: %s %s'%(index, str(recv_dict)))
     except Exception as e:
         log.get(log_name).error('Exception captured in short_term_trade register_dog: %s'%(str(e)))
 
@@ -414,7 +448,7 @@ def short_term_trade(house_dict):
             # Get and update probability
             #start_time = time.time()
             try:
-                df = get_realtime_filter_df(target, int(1 * 60))     # Must large then window size
+                df = get_realtime_filter_df(target, int(stategy_handle.window_size * 2))     # Must large then window size
             except Exception as e:
                 log.get(log_name).error('Exception captured in get_realtime_filter_df[%s]: %s'%(target, str(e)))
                 time.sleep(10)
@@ -424,7 +458,11 @@ def short_term_trade(house_dict):
                 error_cnt += 1
                 continue
             #log.get(log_name).debug('get_realtime_filter_df elapsed_time: %.3f'%(time.time() - start_time))    # Read database cost time
-            trough_prob, peak_prob = stategy_handle.probability(df, dog_id=target)
+            trough_prob, peak_prob = stategy_handle.probability(df, dog_id=target, mean=False)
+            if math.isnan(trough_prob) or math.isnan(peak_prob):
+                log.get(log_name).error('%s: Probability Error math.nan [%.2f%% , %.2f%%]'%(target, trough_prob, peak_prob))
+                error_cnt += 1
+                continue
             trough_prob_list = prob_dict.get(target, {}).get('trough', init_prob_list())
             peak_prob_list = prob_dict.get(target, {}).get('peak', init_prob_list())
             append_dict_list(prob_dict, target, trough_prob, key_sub='trough')
@@ -435,9 +473,16 @@ def short_term_trade(house_dict):
                 continue
 
             # Get continue action and increase avg_cnt as pyramid
-            buy_continue, sell_continue = get_continue_cnt(trigger_action_dict.get(target, []))
-            buy_avg_cnt = buy_continue * avg_cnt
-            sell_avg_cnt = sell_continue * avg_cnt
+            buy_continue, sell_continue = get_continue_cnt(trigger_action_dict.get(target, [])) # Get continue action...
+            # Seems that, for example, if continue sell, then first sell in 100, second sell 110, third sell 140, something like this...
+
+            # For example, if not continue, first take avg_cnt as default
+            # if continue twice, the avg_cnt*2, step longger, make sure need to take action...
+            #buy_avg_cnt = buy_continue * avg_cnt
+            #sell_avg_cnt = sell_continue * avg_cnt
+
+            # No step adjust, try using default avg_cnt for test now...
+            buy_avg_cnt = sell_avg_cnt = avg_cnt
             action_type = 'sell' if all(val > bollinger_limit for val in peak_prob_list[-sell_avg_cnt:]) else \
                         'buy' if all(val > bollinger_limit for val in trough_prob_list[-buy_avg_cnt:]) else ''
 
@@ -476,23 +521,35 @@ def short_term_trade(house_dict):
             # Start submit order and update data and notify to phone
             if action_type != '':
                 #log.get(log_name).debug('[%s] last[%.2f] now_price[%.2f]'%(target, last, now_price))
-                price_diff = ((now_price - last) / last) if (action_type == 'sell') else ((last - now_price) / last)
+                price_diff = ((now_price - last) / abs(last)) if (action_type == 'sell') else ((last - now_price) / abs(last))
                 if last > 0.01 and price_diff < price_float_th:
                     log.get(log_name).debug('[%s]%s, too less diff last[%.2f], Now[%.2f] RequireDiff[%.2f%%]'%(target, 
                         action_type, last, now_price, price_float_th * 100))
                     continue
                 append_dict_list(trigger_price_dict, target, now_price)
                 append_dict_list(trigger_action_dict, target, action_type)
-                recv_dict = None#submit_order(dog_id, action_type, now_price, share)
-                content += '[%s] %s [%d] in %.2f\n'%(target, action_type, share, now_price)
-                log.get(log_name).info('[%s] %s [%d] in %.2f'%(target, action_type, share, now_price) + ', ret: %s'%(str(recv_dict)))
-                if action_type == 'buy':
-                    append_dict_list(trade_order_dict, target, {
-                        'order_id': str(time.time()),
-                        'price':now_price,
-                        'shares':share,
-                        'status':'New',
-                    })
+
+                retry_time = 2
+                while (retry_time > 0):
+                    try:
+                        recv_dict = submit_order(target, action_type, now_price, share)
+                        content += '[%s] %s [%d] in %.2f\n'%(target, action_type, share, now_price)
+                        log.get(log_name).info('[%s] %s [%d] in %.2f'%(target, action_type, share, now_price) + ', ret: %s'%(str(recv_dict)))
+                        if action_type == 'buy':
+                            append_dict_list(trade_order_dict, target, {
+                                'order_id': str(time.time()),
+                                'price':now_price,
+                                'shares':share,
+                                'status':'New',
+                            })
+                        break
+                    except Exception as e:
+                        retry_time -= 1
+                        log.get(log_name).error('Exception in short_term_trade submit_order: %s, retry:%d'%(str(e), retry_time))
+                        time.sleep(10)
+                if retry_time == 0:
+                    content = 'Exception in short_term_trade [%s]submit_order: %s\n'%(target, str(e))
+
         if error_cnt == len(trade_list):
             log.get(log_name).error('Error occurred in %s, exit short trade...'%(str(trade_list)))
             break
@@ -506,7 +563,7 @@ def short_term_trade(house_dict):
                 continue
 
 def main(args):
-    log.init('%s/../log'%(py_dir), log_name, log_mode='w', log_level='debug', console_enable=True)
+    log.init('%s/../log'%(py_dir), log_name, log_mode='w', log_level='info', console_enable=True)
     log.get(log_name).info('Logger Creat Success...[%s]'%(log_name))
 
     if not args.test:
@@ -520,9 +577,14 @@ def main(args):
     log.get(log_name).info('house_dict: %s'%(str(house_dict)))
 
     # Submit order for Long-term trade
+    content = ''
     for dog_index in expectation_dict:
         dog_opt = expectation_dict[dog_index]
-        trade(house_dict, dog_opt, dog_index)
+        content += long_term_trade(house_dict, dog_opt, dog_index)
+    try:
+        notify.bark().send_title_content('Long-Orchestrator-%s'%(get_user_type('-')), content)
+    except Exception as e:
+        log.get(log_name).error('Exception captured in Long-Orchestrator bark[%s]: %s'%(content, str(e)))
 
     # Start Short-term trade monitor
     short_trade_t = threading.Thread(target=short_term_trade, args=(house_dict, ))
