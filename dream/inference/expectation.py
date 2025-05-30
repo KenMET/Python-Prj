@@ -89,13 +89,14 @@ def main(args):
         }})
 
     if len(content) != 0:
-        bark_obj.send_title_content('Kanos Stock House', content)
+        bark_obj.send_title_content('Kanos Expectation(%s)'%(args.market), content)
         create_if_expectation_inexist().closeSession()
         flag = update_expectation(args.market, expect_dict)
         if not flag:
             log.get().error('Expectation update failed: %s'%(str(expect_dict)))
     else:
         log.get().info('No expectation today, hold...')
+        bark_obj.send_title_content('Kanos Expectation(%s)'%(args.market), 'Hold Today')
 
 if __name__ == '__main__':
     # Create ArgumentParser Object

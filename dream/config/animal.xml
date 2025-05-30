@@ -26,8 +26,8 @@
         <id>JNJ</id>
         <id>ZH</id><id>BABA</id><id>BIDU</id><id>PDD</id><id>BILI</id>                  <!-- CN -->
         <id>YANG</id><id>SPY</id><id>SPXL</id><id>XOP</id><id>TQQQ</id><id>ARKB</id>    <!-- ETF -->
-        <id>DIG</id><id>SOXL</id><id>UVIX</id><id>YINN</id>
-        <id>UBSFY</id><id>NTDOY</id><id>XIACY</id>                                      <!-- ADR -->
+	<id>DIG</id><id>SOXL</id><id>UVIX</id><id>YINN</id><id>NVDL</id><id>TSLL</id>
+	<id>UBSFY</id><id>NTDOY</id><id>XIACY</id>                                      <!-- ADR -->
     </dog_us_list>
     <trade_list>
         <us>
