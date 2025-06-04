@@ -84,6 +84,7 @@ class db(dbb.basedb):
         dog_order = self.create_order_class(order_dest)
         conditions = and_(dog_order.Status != 'Canceled', 
             dog_order.Status != 'Expired',
+            dog_order.Status != 'Rejected',
             dog_order.Status != 'Filled')
         result = self.session.query(dog_order).filter(conditions).all()
         #result = self.session.query(dog_order).filter(dog_order.Status != 'Canceled').all()

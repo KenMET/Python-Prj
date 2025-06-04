@@ -113,19 +113,17 @@ def get_next_inject(a, factor=1.0):
         inc += 1
     return inc
 
-def get_last_inject(a, factor=1.0):
-    if a == 0:
-        return 0
+def get_prev_inject(total, factor=1.0):
+    if 0.99 < factor < 1.01:
+        return -1
 
-    for possible_inc in range(1, a + 1):
-        a_prev = a - possible_inc
-        expected_inc = math.floor(a_prev * factor)
-        if expected_inc == a_prev:
-            expected_inc += 1
-        if expected_inc == possible_inc:
-            return possible_inc
+    if (total + 1) & total == 0:
+        prev_total = (total - 1) // 2
+        inc = prev_total + 1
+    else:
+        inc = math.floor(total / 2)
 
-    return -1
+    return inc
 
 # Append item to dict
 # Scense-1
