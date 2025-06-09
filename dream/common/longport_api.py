@@ -71,7 +71,7 @@ def get_trading_session(market):
         trading_session_dict.update({market_temp:market_session_dict})
     return trading_session_dict.get(market,{})
 
-def get_last_price(quote_ctx, session, code):
+def get_last_price_from_longport(quote_ctx, session, code):
     resp = quote_ctx.quote([code])
     for index in resp:
         if session == 'Normal':

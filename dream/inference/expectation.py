@@ -14,7 +14,7 @@ sys.path.append(r'%s/'%(py_dir))
 from strategy import get_strategy_handle
 sys.path.append(r'%s/../common'%(py_dir))
 from config import get_notify_list, get_global_config
-from database import create_if_expectation_inexist, update_expectation, get_dog_last_price
+from database import create_if_expectation_inexist, update_expectation, get_last_price_from_db
 from database import get_holding, get_market_by_range, get_dogname, get_avg_score
 from other import wait_us_market_open, get_user_type
 sys.path.append(r'%s/../../notification'%(py_dir))
@@ -73,7 +73,7 @@ def main(args):
         if trough_prob < bollinger_limit and peak_prob < bollinger_limit:
             log.get().debug('%s: Hold due to [%.2f%% , %.2f%%]'%(dog_name, trough_prob, peak_prob))
             continue
-        last_price = get_dog_last_price(index)
+        last_price = get_last_price_from_db(index)
 
         sub_content = '%s(%.2f):[%.2f%% (%.3f) %.2f%%]\n'%(dog_name,
             avg_score, trough_prob, last_price, peak_prob)

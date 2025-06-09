@@ -17,7 +17,7 @@ py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
 sys.path.append(r'%s/'%(py_dir))
 sys.path.append(r'%s/../common'%(py_dir))
 from config import get_strategy, get_global_config
-from database import get_dog_last_price
+from database import get_last_price_from_db
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
 import log
 
@@ -145,7 +145,7 @@ class mean_reversion:
         if dog_id == None:
             last = df[price_column_name].tail(1).item()
         else:
-            last = get_dog_last_price(dog_id)
+            last = get_last_price_from_db(dog_id)
 
         threshold = (1 - self.th)
         expect_buy = sum(short_df) * self.window_size - threshold * self.short * sum(long_df)

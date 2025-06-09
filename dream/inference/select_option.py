@@ -17,8 +17,8 @@ sys.path.append(r'%s/'%(py_dir))
 import akshare as ak
 sys.path.append(r'%s/../common'%(py_dir))
 from config import get_trade_list, get_user_config, get_global_config
-from longport_api import quantitative_init, get_quote_context, get_option_dict_from_obj, get_last_price
-from database import create_if_option_inexist, get_dog_last_price, get_dog_options, get_last_expectation
+from longport_api import quantitative_init, get_quote_context, get_option_dict_from_obj, get_last_price_from_longport
+from database import create_if_option_inexist, get_last_price_from_db, get_dog_options, get_last_expectation
 from other import wait_us_market_open
 sys.path.append(r'%s/../../notification'%(py_dir))
 import notification as notify
@@ -61,7 +61,7 @@ def main(args):
         if peak_prob > bollinger_limit:
             option_list += get_dog_options(dog_index, 'P')
 
-        dog_last_price = get_dog_last_price(dog_index)
+        dog_last_price = get_last_price_from_db(dog_index)
         log.get().info('[%s] Last price[%.2f]'%(dog_index, dog_last_price))
         for option_index in option_list:
             symbol = option_index['Symbol']
@@ -84,7 +84,7 @@ def main(args):
             if (abs(format_price - dog_last_price) / dog_last_price) > dog_price_diff:
                 continue
 
-            last_symbol_price = get_last_price(quote_ctx, 'Normal', symbol)     # Using api directly, do not register to realtime service
+            last_symbol_price = get_last_price_from_longport(quote_ctx, 'Normal', symbol)     # Using api directly, do not register to realtime service
             if option_price_min <= last_symbol_price <= option_price_max:
                 goal_option_list = goal_option_dict.get(symbol_type, [])
                 goal_option_list.append(option_index)

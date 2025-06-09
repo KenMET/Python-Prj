@@ -301,7 +301,7 @@ def del_dog_realtime(dog_id):     # last_min == -1 mean all need to be return
     db.closeSession()
     return True
 
-def get_dog_last_price(dog_id):
+def get_last_price_from_db(dog_id):
     rt_last_list = get_dog_realtime_cnt(dog_id, 1)
     if len(rt_last_list) > 0:
         rt_last = rt_last_list[-1]

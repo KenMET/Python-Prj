@@ -20,7 +20,7 @@ sys.path.append(r'%s/../input'%(py_dir))
 from longport_api import quantitative_init, get_cost_price_fee
 from longport_api import get_filled_order_from_longport
 from database import create_if_order_inexist, get_house_detail, get_holding
-from database import get_last_expectation, get_dog_last_price, get_dog_realtime_cnt
+from database import get_last_expectation, get_last_price_from_db, get_dog_realtime_cnt
 sys.path.append(r'%s/../../notification'%(py_dir))
 import notification as notify
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
@@ -76,7 +76,7 @@ def long_term_trade(house_dict, dog_opt, dog_id):
             log.get(get_name()).error(content.replace('\n', ''))
             return content
 
-        last_price = get_dog_last_price(dog_id)     # update last price
+        last_price = get_last_price_from_db(dog_id)     # update last price
         steepness = float(get_global_config('price_steepness'))
         bollinger_limit = float(get_global_config('bollinger_limit'))
         buy_price = last_price if (trough_prob > 99.0) else (last_price + math.log(trough_prob/100)/steepness)

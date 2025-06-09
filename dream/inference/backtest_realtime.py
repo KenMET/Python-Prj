@@ -119,7 +119,7 @@ def main(args):
             # Get price of now
             last_data = subset.tail(1)
             now_price = float(last_data['Price'].iloc[0])
-            #now_price = get_dog_last_price(target)
+            #now_price = get_last_price_from_db(target)
             #log.get().info('[%s][%s]:%.2f trough[%.2f], peak[%.2f], action[%s]'%(str(last_data['Time'].iloc[0]), target, now_price, trough_prob, peak_prob, action_type))
             last = trigger_price_dict.get(target, init_prob_list())[-1]     # using init_prob_list for init only, but store price data in fact
 

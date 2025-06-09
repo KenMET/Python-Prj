@@ -23,7 +23,7 @@ from sock_order import submit_order, query_order, cancel_order, modify_order
 from sock_realtime import register_dog
 sys.path.append(r'%s/../input'%(py_dir))
 from longport_api import quantitative_init
-from database import get_house_detail, get_dog_last_price, get_dog_realtime_min
+from database import get_house_detail, get_last_price_from_db, get_dog_realtime_min
 sys.path.append(r'%s/../inference'%(py_dir))
 from strategy import get_strategy_handle
 sys.path.append(r'%s/../../notification'%(py_dir))
@@ -174,9 +174,9 @@ def short_term_trade(house_dict):
             # Get price of now
             #start_time = time.time()
             try:
-                now_price = get_dog_last_price(target)
+                now_price = get_last_price_from_db(target)
             except Exception as e:
-                log.get(get_name()).error('Exception captured in get_dog_last_price[%s]: %s'%(target, str(e)))
+                log.get(get_name()).error('Exception captured in get_last_price_from_db[%s]: %s'%(target, str(e)))
                 time.sleep(10)
                 continue
             #log.get(get_name()).debug('trigger_price_dict.get elapsed_time: %.3f'%(time.time() - start_time))    # Read database cost time
