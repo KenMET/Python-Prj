@@ -18,7 +18,8 @@ sys.path.append(r'%s/../common'%(py_dir))
 from config import get_global_config
 from database import create_if_realtime_inexist, update_registered_time, get_registered_dog
 from database import get_dog_realtime_min, get_dog_realtime_cnt
-from other import get_socket_path, get_dict_from_socket, get_trade_session, is_dog_option
+from other import get_socket_path, get_dict_from_socket, get_trade_session
+from other import is_dog_option, is_winter_time
 from longport_api import quantitative_init, quote
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
 import log
@@ -134,16 +135,23 @@ def market_monitor(lock):
             #lock.release()
             if trading_duration == 'Untradeable' or trading_duration == 'Night':
                 now = datetime.datetime.now()
-                today_16 = now.replace(hour=16, minute=0, second=0, microsecond=0)
-                if now < today_16:
-                    time_left = today_16 - now
+                start_hour = 16
+                if is_winter_time():
+                    start_hour += 1
+                today_start = now.replace(hour=start_hour, minute=0, second=0, microsecond=0)
+                if now < today_start:
+                    time_left = today_start - now
                 else:
-                    tomorrow_16 = today_16 + datetime.timedelta(days=1)
+                    tomorrow_16 = today_start + datetime.timedelta(days=1)
                     time_left = tomorrow_16 - now
-                time_left_sec = int(time_left.total_seconds()) - (60 * 10)  # Reserve 10 minutes
+                time_left_sec = int(time_left.total_seconds()) - (60 * 5)  # Reserve 5 minutes
                 if time_left_sec > 0:
                     log.get(log_name).info('[%s] Start sleep %d seconds...'%(trading_duration, time_left_sec))
                     time.sleep(time_left_sec)
+                else:
+                    duration_time = (datetime.datetime.now() - loop_start_time).total_seconds()
+                    log.get(log_name).info('[%s] About to start[%d], skiping...'%(trading_duration, time_left_sec))
+                    time.sleep(int(get_global_config('realtime_interval')) - duration_time)
             else:
                 duration_time = (datetime.datetime.now() - loop_start_time).total_seconds()
                 time.sleep(int(get_global_config('realtime_interval')) - duration_time)

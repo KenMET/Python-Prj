@@ -43,14 +43,13 @@ def get_expect(dog_code):
         return 0.2, 0.2
     current_date = datetime.datetime.now().strftime('%Y%m%d')
     day_limit = 0
-    if hasattr(stategy_handle, 'long'):
-        day_limit = stategy_handle.long * 5
-    elif hasattr(stategy_handle, 'window_size'):
+    if hasattr(stategy_handle, 'window_size'):
         day_limit = stategy_handle.window_size * 5
     else:
         return 0.2, 0.2
     start_date = (datetime.datetime.now() - datetime.timedelta(days=day_limit)).strftime('%Y%m%d')
     df = get_market_by_range(dog_code, start_date, current_date)
+    log.get().info('Start probability for[%s]'%(dog_code))
     return stategy_handle.probability(df, dog_id=dog_code)
 
 def main(args):

@@ -13,8 +13,8 @@
 
     <mean_reversion>
         <config_0>
-            <short_window>8</short_window><window_size>21</window_size>
-            <threshold>1</threshold>    <!--Trigger th, percentage-->
+            <short_window>9</short_window><window_size>40</window_size>
+            <threshold>3.9</threshold>    <!--Trigger th, percentage-->
             <cool_down_period>3</cool_down_period>  <!--Minimum trading day interval -->
         </config_0>
         <config_1>
