@@ -125,6 +125,16 @@ def get_prev_inject(total, factor=1.0):
 
     return inc
 
+def retry_func(logname, func, param, retry_cnt=2, retry_interval=10, comment=''):
+    while (retry_cnt > 0):
+        try:
+            return func(*param)
+        except Exception as e:
+            retry_cnt -= 1
+            log.get(logname).error('Exception in %s: %s'%(str(e), comment))
+            time.sleep(retry_interval)
+    return None
+
 # Append item to dict
 # Scense-1
 # Origin: my_dict = {'NVDA': [1, 2, 3, 4], 'TSLA': [6]}

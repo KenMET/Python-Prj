@@ -13,7 +13,7 @@ py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
 sys.path.append(r'%s/'%(py_dir))
 sys.path.append(r'%s/../common'%(py_dir))
 from config import get_global_config, get_user_config
-from other import get_user_type, get_next_inject, get_prev_inject
+from other import get_user_type, get_next_inject, get_prev_inject, retry_func
 from sock_order import submit_order, query_order, cancel_order, modify_order
 from sock_realtime import register_dog
 sys.path.append(r'%s/../input'%(py_dir))
@@ -123,23 +123,18 @@ def long_term_trade(house_dict, dog_opt, dog_id):
                         if diff_lower >= float(get_user_config(user, 'option', 'min_percent')):     # Set target price and wait order done
                             submit_dict.update({'opt_direction':'sell', 'opt_price':sell_price, 'opt_quantity':quantity})
 
-        retry_time = 2
-        while (retry_time > 0):
-            try:
-                if len(submit_dict) != 0:
-                    opt_direction = submit_dict.get('opt_direction')
-                    opt_price = submit_dict.get('opt_price')
-                    opt_quantity = submit_dict.get('opt_quantity')
-                    recv_dict = submit_order(dog_id, opt_direction, opt_price, opt_quantity)
-                    content = '[%s] %s set %d quantity in %.2f, last:%.2f\n'%(dog_id, opt_direction, opt_quantity, opt_price, last_price)
-                    log.get(get_name()).info(content.replace('\n','') + ', ret: %s'%(str(recv_dict)))
-                break
-            except Exception as e:
-                retry_time -= 1
-                log.get(get_name()).error('Exception captured in long_term_trade submit_order: %s, retry:%d'%(str(e), retry_time))
-                time.sleep(10)
-        if retry_time == 0:
-            content = 'Exception captured in long_term_trade submit_order: %s\n'%(str(e))
+        # Only submit once, avoid duplicated order...... unless you can find another way to avoid it
+        if len(submit_dict) != 0:
+            opt_direction = submit_dict.get('opt_direction')
+            opt_price = submit_dict.get('opt_price')
+            opt_quantity = submit_dict.get('opt_quantity')
+            recv_dict = retry_func(get_name(), submit_order, (dog_id, opt_direction, opt_price, opt_quantity,),
+                retry_cnt=1, retry_interval=10, comment='Submit order in long_term_trade')
+            if recv_dict != None:
+                content = '[%s]Sumbit: %s %d in %.2f,lst:%.2f\n'%(dog_id, opt_direction, opt_quantity, opt_price, last_price)
+                log.get(get_name()).info(content.replace('\n','') + ', ret: %s'%(str(recv_dict)))
+            else:
+                content = 'Exception captured in long_term_trade submit_order: %s\n'%(str(e))
         return content
     except Exception as e:
         content = 'Exception captured in long_term_trade: %s\n'%(str(e))

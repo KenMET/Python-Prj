@@ -215,25 +215,21 @@ def short_term_trade(house_dict):
                 append_dict_list(trigger_price_dict, target, now_price)
                 append_dict_list(trigger_action_dict, target, action_type)
 
-                retry_time = 2
-                while (retry_time > 0):
-                    try:
-                        recv_dict = None#submit_order(target, action_type, now_price, quantity)
-                        content += '[%s]Order Sumbit: %s [%d] in %.2f\n'%(target, action_type, quantity, now_price)
-                        log.get(get_name()).info('[%s] %s [%d] in %.2f'%(target, action_type, quantity, now_price) + ', ret: %s'%(str(recv_dict)))
-                        if action_type == 'buy':
-                            append_dict_list(trade_order_dict, target, {
-                                'order_id': str(time.time()),
-                                'price':now_price,
-                                'quantity':quantity,
-                                'status':'New',
-                            })
-                        break
-                    except Exception as e:
-                        retry_time -= 1
-                        log.get(get_name()).error('Exception in short_term_trade submit_order: %s, retry:%d'%(str(e), retry_time))
-                        time.sleep(10)
-                if retry_time == 0:
+                # Only submit once, avoid duplicated order...... unless you can find another way to avoid it
+                #recv_dict = retry_func(get_name(), submit_order, (target, action_type, now_price, quantity,),
+                #    retry_cnt=1, retry_interval=10, comment='Submit order in short_term_trade')
+                recv_dict = {'test_for_now':'only notification'}
+                if recv_dict != None:
+                    content += '[%s]Sumbit: %s %d in %.2f,lst:%.2f\n'%(target, action_type, quantity, now_price, last)
+                    log.get(get_name()).info('[%s] %s [%d] in %.2f'%(target, action_type, quantity, now_price) + ', ret: %s'%(str(recv_dict)))
+                    if action_type == 'buy':
+                        append_dict_list(trade_order_dict, target, {
+                            'order_id': str(time.time()),
+                            'price':now_price,
+                            'quantity':quantity,
+                            'status':'New',
+                        })
+                else:
                     content = 'Exception in short_term_trade [%s]submit_order: %s\n'%(target, str(e))
 
         if error_cnt == len(trade_list):
