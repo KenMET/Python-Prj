@@ -141,8 +141,9 @@ def monitor_loop(order_id, dog_id, side, price, quantity):
             opt_order_id = modify_dict.get('opt_order_id')
             opt_price = modify_dict.get('opt_price')
             opt_quantity = modify_dict.get('opt_quantity')
-            recv_dict = retry_func(get_name(), modify_order, (opt_order_id, opt_price, opt_quantity,),
-                retry_cnt=2, retry_interval=10, comment='Modify order in order monitor')
+            recv_dict = {'test_for_now':'only notification'}
+            #recv_dict = retry_func(get_name(), modify_order, (opt_order_id, opt_price, opt_quantity,),
+            #    retry_cnt=2, retry_interval=10, comment='Modify order in order monitor')
             if recv_dict != None:
                 content = '[%s][%s] %s modify to %.2f\n'%(dog_id, opt_order_id, opt_direction, opt_price)
                 log.get(get_name()).info(content.replace('\n','') + ', ret: %s'%(str(recv_dict)))
@@ -169,11 +170,10 @@ def order_monitor(order_id, dog_id, price, quantity, side):
 # Once reach the expected earning, modify the price and quantity.
 # Support Sell only for now...
 def trigger_order_monitor():
-    user, quent_type = get_user_type()
     thread_dict = {}
     log.get(get_name()).info('[Order Monitor]Starting loop...')
     while(True):
-        db_opened_order_list = get_open_order(user, quent_type)
+        db_opened_order_list = get_open_order()
         #log.get(get_name()).info('db_opened_order_list %s'%(str(db_opened_order_list)))
         try:
             api_opened_order_list = get_open_order_from_longport()

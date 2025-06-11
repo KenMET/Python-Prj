@@ -48,6 +48,7 @@
             <window_size>40</window_size>   <!--Should match with config: realtime_interval-->
             <k_val>3.5</k_val>    <!--Should match with config: window_size-->
             <probability_limit>80</probability_limit>  <!--Minimum probability -->
+            <cool_down_period>3</cool_down_period>  <!--Minimum trading interval -->
         </config_0>
     </bollinger>
 </contents>

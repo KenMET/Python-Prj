@@ -62,15 +62,13 @@ def handle_client(client_socket, client_address, lock):
 def order_monitor(lock):
     db = None
     try:
-        user, quent_type = get_user_type()
         house_name = get_user_type('-')
-        
         while(True):
             loop_start_time = datetime.datetime.now()
             log.get(log_name).info('Order monitor, new looping for [%s]'%(house_name))
 
             log.get(log_name).debug('Order monitor, Getting open order for: %s'%(house_name))
-            opened_order_list = get_open_order(user, quent_type)
+            opened_order_list = get_open_order()
             lock.acquire()
             log.get(log_name).debug('Order monitor, Lock acquired, start init: %s'%(house_name))
             for order_index in opened_order_list:

@@ -91,6 +91,13 @@ def get_strategy(id):
 
     return strategy_dict
 
+def get_trade_interval(trade_type, dog_id):
+    cfg = config('strategy')
+    tmp = cfg.get('%s_strategy'%(trade_type), {})
+    dog_config = tmp.get(dog_id, {})
+    detail = cfg.get(dog_config.get('type', ''), {}).get(dog_config.get('item', ''), {})
+    return detail.get('cool_down_period', 1)
+
 def get_global_config(config_name):
     cfg = config('user')
     return cfg.get('global', {}).get(config_name, None)
@@ -118,7 +125,7 @@ def main():
     log.get().info('Logger Creat Success...')
 
     
-    log.get().info(get_short_trade_list('kanos'))
+    log.get().info(get_trade_interval('long', 'TSLA'))
 
 
 if __name__ == '__main__':

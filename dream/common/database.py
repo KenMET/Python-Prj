@@ -174,7 +174,7 @@ def get_holding(name):
     db.closeSession()
     return ast.literal_eval(account_dict['Holding'])
 
-def get_open_order(user, q_type):
+def get_open_order(dog_id=None):
     db = dbdo.db('dream_user')
     order_dest = get_user_type('-')
     if (not db.is_table_exist(order_dest)):      # New a table to insert
@@ -182,10 +182,31 @@ def get_open_order(user, q_type):
         db.create_order_table(order_dest)
         db.closeSession()
         return []
-    temp_list = db.query_order_opened(order_dest)
+    temp_list = db.query_order_opened(order_dest, dog_id)
     opened_list = [db.get_dict_from_obj(i) for i in temp_list] 
     db.closeSession()
     return opened_list
+
+def get_filled_order(dog_id=None):
+    db = dbdo.db('dream_user')
+    order_dest = get_user_type('-')
+    if (not db.is_table_exist(order_dest)):      # New a table to insert
+        #log.get().info('Order not exist, new a table[%s]...'%('order_%s'%(order_dest)))
+        db.create_order_table(order_dest)
+        db.closeSession()
+        return []
+    temp_list = db.query_order_filled(order_dest, dog_id)
+    opened_list = [db.get_dict_from_obj(i) for i in temp_list] 
+    db.closeSession()
+    return opened_list
+
+def get_last_trade_date(dog_id):
+    rt_last_list = get_dog_realtime_cnt(dog_id, 1)
+    if len(rt_last_list) > 0:
+        rt_last = rt_last_list[-1]
+        return float(rt_last.get('Price', 0.00001))
+    daily_last = get_market_last(dog_id)
+    return float(daily_last.get('Close', 0.00001))
 
 def get_market_last(target):
     db = dbdd.db('dream_dog')
@@ -301,6 +322,14 @@ def del_dog_realtime(dog_id):     # last_min == -1 mean all need to be return
     db.closeSession()
     return True
 
+def get_last_trade_date(dog_id):
+    filled_order_list = get_filled_order(dog_id)
+    default_datetime = datetime.datetime(2000, 1, 1, 16, 0, 0)
+    if len(filled_order_list) == 0:
+        return default_datetime
+    filled_order = filled_order_list[-1]
+    return filled_order.get('Date', default_datetime)
+
 def get_last_price_from_db(dog_id):
     rt_last_list = get_dog_realtime_cnt(dog_id, 1)
     if len(rt_last_list) > 0:
@@ -352,9 +381,9 @@ def main(args):
     log.get().info('Logger Creat Success...[%s]'%(py_name))
 
     start_time = time.time()
-    test = get_dog_realtime_min('NVDA', 1000)
+    test = get_last_trade_date('TSLA')
     log.get().debug('ElapsedTime get_dog_realtime: %.3f'%(time.time() - start_time))
-    log.get().info(test[-2:])
+    log.get().info(test)
 
 
 if __name__ == '__main__':

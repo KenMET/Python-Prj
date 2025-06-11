@@ -6,20 +6,21 @@ import sys
 import json
 import math
 import time
+import datetime
 
 # Customsized lib
 py_dir = os.path.dirname(os.path.realpath(__file__))
 py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
 sys.path.append(r'%s/'%(py_dir))
 sys.path.append(r'%s/../common'%(py_dir))
-from config import get_global_config, get_user_config
+from config import get_global_config, get_user_config, get_trade_interval
 from other import get_user_type, get_next_inject, get_prev_inject, retry_func
 from sock_order import submit_order, query_order, cancel_order, modify_order
 from sock_realtime import register_dog
 sys.path.append(r'%s/../input'%(py_dir))
 from longport_api import quantitative_init, get_cost_price_fee
 from longport_api import get_filled_order_from_longport
-from database import create_if_order_inexist, get_house_detail, get_holding
+from database import create_if_order_inexist, get_house_detail, get_holding, get_last_trade_date
 from database import get_last_expectation, get_last_price_from_db, get_dog_realtime_cnt
 sys.path.append(r'%s/../../notification'%(py_dir))
 import notification as notify
@@ -56,7 +57,14 @@ def long_term_trade(house_dict, dog_opt, dog_id):
     except Exception as e:
         log.get(get_name()).error('Exception captured in long_term_trade register_dog: %s'%(str(e)))
     try:
-        
+        last_trade_datetime = get_last_trade_date(dog_id)
+        now = datetime.datetime.now()
+        interval = now - datetime.timedelta(days=int(get_trade_interval('long', dog_id)))
+        if last_trade_datetime > interval:      # Still in the interval range, skip trade.
+            content = '[%s] Still during cool_down_period, skip\n'%(dog_id)
+            log.get(get_name()).info(content.replace('\n',''))
+            return content
+
         available_cash = float(house_dict['AvailableCash'])
         log.get(get_name()).info('available_cash: %.3f'%(available_cash))
         holding = get_holding_by_dog_id(json.loads(house_dict['Holding'].replace("'",'"')), dog_id)
@@ -128,8 +136,9 @@ def long_term_trade(house_dict, dog_opt, dog_id):
             opt_direction = submit_dict.get('opt_direction')
             opt_price = submit_dict.get('opt_price')
             opt_quantity = submit_dict.get('opt_quantity')
-            recv_dict = retry_func(get_name(), submit_order, (dog_id, opt_direction, opt_price, opt_quantity,),
-                retry_cnt=1, retry_interval=10, comment='Submit order in long_term_trade')
+            recv_dict = {'test_for_now':'only notification'}
+            #recv_dict = retry_func(get_name(), submit_order, (dog_id, opt_direction, opt_price, opt_quantity,),
+            #    retry_cnt=1, retry_interval=10, comment='Submit order in long_term_trade')
             if recv_dict != None:
                 content = '[%s]Sumbit: %s %d in %.2f,lst:%.2f\n'%(dog_id, opt_direction, opt_quantity, opt_price, last_price)
                 log.get(get_name()).info(content.replace('\n','') + ', ret: %s'%(str(recv_dict)))
