@@ -40,7 +40,9 @@ def main(args):
         pool = multiprocessing.Pool(PROCESS_LIMIT, initializer=init_worker)
 
         pool.apply_async(long_term_trade_task, args=(queue, log_name,))
+        time.sleep(10)  # Interval as 10 second avoid conflict
         pool.apply_async(short_term_trade_task, args=(queue, log_name,))
+        time.sleep(10)  # Interval as 10 second avoid conflict
         pool.apply_async(order_monitor_task, args=(queue, log_name,))
 
         pool.close()
