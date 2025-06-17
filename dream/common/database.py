@@ -267,9 +267,9 @@ def get_registered_time(dog_id):
 
 def update_registered_time(dog_id):
     db = dbdr.db('dream_dog')
+    last_time = datetime.datetime.now()
     content_dict = get_registered_dog()
     dog_tmp_dict = content_dict.get(dog_id, {})
-    last_time = datetime.datetime.now()
     dog_tmp_dict.update({'time':last_time})
     content_dict.update({dog_id:dog_tmp_dict})
     symbol_dict = {
