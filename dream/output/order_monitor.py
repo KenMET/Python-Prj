@@ -86,10 +86,8 @@ def monitor_loop(order_id, dog_id, side, price, quantity):
         price = recv_dict['Price']      # Need update price in case of modified order
         if any(s in order_status for s in ["Filled", "Rejected", "Canceled", "Expired"]):
             content = '[%s] New Status[%s]'%(order_id, order_status)
-            try:
-                notify.bark().send_title_content('Order-Status', content)
-            except Exception as e:
-                log.get(get_name()).error('Exception captured in Order-Status bark[%s]: %s'%(content, str(e)))
+            retry_func(get_name(), notify.bark().send_title_content, ('Order-Status', content,),
+                retry_cnt=3, retry_interval=60, comment='Exception in Order-Status bark')
             return True
 
         flag, last_price, last_datetime = query_dog_last(dog_id)
@@ -149,11 +147,8 @@ def monitor_loop(order_id, dog_id, side, price, quantity):
                 log.get(get_name()).info(content.replace('\n','') + ', ret: %s'%(str(recv_dict)))
             else:
                 content = 'Exception captured in trade modify_order: %s\n'%(str(e))
-            try:
-                notify.bark().send_title_content('Order-Monitor', content)
-            except Exception as e:
-                log.get(get_name()).error('Exception captured in order_monitor bark[%s]: %s'%(content, str(e)))
-
+            retry_func(get_name(), notify.bark().send_title_content, ('Order-Monitor', content,),
+                retry_cnt=3, retry_interval=60, comment='Exception in Order-Monitor bark')
 
 def order_monitor(order_id, dog_id, price, quantity, side):
     log.get(get_name()).info('Start monitor for [%s][%s][%.2f][%s][%d]'%(order_id, dog_id, price, side, quantity))
@@ -216,10 +211,8 @@ def trigger_order_monitor():
             monitor_t.start()
             thread_dict.update({order_id:monitor_t})
         if len(content) > 0:
-            try:
-                notify.bark().send_title_content('Monitor-Trigger', content)
-            except Exception as e:
-                log.get(get_name()).error('Exception captured in Monitor-Trigger bark[%s]: %s'%(content, str(e)))
+            retry_func(get_name(), notify.bark().send_title_content, ('Monitor-Trigger', content,),
+                retry_cnt=3, retry_interval=60, comment='Exception in Monitor-Trigger bark')
 
         time.sleep(int(get_global_config('order_monitor_interval')))
         now_seesion, surplus_min = get_current_session_and_remaining_time('Post')   # Track till Post session end

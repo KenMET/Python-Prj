@@ -166,10 +166,6 @@ def long_term_trade_task(queue, log_name):
     for dog_index in expectation_dict:
         dog_opt = expectation_dict[dog_index]
         content += long_term_trade(house_dict, dog_opt, dog_index)
-    try:
-        if content != '':
-            notify.bark().send_title_content('Long-Orchestrator-%s'%(get_user_type('-')), content)
-    except Exception as e:
-        log.get(get_name()).error('Exception captured in Long-Orchestrator bark[%s]: %s'%(content, str(e)))
-
-
+    
+    retry_func(get_name(), notify.bark().send_title_content, ('Long-Orchestrator-%s'%(get_user_type('-')), content,),
+        retry_cnt=3, retry_interval=60, comment='Exception in Long-Orchestrator bark')

@@ -16,7 +16,7 @@ from long_term import long_term_trade_task
 from short_term import short_term_trade_task
 from order_monitor import order_monitor_task
 sys.path.append(r'%s/../common'%(py_dir))
-from other import wait_us_market_open, get_user_type
+from other import wait_us_market_open, get_user_type, retry_func
 sys.path.append(r'%s/../../notification'%(py_dir))
 import notification as notify
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
@@ -49,11 +49,9 @@ def main(args):
         pool.close()
         pool.join()
 
-        try:
-            content = 'This round normally exited.'
-            notify.bark().send_title_content('Orchestrator-%s'%(get_user_type('-')), content)
-        except Exception as e:
-            log.get(log_name).error('Exception in Orchestrator bark[%s]: %s'%(content, str(e)))
+        content = 'This round normally exited.'
+        flag = retry_func(get_name(), notify.bark().send_title_content, ('Orchestrator-%s'%(get_user_type('-')), content,),
+            retry_cnt=3, retry_interval=60, comment='Exception in Orchestrator bark')
 
     except KeyboardInterrupt:
         log.get(log_name).info('Received "Ctrl+C" signal, stop process pool')

@@ -17,7 +17,7 @@ import notification as notify
 sys.path.append(r'%s/../common'%(py_dir))
 from longport_api import quantitative_init, get_trade_context
 from database import create_if_house_inexist, get_house_detail, get_holding, get_secret_detail
-from other import wait_us_market_open, get_user_type
+from other import wait_us_market_open, get_user_type, retry_func
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
 import log
 log_name = '%s_%s'%(py_name, get_user_type('_'))
@@ -84,8 +84,9 @@ def main(args):
         log.get(log_name).info(house_holding)
     except:
         log.get(log_name).error('House Update', '[%s] update fail, please check if token expired.'%(get_user_type('-')))
-        bark_obj = notify.bark()
-        flag = bark_obj.send_title_content('House Update', '[%s] update fail, please check if token expired.'%(get_user_type('-')))
+        content = '[%s] update fail, please check if token expired.'%(get_user_type('-'))
+        flag = retry_func(py_name, notify.bark().send_title_content, ('House-Update', content,),
+            retry_cnt=3, retry_interval=60, comment='Exception in House-Update bark')
 
 if __name__ == '__main__':
     # Create ArgumentParser Object

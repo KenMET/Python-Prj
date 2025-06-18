@@ -14,7 +14,7 @@ py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
 sys.path.append(r'%s/'%(py_dir))
 from longport.openapi import Config, TradeContext, QuoteContext
 sys.path.append(r'%s/../common'%(py_dir))
-from other import is_dog_option
+from other import is_dog_option, retry_func
 from config import get_global_config
 from database import get_market_by_range, get_registered_dog, del_registered_dog
 from database import get_dog_realtime_cnt, del_dog_realtime
@@ -165,7 +165,7 @@ def sanity_exception():
 
 
 def main(args):
-    log.init('%s/../log'%(py_dir), py_name, log_mode='w', log_level='info', console_enable=True)
+    log.init('%s/../log'%(py_dir), py_name, log_mode='w', log_level='info', console_enable=False)
     log.get().info('Logger Creat Success...')
     bark_content = ''
 
@@ -201,10 +201,12 @@ def main(args):
     bark_obj = notify.bark()
     if len(bark_content) == 0:
         log.get().info('All market DB works normal')
-        flag = bark_obj.send_title_content('Market Sanity', 'All market DB works normal')
+        flag = retry_func(py_name, bark_obj.send_title_content, ('Market-Sanity', 'All market DB works normal',),
+            retry_cnt=3, retry_interval=60, comment='Exception in Market-Sanity bark')
     else:
         log.get().error('Sanity Failed: %s'%(bark_content))
-        flag = bark_obj.send_title_content('Market Sanity', bark_content)
+        flag = retry_func(py_name, bark_obj.send_title_content, ('Market-Sanity', bark_content,),
+            retry_cnt=3, retry_interval=60, comment='Exception in Market-Sanity bark')
     log.get().info('Bark Notification Result[%s]'%(str(flag)))
 
 if __name__ == '__main__':

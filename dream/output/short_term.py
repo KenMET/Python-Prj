@@ -237,14 +237,8 @@ def short_term_trade(house_dict):
             break
         if content != '':
             #log.get(get_name()).info(content + ', ret: %s'%(str(recv_dict)))
-            try:
-                notify.bark().send_title_content('Short-Orchestrator-%s'%(get_user_type('-')), content)
-            except Exception as e:
-                log.get(get_name()).error('Exception captured in Short-Orchestrator bark[%s]: %s'%(content, str(e)))
-                time.sleep(10)
-                continue
-
-
+            retry_func(get_name(), notify.bark().send_title_content, ('Short-Orchestrator-%s'%(get_user_type('-')), content,),
+                retry_cnt=3, retry_interval=60, comment='Exception in Short-Orchestrator bark')
 
 def short_term_trade_task(queue, log_name):
     set_name(log_name)

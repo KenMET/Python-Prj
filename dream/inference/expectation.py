@@ -16,7 +16,7 @@ sys.path.append(r'%s/../common'%(py_dir))
 from config import get_notify_list, get_global_config
 from database import create_if_expectation_inexist, update_expectation, get_last_price_from_db
 from database import get_holding, get_market_by_range, get_dogname, get_avg_score
-from other import wait_us_market_open, get_user_type
+from other import wait_us_market_open, get_user_type, retry_func
 sys.path.append(r'%s/../../notification'%(py_dir))
 import notification as notify
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
@@ -88,14 +88,16 @@ def main(args):
         }})
 
     if len(content) != 0:
-        bark_obj.send_title_content('Kanos Expectation(%s)'%(args.market), content)
+        flag = retry_func(py_name, bark_obj.send_title_content, ('Expectation(%s)'%(args.market), content,),
+            retry_cnt=3, retry_interval=60, comment='Exception in Expectation(%s) bark'%(args.market))
         create_if_expectation_inexist().closeSession()
         flag = update_expectation(args.market, expect_dict)
         if not flag:
             log.get().error('Expectation update failed: %s'%(str(expect_dict)))
     else:
         log.get().info('No expectation today, hold...')
-        bark_obj.send_title_content('Kanos Expectation(%s)'%(args.market), 'Hold Today')
+        flag = retry_func(py_name, bark_obj.send_title_content, ('Expectation(%s)'%(args.market), 'Hold Today',),
+            retry_cnt=3, retry_interval=60, comment='Exception in Expectation(%s) bark'%(args.market))
 
 if __name__ == '__main__':
     # Create ArgumentParser Object

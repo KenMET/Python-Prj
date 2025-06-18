@@ -19,7 +19,7 @@ sys.path.append(r'%s/../common'%(py_dir))
 from config import get_trade_list, get_user_config, get_global_config
 from longport_api import quantitative_init, get_quote_context, get_option_dict_from_obj, get_last_price_from_longport
 from database import create_if_option_inexist, get_last_price_from_db, get_dog_options, get_last_expectation
-from other import wait_us_market_open
+from other import wait_us_market_open, retry_func
 sys.path.append(r'%s/../../notification'%(py_dir))
 import notification as notify
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
@@ -104,7 +104,8 @@ def main(args):
             content += sub_content
             log.get().info('Ready to send content: %s'%(sub_content.replace('\n', '')))
     if len(content) > 0:
-        bark_obj.send_title_content('Kanos Option Advise', content)
+        flag = retry_func(py_name, bark_obj.send_title_content, ('Option-Advise', content,),
+            retry_cnt=3, retry_interval=60, comment='Exception in Option-Advise bark')
  
     # "sentiment_score_definition":  (avg_score)
     #   x <= -0.35: Bearish
