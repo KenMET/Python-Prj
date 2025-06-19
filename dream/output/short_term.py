@@ -17,7 +17,7 @@ py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
 sys.path.append(r'%s/'%(py_dir))
 sys.path.append(r'%s/../common'%(py_dir))
 from config import get_global_config, get_short_trade_list
-from other import get_user_type, get_next_inject, get_prev_inject
+from other import get_user_type, get_next_inject, get_prev_inject, retry_func
 from other import get_current_session_and_remaining_time, append_dict_list, clear_dict_list
 from sock_order import submit_order, query_order, cancel_order, modify_order
 from sock_realtime import register_dog
