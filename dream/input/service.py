@@ -19,7 +19,7 @@ from config import get_global_config
 from database import create_if_realtime_inexist, update_registered_time, get_registered_dog
 from database import get_dog_realtime_min, get_dog_realtime_cnt
 from other import get_socket_path, get_dict_from_socket
-from other import is_dog_option, is_winter_time, get_current_session_and_remaining_time
+from other import is_dog_option, is_winter_time, get_current_session
 from longport_api import quantitative_init, quote
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
 import log
@@ -66,10 +66,7 @@ def market_monitor(lock):
         while(True):
             loop_start_time = datetime.datetime.now()
             log.get(log_name).info('Market monitor, new looping')
-            try:
-                now_seesion, surplus_min = get_current_session_and_remaining_time('Post')
-            except Exception as e:
-                log.get(log_name).error('Exception in market_monitor get_current_session_and_remaining_time: %s'%(str(e)))
+            now_seesion = get_current_session()
 
             try:
                 registered_list = [n for n in get_registered_dog()]

@@ -18,7 +18,7 @@ sys.path.append(r'%s/'%(py_dir))
 sys.path.append(r'%s/../common'%(py_dir))
 from config import get_global_config, get_short_trade_list
 from other import get_user_type, get_next_inject, get_prev_inject, retry_func
-from other import get_current_session_and_remaining_time, append_dict_list, clear_dict_list
+from other import get_current_session, get_remaining_time, append_dict_list, clear_dict_list
 from sock_order import submit_order, query_order, cancel_order, modify_order
 from sock_realtime import register_dog
 sys.path.append(r'%s/../input'%(py_dir))
@@ -114,17 +114,13 @@ def short_term_trade(house_dict):
         error_cnt = 0
 
         # Check current session
-        try:
-            now_seesion, surplus_min = get_current_session_and_remaining_time('Post')   # Track till Post session end
-            if now_seesion == 'Night' or surplus_min < 30:
-                log.get(get_name()).info('Current Session: %s, [%d] minutes left, stop short trade monitor...'%(now_seesion, surplus_min))
-                break
-            else:
-                log.get(get_name()).debug('Current Session: %s, [%d] minutes left, continue short trade monitor...'%(now_seesion, surplus_min))
-        except Exception as e:
-            log.get(get_name()).error('Exception captured in get_current_session_and_remaining_time: %s'%(str(e)))
-            time.sleep(10)
-            continue
+        now_seesion = get_current_session()
+        surplus_min = get_remaining_time('Post')    # Track till Post session end
+        if now_seesion == 'Night' or surplus_min < 10:
+            log.get(get_name()).info('Current Session: %s, [%d] minutes left, stop short trade monitor...'%(now_seesion, surplus_min))
+            break
+        else:
+            log.get(get_name()).debug('Current Session: %s, [%d] minutes left, continue short trade monitor...'%(now_seesion, surplus_min))
 
         content = ''
         for target in trade_list:
@@ -135,7 +131,7 @@ def short_term_trade(house_dict):
             try:
                 df = get_realtime_filter_df(target, int(stategy_handle.window_size * 2))     # Must large then window size
             except Exception as e:
-                log.get(get_name()).error('Exception captured in get_realtime_filter_df[%s]: %s'%(target, str(e)))
+                log.get(get_name()).error('Exception in get_realtime_filter_df[%s]: %s'%(target, str(e)))
                 time.sleep(10)
                 continue
             if len(df) == 0:

@@ -13,7 +13,7 @@ sys.path.append(r'%s/'%(py_dir))
 sys.path.append(r'%s/../common'%(py_dir))
 from config import get_global_config, get_user_config
 from other import get_user_type, append_dict_list, clear_dict_list, retry_func
-from other import get_current_session_and_remaining_time, is_dog_option
+from other import get_current_session, get_remaining_time, is_dog_option
 from sock_order import submit_order, query_order, cancel_order, modify_order
 from sock_realtime import register_dog
 sys.path.append(r'%s/../input'%(py_dir))
@@ -96,7 +96,8 @@ def monitor_loop(order_id, dog_id, side, price, quantity):
         diff = (abs(last_price - price) / abs(price)) * 100
         log.get(get_name()).info('[%s][%s] LastPrice[%.2f] ExpectPrice[%.2f] Diff[%.2f%%]'%(dog_id, last_datetime, last_price, price, diff))
 
-        now_seesion, surplus_min = get_current_session_and_remaining_time('Normal')   # Track till Normal session end
+        now_seesion = get_current_session()
+        surplus_min = get_remaining_time('Normal')  # Track till Normal session end
         if now_seesion == 'Post' or now_seesion == 'Night':
             log.get(get_name()).info('Current Session: %s, stop monitor...'%(now_seesion))
             return  False # No need to track, wait expired
@@ -211,7 +212,7 @@ def trigger_order_monitor():
                 retry_cnt=3, retry_interval=60, comment='Exception in Monitor-Trigger bark')
 
         time.sleep(int(get_global_config('order_monitor_interval')))
-        now_seesion, surplus_min = get_current_session_and_remaining_time('Post')   # Track till Post session end
+        now_seesion = get_current_session()
         if now_seesion == 'Night':
             log.get(get_name()).info('Current Session: %s, stop order detection...'%(now_seesion))
             break
