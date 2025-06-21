@@ -18,8 +18,8 @@ sys.path.append(r'%s/../common'%(py_dir))
 from config import get_global_config
 from database import create_if_realtime_inexist, update_registered_time, get_registered_dog
 from database import get_dog_realtime_min, get_dog_realtime_cnt
-from other import get_socket_path, get_dict_from_socket, get_trade_session
-from other import is_dog_option, is_winter_time
+from other import get_socket_path, get_dict_from_socket
+from other import is_dog_option, is_winter_time, get_current_session_and_remaining_time
 from longport_api import quantitative_init, quote
 sys.path.append(r'%s/../../common_api/log'%(py_dir))
 import log
@@ -67,10 +67,10 @@ def market_monitor(lock):
             loop_start_time = datetime.datetime.now()
             log.get(log_name).info('Market monitor, new looping')
             try:
-                trade_session = get_trade_session()
+                now_seesion, surplus_min = get_current_session_and_remaining_time('Post')
             except Exception as e:
-                log.get(log_name).error('Exception captured in market_monitor get_trade_session: %s'%(str(e)))
-                trade_session = []
+                log.get(log_name).error('Exception in market_monitor get_current_session_and_remaining_time: %s'%(str(e)))
+
             try:
                 registered_list = [n for n in get_registered_dog()]
             except Exception as e:
@@ -79,8 +79,6 @@ def market_monitor(lock):
             dog_list, option_list = list(filter(lambda x: not is_dog_option(x), registered_list)), list(filter(is_dog_option, registered_list))
 
             #lock.acquire()
-
-            timestamp_now = datetime.datetime.now().time()
 
             log.get(log_name).info('Market monitor, Quote dog&option from %s'%(str(dog_list+option_list)))
             resp = []
@@ -94,30 +92,29 @@ def market_monitor(lock):
                 log.get(log_name).debug('Market monitor, Test: %s'%(str(index)))
                 dog_code = str(index.symbol).split('.')[0]
                 session_obj = index     # Default to use normal info
-                if trade_session['Pre']['Start'] <= timestamp_now < trade_session['Pre']['End']:
-                    trading_duration = 'Pre'
-                    if hasattr(index, 'pre_market_quote'):      # If there is pre_market info, using it
-                        session_obj = index.pre_market_quote
-                elif trade_session['Normal']['Start'] <= timestamp_now or timestamp_now < trade_session['Normal']['End']:
-                    trading_duration = 'Normal'
-                elif trade_session['Post']['Start'] <= timestamp_now < trade_session['Post']['End']:
-                    trading_duration = 'Post'
-                    if hasattr(index, 'post_market_quote'): # If there is post_market info, using it
-                        session_obj = index.post_market_quote
-                elif trade_session['Night']['Start'] <= timestamp_now < trade_session['Night']['End']:  # For night, not support yet, using normal info for now
-                    trading_duration = 'Night'
+                if now_seesion == 'Pre' and hasattr(index, 'pre_market_quote'):
+                    session_obj = index.pre_market_quote
+                elif now_seesion == 'Post' and hasattr(index, 'post_market_quote'):
+                    session_obj = index.post_market_quote
+                elif now_seesion == 'Normal':
+                    pass
+                elif now_seesion == 'Night':
+                    break    # Not support yet
                 else:
-                    log.get(log_name).error('[%s]Datetime error: %s trade_session:%s'%(dog_code, str(timestamp_now), str(trade_session)))
+                    log.get(log_name).error('[%s]Datetime error, now_seesion:%s'%(dog_code, str(now_seesion)))
                     break
                 timestamp = session_obj.timestamp.strftime('%Y%m%d%H%M%S')
                 time_diff = datetime.datetime.now() - datetime.datetime.strptime(timestamp, '%Y%m%d%H%M%S')
-                if time_diff > datetime.timedelta(hours=1):
+                if time_diff > datetime.timedelta(minutes=30) and not is_dog_option(dog_code):
+                    # When normal dog's latest timestamp no update in 30 min, may not a trade day, skip
                     log.get(log_name).info('Market monitor, Maybe not a trade day... %s'%(timestamp))
-                    trading_duration = 'Untradeable'
+                    now_seesion = 'Untradeable'
                     break
+                if is_dog_option(dog_code) and now_seesion != 'Normal':
+                    continue    # Option trade in normal seesion only
                 dog_time = '%s-%s'%(dog_code, timestamp)
                 temp_dict = {
-                    'DogTime': dog_time,
+                    'DogTime': dog_time,    # time from api quote, not from local...
                     'Price': float(session_obj.last_done),
                     'Close': float(session_obj.prev_close),
                     #'Open': float(session_obj.open),
@@ -133,25 +130,18 @@ def market_monitor(lock):
                 log.get(log_name).info('[%s][%s]:%s'%(trading_duration, dog_time, str(temp_dict)))
             
             #lock.release()
-            if trading_duration == 'Untradeable' or trading_duration == 'Night':
+            if now_seesion == 'Untradeable' or now_seesion == 'Night':
                 now = datetime.datetime.now()
-                start_hour = 16
-                if is_winter_time():
-                    start_hour += 1
+                start_hour = 16 if not is_winter_time() else 17
                 today_start = now.replace(hour=start_hour, minute=0, second=0, microsecond=0)
                 if now < today_start:
                     time_left = today_start - now
                 else:
-                    tomorrow_16 = today_start + datetime.timedelta(days=1)
-                    time_left = tomorrow_16 - now
-                time_left_sec = int(time_left.total_seconds()) - (60 * 5)  # Reserve 5 minutes
-                if time_left_sec > 0:
-                    log.get(log_name).info('[%s] Start sleep %d seconds...'%(trading_duration, time_left_sec))
-                    time.sleep(time_left_sec)
-                else:
-                    duration_time = (datetime.datetime.now() - loop_start_time).total_seconds()
-                    log.get(log_name).info('[%s] About to start[%d], skiping...'%(trading_duration, time_left_sec))
-                    time.sleep(int(get_global_config('realtime_interval')) - duration_time)
+                    tomorrow_start = today_start + datetime.timedelta(days=1)
+                    time_left = tomorrow_start - now
+                time_left_sec = int(time_left.total_seconds()) + 10  # Sleep to after market started 10 second
+                log.get(log_name).info('[%s] Start sleep %d seconds till market open...'%(trading_duration, time_left_sec))
+                time.sleep(time_left_sec)
             else:
                 duration_time = (datetime.datetime.now() - loop_start_time).total_seconds()
                 time.sleep(int(get_global_config('realtime_interval')) - duration_time)

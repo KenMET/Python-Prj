@@ -170,13 +170,9 @@ def trigger_order_monitor():
     while(True):
         db_opened_order_list = get_open_order()
         #log.get(get_name()).info('db_opened_order_list %s'%(str(db_opened_order_list)))
-        try:
-            api_opened_order_list = get_open_order_from_longport()
-            #log.get(get_name()).info('api_opened_order_list %s'%(str(api_opened_order_list)))
-        except Exception as e:
-            log.get(get_name()).error('Exception captured in get_open_order_from_longport: %s'%(str(e)))
-            time.sleep(int(get_global_config('order_monitor_interval')))
-            continue
+        api_opened_order_list = retry_func(get_name(), get_open_order_from_longport, (),
+            retry_cnt=3, retry_interval=int(get_global_config('order_monitor_interval')), 
+            comment='Exception in get_open_order_from_longport')
         opened_order_list = list({item['OrderID']: item for item in db_opened_order_list + api_opened_order_list}.values())
         log.get(get_name()).debug('opened_order_list %s'%(str(opened_order_list)))
         if len(api_opened_order_list) != 0:     # Try from longport

@@ -7,6 +7,7 @@ import sys
 import json
 import math
 import socket
+import inspect
 import argparse
 import datetime, time
 import pytz
@@ -75,7 +76,6 @@ def get_current_session_and_remaining_time(last_session):
 
     return current_session, remaining_minutes
 
-
 def get_user_type(mid_char=''):
     if mid_char == '':
         return os.environ['USER_NAME'], os.environ['USER_TYPE']
@@ -125,10 +125,13 @@ def get_prev_inject(total, factor=1.0):
 
     return inc
 
-def retry_func(logname, func, param, retry_cnt=2, retry_interval=10, comment=''):
+def retry_func(logname, func, param=(), retry_cnt=2, retry_interval=10, comment=''):
     while (retry_cnt > 0):
         try:
-            return func(*param)
+            if not inspect.signature(func).parameters:
+                return func()
+            else:
+                return func(*param)
         except Exception as e:
             retry_cnt -= 1
             log.get(logname).error('Exception in %s: %s'%(str(e), comment))
@@ -179,19 +182,24 @@ def main(args):
     log.init('%s/../log'%(py_dir), py_name, log_mode='w', log_level='info', console_enable=True)
     log.get().info('Logger Creat Success...[%s]'%(py_name))
 
-    my_dict1 = {"NVDA": [1, 2, 3]}
-    append_dict_list(my_dict1, "NVDA", 4)
-    append_dict_list(my_dict1, "TSLA", 6)
-    log.get().info('my_dict1:%s'%(str(my_dict1)))
-
-    my_dict2 = {'NVDA': {'peak':[1, 2], 'trough':[3, 4]}, 'TSLA': {'peak':[5, 6], 'trough':[7, 8]}}
-    append_dict_list(my_dict2, "NVDA", 10, key_sub='peak')
-    log.get().info('my_dict2:%s'%(str(my_dict2)))
+    #my_dict1 = {"NVDA": [1, 2, 3]}
+    #append_dict_list(my_dict1, "NVDA", 4)
+    #append_dict_list(my_dict1, "TSLA", 6)
+    #log.get().info('my_dict1:%s'%(str(my_dict1)))
+    #my_dict2 = {'NVDA': {'peak':[1, 2], 'trough':[3, 4]}, 'TSLA': {'peak':[5, 6], 'trough':[7, 8]}}
+    #append_dict_list(my_dict2, "NVDA", 10, key_sub='peak')
+    #log.get().info('my_dict2:%s'%(str(my_dict2)))
 
     #def test_func(param_1, param_2):
     #    time.sleep(1)
-    #    log.get().info('Making exception... %s'%(param_3))
+    #    log.get().info('Making exception... %s'%(param_2))
     #retry_func(py_name, test_func, ('Test-test', '123',),
+    #    retry_cnt=3, retry_interval=5, comment='Exception in Test-test')
+
+    #def test_func2():
+    #    time.sleep(1)
+    #    log.get().info('Making exception... %s'%("12345"))
+    #retry_func(py_name, test_func2, (),
     #    retry_cnt=3, retry_interval=5, comment='Exception in Test-test')
 
 if __name__ == '__main__':
