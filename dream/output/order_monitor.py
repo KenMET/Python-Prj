@@ -220,19 +220,20 @@ def trigger_order_monitor():
     return thread_dict
 
 def order_monitor_task(queue, log_name):
-    set_name(log_name)
-
-    quantitative_init()
-
-    # Start order monitor
-    thread_dict = {}
     try:
-        thread_dict = trigger_order_monitor()
+        set_name(log_name)
+
+        quantitative_init()
+
+        # Start order monitor
+        thread_dict = {}
+        try:
+            thread_dict = trigger_order_monitor()
+        except Exception as e:
+            log.get(get_name()).error('Exception in trigger_order_monitor: %s'%(str(e)))
+
+        for order_id in thread_dict:
+            thread_dict[order_id].join()
+        short_trade_t.join()
     except Exception as e:
-        log.get(get_name()).error('Exception in trigger_order_monitor: %s'%(str(e)))
-
-    for order_id in thread_dict:
-        thread_dict[order_id].join()
-    short_trade_t.join()
-
-
+        log.get(get_name()).error('Exception in order_monitor_task: %s'%(str(e)))

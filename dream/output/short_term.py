@@ -238,28 +238,33 @@ def short_term_trade(house_dict):
                 retry_cnt=3, retry_interval=60, comment='Exception in Short-Orchestrator bark')
 
 def short_term_trade_task(queue, log_name):
-    set_name(log_name)
-
-    start_hour = 16 if not is_winter_time() else 17
-    today_start = now.replace(hour=start_hour, minute=0, second=0, microsecond=0)
-    while(True):
-        now = datetime.datetime.now()
-        if now > today_start:
-            time_left = now - today_start
-            if int(time_left.total_seconds()) > (60 * 30):  # Start short trade after market opened 30 min
-                break
-            else:
-                time.sleep(60)
-        else:
-            log.get(get_name()).info('[short_term] time before pre market, exit...')
-            return
-
-    quantitative_init()
-
-    house_dict = get_house_detail(get_user_type('-'))
-    log.get(get_name()).info('[short_term]house_dict: %s'%(str(house_dict)))
-
     try:
-        short_term_trade(house_dict)
+        set_name(log_name)
+
+        now = datetime.datetime.now()
+        start_hour = 16 if not is_winter_time() else 17
+        today_start = now.replace(hour=start_hour, minute=0, second=0, microsecond=0)
+        while(True):
+            now = datetime.datetime.now()
+            if now > today_start:
+                time_left = now - today_start
+                if int(time_left.total_seconds()) > (60 * 30):  # Start short trade after market opened 30 min
+                    break
+                else:
+                    log.get(get_name()).info('[short_term] Start sleep 60 sec... Reserve time for realtime update')
+                    time.sleep(60)
+            else:
+                log.get(get_name()).info('[short_term] time before pre market, exit...')
+                return
+
+        quantitative_init()
+
+        house_dict = get_house_detail(get_user_type('-'))
+        log.get(get_name()).info('[short_term]house_dict: %s'%(str(house_dict)))
+
+        try:
+            short_term_trade(house_dict)
+        except Exception as e:
+            log.get(get_name()).error('Exception in short_term_trade: %s'%(str(e)))
     except Exception as e:
-        log.get(get_name()).error('Exception in short_term_trade: %s'%(str(e)))
+        log.get(get_name()).error('Exception in short_term_trade_task: %s'%(str(e)))

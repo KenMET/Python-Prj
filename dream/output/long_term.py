@@ -152,20 +152,23 @@ def long_term_trade(house_dict, dog_opt, dog_id):
 
 
 def long_term_trade_task(queue, log_name):
-    set_name(log_name)
+    try:
+        set_name(log_name)
 
-    quantitative_init()
-    expectation_dict = get_last_expectation('us', today=True)
-    log.get(get_name()).info('[long_term]expectation_dict: %s'%(str(expectation_dict)))
+        quantitative_init()
+        expectation_dict = get_last_expectation('us', today=True)
+        log.get(get_name()).info('[long_term]expectation_dict: %s'%(str(expectation_dict)))
 
-    house_dict = get_house_detail(get_user_type('-'))
-    log.get(get_name()).info('[long_term]house_dict: %s'%(str(house_dict)))
+        house_dict = get_house_detail(get_user_type('-'))
+        log.get(get_name()).info('[long_term]house_dict: %s'%(str(house_dict)))
 
-    # Submit order for Long-term trade
-    content = ''
-    for dog_index in expectation_dict:
-        dog_opt = expectation_dict[dog_index]
-        content += long_term_trade(house_dict, dog_opt, dog_index)
-    
-    retry_func(get_name(), notify.bark().send_title_content, ('Long-Orchestrator-%s'%(get_user_type('-')), content,),
-        retry_cnt=3, retry_interval=60, comment='Exception in Long-Orchestrator bark')
+        # Submit order for Long-term trade
+        content = ''
+        for dog_index in expectation_dict:
+            dog_opt = expectation_dict[dog_index]
+            content += long_term_trade(house_dict, dog_opt, dog_index)
+        if content != '':
+            retry_func(get_name(), notify.bark().send_title_content, ('Long-Orchestrator-%s'%(get_user_type('-')), content,),
+                retry_cnt=3, retry_interval=60, comment='Exception in Long-Orchestrator bark')
+    except Exception as e:
+        log.get(get_name()).error('Exception in long_term_trade_task: %s'%(str(e)))
