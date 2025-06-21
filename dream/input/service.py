@@ -127,7 +127,7 @@ def market_monitor(lock):
                 if not db.update_sharing_by_dogtime(dog_time, temp_dict):
                     log.get(log_name).error('[%s]Realtime update failed: %s'%(dog_code, str(temp_dict)))
                 db.closeSession()
-                log.get(log_name).info('[%s][%s]:%s'%(trading_duration, dog_time, str(temp_dict)))
+                log.get(log_name).info('[%s][%s]:%s'%(now_seesion, dog_time, str(temp_dict)))
             
             #lock.release()
             if now_seesion == 'Untradeable' or now_seesion == 'Night':
@@ -140,7 +140,7 @@ def market_monitor(lock):
                     tomorrow_start = today_start + datetime.timedelta(days=1)
                     time_left = tomorrow_start - now
                 time_left_sec = int(time_left.total_seconds()) + 10  # Sleep to after market started 10 second
-                log.get(log_name).info('[%s] Start sleep %d seconds till market open...'%(trading_duration, time_left_sec))
+                log.get(log_name).info('[%s] Start sleep %d seconds till market open...'%(now_seesion, time_left_sec))
                 time.sleep(time_left_sec)
             else:
                 duration_time = (datetime.datetime.now() - loop_start_time).total_seconds()
