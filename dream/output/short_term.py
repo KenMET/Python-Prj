@@ -6,6 +6,7 @@ import sys
 import math
 import time
 import random
+import datetime
 import threading
 import multiprocessing
 
@@ -17,7 +18,7 @@ py_name = os.path.realpath(__file__)[len(py_dir)+1:-3]
 sys.path.append(r'%s/'%(py_dir))
 sys.path.append(r'%s/../common'%(py_dir))
 from config import get_global_config, get_short_trade_list
-from other import get_user_type, get_next_inject, get_prev_inject, retry_func
+from other import get_user_type, get_next_inject, get_prev_inject, retry_func, is_winter_time
 from other import get_current_session, get_remaining_time, append_dict_list, clear_dict_list
 from sock_order import submit_order, query_order, cancel_order, modify_order
 from sock_realtime import register_dog
@@ -108,7 +109,7 @@ def short_term_trade(house_dict):
     trigger_price_dict = {}
     trigger_action_dict = {}
 
-    log.get(get_name()).info('Starting loop...')
+    log.get(get_name()).info('[short_term]Starting loop...')
     while(True):
         time.sleep(int(get_global_config('realtime_interval')))
         error_cnt = 0
@@ -238,6 +239,20 @@ def short_term_trade(house_dict):
 
 def short_term_trade_task(queue, log_name):
     set_name(log_name)
+
+    start_hour = 16 if not is_winter_time() else 17
+    today_start = now.replace(hour=start_hour, minute=0, second=0, microsecond=0)
+    while(True):
+        now = datetime.datetime.now()
+        if now > today_start:
+            time_left = now - today_start
+            if int(time_left.total_seconds()) > (60 * 30):  # Start short trade after market opened 30 min
+                break
+            else:
+                time.sleep(60)
+        else:
+            log.get(get_name()).info('[short_term] time before pre market, exit...')
+            return
 
     quantitative_init()
 
