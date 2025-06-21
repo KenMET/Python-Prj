@@ -1,0 +1,65 @@
+# For Spider Container
+
+# Run package update for all container every week sunday (08:80:00 -> 09:08:00) one hour to update
+8 8 * * 0 docker exec dream_spider /bin/bash -c "pip3 install akshare longport plotly --upgrade"
+8 8 * * 0 docker exec dream_kanos_sim /bin/bash -c "pip3 install akshare longport plotly --upgrade"
+8 8 * * 0 docker exec dream_kanos_formal /bin/bash -c "pip3 install akshare longport plotly --upgrade"
+8 8 * * 0 docker exec dream_test /bin/bash -c "pip3 install akshare longport plotly --upgrade"
+8 9 * * 0 docker restart dream_spider
+8 9 * * 0 docker restart dream_kanos_sim
+8 9 * * 0 docker restart dream_kanos_formal
+8 9 * * 0 docker restart dream_test
+
+# Run Sanity every day at 05:20:00
+20 5 * * * docker exec dream_spider /bin/bash -c "python3 /base/dream/input/sanity.py"
+
+### For CN dog
+# Run every day at 04:00:00
+0 4 * * * docker exec dream_spider /bin/bash -c "python3 /base/dream/input/dog_info.py --market cn"   
+# Run every day at 04:05:00
+5 4 * * * docker exec dream_spider /bin/bash -c "python3 /base/dream/input/dog_market.py --market cn"
+# Run Expectation Notify every morning 08:20:00 for CN dog (outdoor time)
+20 8 * * 1-5 docker exec dream_spider /bin/bash -c "python3 /base/dream/inference/expectation.py --market cn"
+
+### For US dog
+## For pre/normal/post trade
+# Sentiment fetch everyday at 15:00:00 (before pre openning)
+0 15 * * * docker exec dream_spider /bin/bash -c "python3 /base/dream/input/sentiment.py"
+# Option fetch every workday at 15:30:00 (before per openning)
+30 15 * * 1-5 docker exec dream_spider /bin/bash -c "python3 /base/dream/input/dog_option.py"
+# Information fetch everyday at 15:50:00 (before pre openning)
+50 15 * * * docker exec dream_spider /bin/bash -c "python3 /base/dream/input/dog_info.py --market us"
+# Market detail fetch everyday at 15:55:00 (before pre openning)
+55 15 * * * docker exec dream_spider /bin/bash -c "python3 /base/dream/input/dog_market.py --market us"
+## For night trade
+# Information fetch everyday at 07:50:00 (before pre openning)
+50 7 * * * docker exec dream_spider /bin/bash -c "python3 /base/dream/input/dog_info.py --market us"
+# Market detail fetch everyday at 07:55:00 (before pre openning)
+55 7 * * * docker exec dream_spider /bin/bash -c "python3 /base/dream/input/dog_market.py --market us"
+
+## Other
+# Expectation Notify everydat at 08:25:00 for US dog
+25 8 * * 1-5 docker exec dream_spider /bin/bash -c "python3 /base/dream/inference/expectation.py --market us"
+# Option Selection Advise everydat at 08:25:00 for US dog
+30 8 * * 1-5 docker exec dream_spider /bin/bash -c "python3 /base/dream/inference/select_option.py"
+
+
+# For Trade Container
+
+## For Kanos-Simulation
+# House update everyday at 16:01:00 (pre openning)
+1 16 * * * docker exec dream_kanos_sim /bin/bash -c "python3 /base/dream/input/house.py"
+# House update everyday at 08:01:00 (night openning)
+1 8 * * * docker exec dream_kanos_sim /bin/bash -c "python3 /base/dream/input/house.py"
+# Quent Traded every workday at 16:05:00(short)
+5 16 * * 1-5 docker exec dream_kanos_sim /bin/bash -c "python3 /base/dream/output/orchestrator.py"
+
+
+
+## For Kanos-Formal
+# House update everyday at 16:01:00 (pre openning)
+1 16 * * * docker exec dream_kanos_formal /bin/bash -c "python3 /base/dream/input/house.py"
+# House update everyday at 08:01:00 (night openning)
+1 8 * * * docker exec dream_kanos_formal /bin/bash -c "python3 /base/dream/input/house.py"
+# Quent Traded every workday at 16:05:00(short) 
+#5 16 * * 1-5 docker exec dream_kanos_formal /bin/bash -c "python3 /base/dream/output/orchestrator.py"

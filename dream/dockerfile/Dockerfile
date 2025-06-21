@@ -11,8 +11,8 @@ RUN apt update && \
 	apt install -y python3-pip || true && apt install -y python3-pip && \
 	python3 -m pip install sqlalchemy pymysql requests bs4 cryptography numpy matplotlib scipy && \
 	python3 -m pip install sqlalchemy pymysql requests bs4 cryptography numpy matplotlib scipy && \
-	python3 -m pip install pandas adata akshare longport && \
-	python3 -m pip install pandas adata akshare longport
+	python3 -m pip install pandas adata akshare longport plotly retrying && \
+	python3 -m pip install pandas adata akshare longport plotly retrying
 
 CMD ["bash"]
 
